@@ -660,6 +660,37 @@ landslides there?"* or *"is this address in a flood zone?"*. For Claude Desktop,
 }
 ```
 
+As an always-on service, for an agent that talks HTTP (for example
+[mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server)'s
+chat and map), serve it over streamable HTTP at `/mcp`:
+
+```bash
+idrogeo-mcp --transport streamable-http --host 0.0.0.0 --port 8767
+```
+
+Every option also reads an environment variable, so a compose file needs no
+command line, and `GET /health` answers `{"status": "ok"}`:
+
+```yaml
+services:
+  idrogeo-mcp:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    command: uvx --from "ispra-idrogeo[mcp]>=0.6" idrogeo-mcp
+    environment:
+      IDROGEO_MCP_TRANSPORT: streamable-http
+      IDROGEO_MCP_HOST: 0.0.0.0
+      IDROGEO_MCP_PORT: "8767"
+      IDROGEO_DATA_DIR: /data/idrogeo  # for download_dataset
+    volumes:
+      - idrogeo-data:/data/idrogeo
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8767/health')"]
+```
+
+On `127.0.0.1` the SDK refuses requests with a foreign `Host` header (DNS
+rebinding protection); on `0.0.0.0` it does not, unless you list the names
+clients use: `IDROGEO_MCP_ALLOWED_HOSTS=idrogeo-mcp:*,localhost:*`.
+
 | Tool | What the agent gets |
 |---|---|
 | `hazard_at` | Landslide and flood hazard, municipality and slope of a point |

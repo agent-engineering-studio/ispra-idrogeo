@@ -186,3 +186,47 @@ async def test_the_client_is_closed_only_if_ours() -> None:
     assert ours._client.is_closed and not theirs._client.is_closed
     await theirs.aclose()
     assert mcp_server.server() is not None  # builds with its own client
+
+
+def test_options_from_the_command_line_and_the_environment() -> None:
+    default = mcp_server.options([], environ={})
+    assert (default.transport, default.host, default.port, default.allowed_host) == (
+        "stdio",
+        "127.0.0.1",
+        8767,
+        [],
+    )
+    env = {
+        "IDROGEO_MCP_TRANSPORT": "streamable-http",
+        "IDROGEO_MCP_HOST": "0.0.0.0",
+        "IDROGEO_MCP_PORT": "9000",
+        "IDROGEO_MCP_ALLOWED_HOSTS": "idrogeo-mcp:*, ",
+    }
+    from_env = mcp_server.options([], environ=env)
+    assert (from_env.transport, from_env.host, from_env.port) == (
+        "streamable-http",
+        "0.0.0.0",
+        9000,
+    )
+    assert mcp_server.http_options(from_env)["transport_security"].allowed_hosts == [
+        "idrogeo-mcp:*"
+    ]
+    flags = mcp_server.options(["--port", "8000", "--transport", "stdio"], environ=env)
+    assert (flags.port, flags.transport) == (8000, "stdio")  # flags win over the environment
+    assert mcp_server.http_options(mcp_server.options([], environ={})) == {
+        "host": "127.0.0.1",
+        "port": 8767,
+        "streamable_http_path": "/mcp",
+    }
+    with pytest.raises(SystemExit):
+        mcp_server.options([], environ={"IDROGEO_MCP_TRANSPORT": "sse"})
+
+
+def test_health_and_mcp_over_http() -> None:
+    from starlette.testclient import TestClient
+
+    app = _server().streamable_http_app()
+    with TestClient(app) as http:
+        health = http.get("/health")
+        assert health.status_code == 200 and health.json()["status"] == "ok"
+        assert 400 <= http.get("/mcp").status_code < 500  # no session: refused, but alive

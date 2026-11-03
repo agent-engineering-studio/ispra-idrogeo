@@ -26,6 +26,11 @@ All notable changes to this project are documented here. The format follows
   `save_marks`) is the engine.
 - `progress=callback(done, total)` on `download` and `fetch`, and a progress
   bar in `idrogeo fetch` (on stderr, when it is a terminal).
+- `idrogeo-mcp --transport streamable-http --host --port`: the MCP server
+  over HTTP at `/mcp`, with `GET /health`; every option also reads
+  `IDROGEO_MCP_TRANSPORT`, `IDROGEO_MCP_HOST`, `IDROGEO_MCP_PORT` and
+  `IDROGEO_MCP_ALLOWED_HOSTS` (DNS rebinding protection). stdio stays the
+  default.
 - `ispra_idrogeo.wms`: the pure request builders and parsers behind them,
   and `distance_m` from a point to any GeoJSON geometry.
 

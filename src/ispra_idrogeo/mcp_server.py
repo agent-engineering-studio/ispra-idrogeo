@@ -1,6 +1,13 @@
 """An MCP server over IdroGEO, for AI agents: ``pip install "ispra-idrogeo[mcp]"``.
 
-    idrogeo-mcp            # stdio, for Claude Desktop, IDEs, agent frameworks
+    idrogeo-mcp                                     # stdio: Claude Desktop, IDEs
+    idrogeo-mcp --transport streamable-http --host 0.0.0.0 --port 8767
+
+Over HTTP the MCP endpoint is ``/mcp`` and ``GET /health`` answers
+``{"status": "ok"}`` for container healthchecks. Every option also reads
+an environment variable (``IDROGEO_MCP_TRANSPORT``, ``IDROGEO_MCP_HOST``,
+``IDROGEO_MCP_PORT``, ``IDROGEO_MCP_ALLOWED_HOSTS``), so a compose file
+needs no command line.
 
 Every tool reads the public API (no account), except ``download_dataset``,
 which writes the file to the local download folder and returns its path.
@@ -10,14 +17,17 @@ Codes come back with their English labels, and long answers are cut at
 
 from __future__ import annotations
 
+import argparse
 import logging
-from collections.abc import AsyncIterator, Awaitable, Callable
+import os
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 from datetime import date, datetime
 from functools import wraps
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
+from ispra_idrogeo import __version__
 from ispra_idrogeo.client import IdroGEO
 from ispra_idrogeo.codes import decode
 from ispra_idrogeo.errors import IdrogeoError
@@ -27,7 +37,10 @@ from ispra_idrogeo.sources import EVENT_LAYERS, LANDSLIDE_LAYERS, MOSAICS, mosai
 try:
     from mcp.server.mcpserver import MCPServer
     from mcp.server.mcpserver.exceptions import ToolError
+    from mcp.server.transport_security import TransportSecuritySettings
     from mcp.types import ToolAnnotations
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse, Response
 except ImportError as exc:  # pragma: no cover - exercised only without the extra
     raise ImportError(
         'ispra_idrogeo.mcp_server needs the mcp extra: pip install "ispra-idrogeo[mcp]"'
@@ -255,6 +268,14 @@ def server(idrogeo: IdroGEO | None = None) -> MCPServer[Any]:
             raise ValueError(f"unknown dataset {dataset!r}")
         return {"path": str(await client.fetch(found))}
 
+    async def health(_request: Request) -> Response:
+        """``GET /health`` over HTTP, for container healthchecks."""
+        return JSONResponse({"status": "ok", "server": "ispra-idrogeo", "version": __version__})
+
+    # custom_route is untyped in the SDK: register the typed handler through a cast.
+    route = cast(Callable[[Any], Any], mcp.custom_route("/health", methods=["GET"]))
+    route(health)
+
     return mcp
 
 
@@ -288,7 +309,52 @@ async def _take(rows: AsyncIterator[dict[str, Any]], limit: int) -> list[dict[st
     return out
 
 
-def main() -> None:  # pragma: no cover - runs a stdio server
+def options(
+    argv: Sequence[str] | None = None, environ: Mapping[str, str] = os.environ
+) -> argparse.Namespace:
+    """The command line of ``idrogeo-mcp``, each default from its environment variable."""
+    top = argparse.ArgumentParser(prog="idrogeo-mcp", description="IdroGEO as an MCP server.")
+    top.add_argument(
+        "--transport",
+        choices=("stdio", "streamable-http"),
+        default=environ.get("IDROGEO_MCP_TRANSPORT", "stdio"),
+        help="stdio (default) or streamable-http, served at /mcp",
+    )
+    top.add_argument(
+        "--host",
+        default=environ.get("IDROGEO_MCP_HOST", "127.0.0.1"),
+        help="HTTP address (default 127.0.0.1; 0.0.0.0 in a container)",
+    )
+    top.add_argument("--port", type=int, default=int(environ.get("IDROGEO_MCP_PORT", "8767")))
+    top.add_argument(
+        "--allowed-host",
+        action="append",
+        default=[h for h in environ.get("IDROGEO_MCP_ALLOWED_HOSTS", "").split(",") if h.strip()],
+        metavar="HOST[:PORT]",
+        help="accept only these Host headers (DNS rebinding protection); repeatable",
+    )
+    args = top.parse_args(argv)
+    if args.transport not in ("stdio", "streamable-http"):
+        top.error(f"unknown transport {args.transport!r}")
+    return args
+
+
+def http_options(args: argparse.Namespace) -> dict[str, Any]:
+    """The keyword arguments of ``MCPServer.run`` for the HTTP transport."""
+    found: dict[str, Any] = {"host": args.host, "port": args.port, "streamable_http_path": "/mcp"}
+    if args.allowed_host:
+        found["transport_security"] = TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=[h.strip() for h in args.allowed_host],
+        )
+    return found
+
+
+def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover - runs a server
     """Entry point of ``idrogeo-mcp``."""
     logging.getLogger("httpx").setLevel(logging.WARNING)  # not one line per request
-    server().run("stdio")
+    args = options(argv)
+    if args.transport == "stdio":
+        server().run("stdio")
+    else:
+        server().run("streamable-http", **http_options(args))
