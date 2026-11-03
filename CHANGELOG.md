@@ -21,6 +21,11 @@ All notable changes to this project are documented here. The format follows
 - `landslide_filter`, `event_filter`, `site_filter`: search filters by
   movement, activity, district, area (ISTAT codes) and dates, in the syntax
   each search wants.
+- Extra `[mcp]` and the `idrogeo-mcp` server (MCP SDK 2.x, stdio): 10
+  tools for AI agents (`find_area`, `area_risk`, `area_landslides`,
+  `landslide`, `search_landslides`, `search_events`, `monitoring_sites`,
+  `webcams`, `code_list`, `download_dataset`), codes decoded, answers capped
+  at `limit` rows.
 - The `idrogeo` command: `fetch`, `summary`, `municipalities`, `landslides`,
   `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`;
   downloads print their path, the rest prints JSON Lines.

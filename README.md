@@ -560,6 +560,41 @@ dictionary). `id_frane_correlati` links 880 sites to their IFFI landslides,
 so you can tell which landslides someone is already watching. Look a site up
 by its `uid` (`"SIPIE001"`), not by its `id`.
 
+### For AI agents: the MCP server
+
+```bash
+pip install "ispra-idrogeo[mcp]"
+```
+
+`idrogeo-mcp` is an [MCP](https://modelcontextprotocol.io) server, so Claude
+Desktop, an IDE or your own agent can answer questions like *"how many people
+live in high landslide hazard areas in Sarno, and is anyone monitoring the
+landslides there?"*. For Claude Desktop, add it to
+`claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "idrogeo": { "command": "idrogeo-mcp" }
+  }
+}
+```
+
+| Tool | What the agent gets |
+|---|---|
+| `find_area` | The ISTAT code of a region, province or municipality from its name |
+| `area_risk` | Hazard and exposure: residents, buildings, heritage per hazard class |
+| `area_landslides` | IFFI counts by type of movement, events, monitoring |
+| `landslide` | One landslide in full, codes decoded |
+| `search_landslides` / `search_events` | Landslides by type and activity; events by area and date |
+| `monitoring_sites` / `webcams` | Who is watching, with which instruments |
+| `code_list` | Any code list, in four languages |
+| `download_dataset` | A layer downloaded (only if changed) to the local folder |
+
+Every tool but `download_dataset` only reads. Searches stop at `limit` rows
+(100 by default, 1,000 at most), so an agent never receives 700,000
+landslides at once, and IdroGEO's refusals come back as readable errors.
+
 ### Bring your own HTTP client
 
 ```python
@@ -650,6 +685,7 @@ All checked against the live service on 3 November 2026.
 | `ispra_idrogeo.geo.read(path)` | A downloaded file or folder as a GeoDataFrame (extra `[geo]`). |
 | `ispra_idrogeo.geo.frame(rows, geometry="point")` | API rows as a GeoDataFrame, in their own CRS. |
 | `ispra_idrogeo.geo.add_labels(frame, labels)` | `<column>_label` columns for coded columns. |
+| `idrogeo-mcp` | An MCP server with the same data as 10 tools (extra `[mcp]`). |
 | `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
