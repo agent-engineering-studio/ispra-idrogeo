@@ -41,6 +41,9 @@ from ispra_idrogeo.sources import Dataset
 from ispra_idrogeo.wms import WMS_URL, PointHazard, area_params, nearby, parse_hazard, point_params
 
 _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
+
+#: ``progress(done, total)``: bytes written so far, and the size if known.
+type Progress = Callable[[int, int | None], None]
 _CHUNK = 1 << 20
 
 
@@ -98,11 +101,19 @@ class IdroGEO:
         if self._own:
             await self._client.aclose()
 
-    async def download(self, dataset: Dataset, directory: Path | None = None) -> Download:
+    async def download(
+        self,
+        dataset: Dataset,
+        directory: Path | None = None,
+        *,
+        progress: Progress | None = None,
+    ) -> Download:
         """The file in ``directory``, downloaded only if missing or changed upstream.
 
         ``directory`` defaults to :func:`~ispra_idrogeo.cache.default_directory`.
         A 404 raises :class:`IdrogeoError`: the layer or area does not exist.
+        ``progress(done, total)`` is called after each chunk of a download,
+        ``total`` being ``None`` when the server does not say the size.
         """
         directory = directory or default_directory()
         directory.mkdir(parents=True, exist_ok=True)
@@ -117,9 +128,15 @@ class IdroGEO:
                     if status == 304 and known is not None:
                         return Download(path, changed=False)
                     if status == 200:
+                        size = response.headers.get("content-length")
+                        total = int(size) if size and size.isdigit() else None
+                        done = 0
                         with partial.open("wb") as out:
                             async for chunk in response.aiter_bytes(_CHUNK):
                                 out.write(chunk)
+                                done += len(chunk)
+                                if progress is not None:
+                                    progress(done, total)
                         partial.replace(path)
                         write_validators(
                             path,
@@ -144,15 +161,21 @@ class IdroGEO:
         raise AssertionError("unreachable")  # pragma: no cover
 
     async def fetch(
-        self, dataset: Dataset, directory: Path | None = None, *, unpack: bool = True
+        self,
+        dataset: Dataset,
+        directory: Path | None = None,
+        *,
+        unpack: bool = True,
+        progress: Progress | None = None,
     ) -> Path:
         """The dataset ready to read: the folder its ZIP unpacks to, or the file.
 
         The folder is ``<directory>/<dataset.stem>`` and is unpacked again
         only when the download changed (or the folder is missing).
+        ``progress`` is passed to :meth:`download`.
         """
         directory = directory or default_directory()
-        got = await self.download(dataset, directory)
+        got = await self.download(dataset, directory, progress=progress)
         if not unpack or not dataset.filename.endswith(".zip"):
             return got.path
         folder = directory / dataset.stem

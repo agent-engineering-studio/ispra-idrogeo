@@ -182,7 +182,8 @@ idrogeo labels tipo_movimento --lang it
 idrogeo hazard 40.829 14.617                        # P4, Sarno, 12.3°
 ```
 
-Downloads print the path they wrote; everything else prints JSON, one object
+Downloads print the path they wrote, with a progress bar on stderr when it is
+a terminal (`--progress` / `--no-progress` to choose); everything else prints JSON, one object
 per line for lists (JSON Lines), ready for `jq`, a file or a database loader.
 `idrogeo --help` and `idrogeo <command> --help` list every option. An error
 prints one line on stderr and exits with status 1.
@@ -403,6 +404,20 @@ next_since = max(datetime.fromisoformat(f["modified"]) for f in changed)
 ```python
 ids = {f["id_frana"] async for f in idrogeo.iter_landslides(select=["id_frana"], page_size=100_000)}
 ```
+
+### Watch for changes
+
+```bash
+idrogeo watch --once >> changes.jsonl                 # one round, e.g. every hour from cron
+idrogeo watch --kind events --interval 900            # or keep running, every 15 minutes
+```
+
+Each line is a landslide, an event or a monitoring site that changed since
+the previous round, with `"kind"` saying which. The first run starts from
+now (or from `--since`); after that `<dir>/watch.json` remembers where each
+kind stands, so a stopped watch resumes without missing or repeating a
+change. In Python, `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` does
+one round.
 
 ### Landslides per region (the map above)
 
@@ -745,8 +760,10 @@ All checked against the live service on 3 November 2026.
 | `ispra_idrogeo.geo.read(path)` | A downloaded file or folder as a GeoDataFrame (extra `[geo]`). |
 | `ispra_idrogeo.geo.frame(rows, geometry="point")` | API rows as a GeoDataFrame, in their own CRS. |
 | `ispra_idrogeo.geo.add_labels(frame, labels)` | `<column>_label` columns for coded columns. |
+| `.download` / `.fetch(..., progress=callback)` | `callback(done, total)` after each chunk, for your own progress bar. |
+| `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` | One round of `idrogeo watch`: what changed since a `Mark`. |
 | `idrogeo-mcp` | An MCP server with the same data as 12 tools (extra `[mcp]`). |
-| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`. |
+| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,
@@ -807,9 +824,7 @@ issue to discuss one before starting.
 | Idea | Why it matters | Good for |
 |---|---|---|
 | 📓 **Example notebooks** (a town, a valley, a flood plain) | Show what the data can do, from download to map | first contribution, GIS users |
-| 📊 **Progress bar** for the big downloads (`idrogeo fetch`) | 1.2 GB feels less like a black box | first contribution |
 | 🗺️ **Landslides of an area through the API** | The search has no reliable area filter today (see the traps); a spatial filter would fill the gap | intermediate |
-| 🔔 **A changes feed**: `idrogeo watch` printing new and changed landslides and events | Alerts and dashboards without polling by hand | intermediate |
 | 🧠 **More MCP tools** (hazard at a point, nearest landslides) | Agents that answer "is my house at risk?" | intermediate, AI users |
 | 🧩 **A GeoServer bootstrap** that publishes the downloads, for [mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server) | From open data to a live map server in one command | advanced |
 | 📚 **Documentation site** | Search, API reference, tutorials | anyone |

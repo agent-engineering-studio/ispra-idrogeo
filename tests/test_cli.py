@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +39,13 @@ def _server(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"nome": "Bari"})
     if path == "pir/comuni":
         return httpx.Response(200, json=[{"pro_com": 72006}])
+    watching = "point" in request.url.params.get("select", "")  # watch asks for the point
+    if watching and path == "frana/searchfilter":
+        row = {"id_frana": "A", "modified": "2026-11-03T16:30:00+00:00"}
+        since = (body or {})["modified"]
+        return httpx.Response(200, json=[row] if since <= "gte.2026-11-03T16:30" else [])
+    if watching:
+        return httpx.Response(200, json=[])
     if path in ("frana/searchfilter", "evento/main/filter", "sito/filter", "webcam/filter"):
         return httpx.Response(200, json=[{"path": path, "body": body, **request.url.params}])
     if path == "frana/0017680500":
@@ -130,6 +138,58 @@ async def test_fetch_and_municipalities(tmp_path: Path) -> None:
     rows = await _run("--dir", str(tmp_path), "municipalities", "--max-age-days", "30")
     assert rows == [{"nome": "Bari"}]
     assert await _run("--dir", str(tmp_path), "municipalities") == rows
+
+
+async def test_watch(tmp_path: Path) -> None:
+    state = tmp_path / "watch.json"
+    argv = ["--dir", str(tmp_path), "watch", "--once", "--since", "2026-11-03T00:00:00Z"]
+    assert await _run(*argv) == [
+        {"kind": "landslides", "id_frana": "A", "modified": "2026-11-03T16:30:00+00:00"}
+    ]
+    assert json.loads(state.read_text())["landslides"]["ids"] == ["A"]
+    assert await _run("--dir", str(tmp_path), "watch", "--once") == []  # nothing new
+    naps: list[float] = []
+
+    async def nap(seconds: float) -> None:
+        naps.append(seconds)
+        if len(naps) == 2:
+            raise KeyboardInterrupt
+
+    out = io.StringIO()
+    async with _idrogeo() as idrogeo:
+        args = cli.parser().parse_args(
+            ["watch", "--kind", "events", "--state", str(tmp_path / "w2.json"), "--interval", "5"]
+        )
+        with pytest.raises(KeyboardInterrupt):
+            await cli.run(args, idrogeo, out, sleep=nap)
+    assert naps == [5, 5] and out.getvalue() == ""
+
+
+async def test_fetch_progress(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    out = io.StringIO()
+    async with _idrogeo() as idrogeo:
+        argv = ["--dir", str(tmp_path), "fetch", "sensor_data", "--progress"]
+        await cli.run(cli.parser().parse_args(argv), idrogeo, out)
+    assert "idrogeo_sensor_data.csv.bz2  0.0 / 0.0 MB  100%" in capsys.readouterr().err
+
+    async def chunks() -> AsyncIterator[bytes]:
+        yield b"BZ2"
+
+    def unsized(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=chunks())  # streamed: no Content-Length
+
+    seen: list[tuple[int, int | None]] = []
+    async with IdroGEO(
+        httpx.AsyncClient(transport=httpx.MockTransport(unsized)), sleep=_sleep
+    ) as idrogeo:
+        from ispra_idrogeo import sensor_data
+
+        await idrogeo.fetch(
+            sensor_data(), tmp_path / "b", progress=lambda d, t: seen.append((d, t))
+        )
+    assert seen == [(3, None)]
+    cli._bar("x.zip", out)(1_500_000, None)
+    assert out.getvalue().endswith("x.zip  1.5 MB")
 
 
 def test_since_needs_a_time_zone(capsys: pytest.CaptureFixture[str]) -> None:

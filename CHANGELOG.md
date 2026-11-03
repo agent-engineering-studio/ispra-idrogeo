@@ -15,6 +15,12 @@ All notable changes to this project are documented here. The format follows
 - `IdroGEO.landslides_near(lat, lon, radius_m)`: the IFFI landslides around a
   point, nearest first, with the distance to their real outline.
   `idrogeo near`, and the MCP tool `landslides_near`.
+- `idrogeo watch`: prints the landslides, events and monitoring sites that
+  change, once per change, resuming from `<dir>/watch.json`; `--once` for
+  cron. `ispra_idrogeo.watch` (`changes`, `Mark`, `load_marks`,
+  `save_marks`) is the engine.
+- `progress=callback(done, total)` on `download` and `fetch`, and a progress
+  bar in `idrogeo fetch` (on stderr, when it is a terminal).
 - `ispra_idrogeo.wms`: the pure request builders and parsers behind them,
   and `distance_m` from a point to any GeoJSON geometry.
 

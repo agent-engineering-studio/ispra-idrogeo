@@ -12,6 +12,7 @@ a database loader.
     idrogeo lookup formazioni argille
     idrogeo hazard 40.829 14.617
     idrogeo near 40.838 14.630 --radius 500
+    idrogeo watch --once >> changes.jsonl      # from cron
 """
 
 from __future__ import annotations
@@ -20,13 +21,14 @@ import argparse
 import asyncio
 import json
 import sys
-from collections.abc import AsyncIterable, Callable, Iterable, Sequence
+from collections.abc import AsyncIterable, Awaitable, Callable, Iterable, Sequence
 from dataclasses import asdict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, TextIO
 
 from ispra_idrogeo.api import LOOKUPS
+from ispra_idrogeo.cache import default_directory
 from ispra_idrogeo.client import IdroGEO
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.sources import (
@@ -38,6 +40,7 @@ from ispra_idrogeo.sources import (
     opendata,
     sensor_data,
 )
+from ispra_idrogeo.watch import WATCHED, Kind, Mark, changes, load_marks, save_marks
 
 _DATASETS = (*LANDSLIDE_LAYERS, *EVENT_LAYERS, *MOSAICS, "sensor_data")
 
@@ -55,6 +58,12 @@ def parser() -> argparse.ArgumentParser:
     fetch.add_argument("--area", default="ispra", help="region or province (default: Italy)")
     fetch.add_argument("--geojson", action="store_true", help="GeoJSON instead of shapefile")
     fetch.add_argument("--no-unpack", action="store_true", help="keep the ZIP as it is")
+    fetch.add_argument(
+        "--progress",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="show a progress bar on stderr (default: when stderr is a terminal)",
+    )
 
     summary = commands.add_parser("summary", help="IFFI counts or risk indicators of an area")
     summary.add_argument("summary", choices=("iffi", "pir"))
@@ -98,6 +107,17 @@ def parser() -> argparse.ArgumentParser:
     near.add_argument("lon", type=float)
     near.add_argument("--radius", type=float, default=500, help="metres (default 500)")
     near.add_argument("--limit", type=int, default=200)
+
+    watch = commands.add_parser(
+        "watch", help="print the landslides, events and sites that change, as they change"
+    )
+    watch.add_argument(
+        "--kind", action="append", choices=tuple(WATCHED), help="repeatable (default: all)"
+    )
+    watch.add_argument("--state", type=Path, help="marks file (default: <dir>/watch.json)")
+    watch.add_argument("--since", type=_since, help="first run: start here (default: now)")
+    watch.add_argument("--once", action="store_true", help="one round, then exit (for cron)")
+    watch.add_argument("--interval", type=float, default=3600, help="seconds between rounds")
 
     lookup = commands.add_parser("lookup", help="search a reference list by text")
     lookup.add_argument("kind", choices=LOOKUPS)
@@ -149,7 +169,12 @@ def _dataset(name: str, area: str, geojson: bool) -> Dataset:
     return opendata(name, area, "geojson" if geojson else "shapefile")  # type: ignore[arg-type]
 
 
-async def run(args: argparse.Namespace, idrogeo: IdroGEO, out: TextIO) -> None:
+async def run(
+    args: argparse.Namespace,
+    idrogeo: IdroGEO,
+    out: TextIO,
+    sleep: Callable[[float], Awaitable[Any]] = asyncio.sleep,
+) -> None:
     """Carry out one parsed command, writing its result to ``out``."""
     write: Callable[[Any], None] = lambda value: print(  # noqa: E731
         json.dumps(value, ensure_ascii=False), file=out
@@ -157,7 +182,14 @@ async def run(args: argparse.Namespace, idrogeo: IdroGEO, out: TextIO) -> None:
     command = args.command
     if command == "fetch":
         dataset = _dataset(args.dataset, args.area, args.geojson)
-        print(await idrogeo.fetch(dataset, args.dir, unpack=not args.no_unpack), file=out)
+        show = sys.stderr.isatty() if args.progress is None else args.progress
+        bar = _bar(dataset.filename, sys.stderr) if show else None
+        print(
+            await idrogeo.fetch(dataset, args.dir, unpack=not args.no_unpack, progress=bar),
+            file=out,
+        )
+        if bar is not None:
+            print(file=sys.stderr)
     elif command == "summary":
         write(await idrogeo.summary(args.summary, args.level, args.code))
     elif command == "municipalities":
@@ -188,11 +220,52 @@ async def run(args: argparse.Namespace, idrogeo: IdroGEO, out: TextIO) -> None:
     elif command == "near":
         for row in await idrogeo.landslides_near(args.lat, args.lon, args.radius, limit=args.limit):
             write(row)
+    elif command == "watch":
+        await _watch(args, idrogeo, write, sleep)
     elif command == "lookup":
         for row in await idrogeo.lookup(args.kind, args.text, limit=args.limit):
             write(row)
     else:  # dictionaries
         write(await idrogeo.dictionaries())
+
+
+def _bar(name: str, stream: TextIO) -> Callable[[int, int | None], None]:
+    """A one-line progress bar: ``name  12.3 / 573.0 MB  2%``, rewritten in place."""
+
+    def show(done: int, total: int | None) -> None:
+        mb = done / 1e6
+        if total:
+            line = f"{name}  {mb:,.1f} / {total / 1e6:,.1f} MB  {100 * done // total}%"
+        else:
+            line = f"{name}  {mb:,.1f} MB"
+        print(f"\r{line}", end="", file=stream, flush=True)
+
+    return show
+
+
+async def _watch(
+    args: argparse.Namespace,
+    idrogeo: IdroGEO,
+    write: Callable[[Any], None],
+    sleep: Callable[[float], Awaitable[Any]],
+) -> None:
+    kinds: list[Kind] = args.kind or list(WATCHED)
+    state: Path = args.state or (args.dir or default_directory()) / "watch.json"
+    marks = load_marks(state)
+    start = args.since or datetime.now(UTC)
+    for kind in kinds:
+        if kind not in marks:
+            marks[kind] = Mark(start)
+    save_marks(state, marks)
+    while True:
+        for kind in kinds:
+            rows, marks[kind] = await changes(idrogeo, kind, marks[kind])
+            for row in rows:
+                write({"kind": kind, **row})
+            save_marks(state, marks)
+        if args.once:
+            return
+        await sleep(args.interval)
 
 
 def _select(args: argparse.Namespace) -> list[str] | None:
