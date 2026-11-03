@@ -32,6 +32,7 @@ from ispra_idrogeo.cache import (
 from ispra_idrogeo.client import Download, IdroGEO
 from ispra_idrogeo.codes import CODE_DICTIONARIES, Language, decode, parse_labels
 from ispra_idrogeo.errors import IdrogeoError
+from ispra_idrogeo.filters import event_filter, landslide_filter, site_filter
 from ispra_idrogeo.sources import (
     BASE_URL,
     EVENT_LAYERS,
@@ -82,7 +83,9 @@ __all__ = [
     "__version__",
     "decode",
     "default_directory",
+    "event_filter",
     "extract",
+    "landslide_filter",
     "level_codes",
     "mosaic",
     "opendata",
@@ -95,6 +98,7 @@ __all__ = [
     "search_params",
     "sensor_data",
     "since_filter",
+    "site_filter",
     "summary_path",
     "write_json",
     "write_validators",

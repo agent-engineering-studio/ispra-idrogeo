@@ -482,21 +482,32 @@ is not in its list becomes `None` rather than a guess.
 ### Walk through every landslide or event
 
 ```python
-async with IdroGEO() as idrogeo:
-    sinkholes = [f async for f in idrogeo.iter_landslides({"tipo_movimento": 6})]
-    print(len(sinkholes))  # 500, the same as IFFI's national count
+from datetime import date
 
-    async for event in idrogeo.iter_events({"regione": "eq.16"}):  # Puglia
+from ispra_idrogeo import IdroGEO, event_filter, landslide_filter
+
+async with IdroGEO() as idrogeo:
+    active_sinkholes = landslide_filter(movement=6, activity=100)
+    print(len([f async for f in idrogeo.iter_landslides(active_sinkholes)]))  # 217
+
+    tuscany_2023 = event_filter(region=9, start=date(2023, 1, 1), end=date(2024, 1, 1))
+    async for event in idrogeo.iter_events(tuscany_2023):  # 8 events
         print(event["uid"], event["computed_date"], event["comune_nome"])
 ```
 
 `iter_landslides` and `iter_events` ask for one page after another
 (`page_size`, 1,000 by default) and stop at the last one. They sort by a
-unique key (`id_frana`, `uid`) so pages do not overlap. Each search has
-its own filter syntax: landslides take plain values (`{"tipo_movimento":
-6}`), events take operators (`{"regione": "eq.16"}`). An empty filter
-matches everything. `search_landslides` and `search_events` return a single
+unique key (`id_frana`, `uid`) so pages do not overlap. An empty filter
+matches everything; `search_landslides` and `search_events` return a single
 page, if you prefer to page yourself.
+
+`landslide_filter`, `event_filter` and `site_filter` build the filters, because each
+search reads them its own way: landslides want `{"tipo_movimento": 6}` but
+`{"stato_attivita_1liv": "eq.100"}`, events and sites want operators
+everywhere, and a range of dates is an `"and"` of two conditions. Codes are
+ISTAT codes for areas and the code lists' codes for the rest; a list of
+codes means "any of these". You can still pass a plain `dict` if you know
+the syntax.
 
 ### One landslide, in full
 
@@ -600,7 +611,9 @@ point to paths that no longer exist. This library handles these for you:
 | `/api/sito/{id}` with the site's `id` (a UUID) | HTTP **404**: the path wants the `uid` (`SIPIE001`); `/listing` of an unknown site answers `null` with HTTP 200 | `site(uid)` and `stations(uid)`, which raise `IdrogeoError` for both |
 | webcam `geom` as longitude and latitude | it is **EPSG:3857** metres, while sites use lon/lat | says so in `webcams()` |
 | a webcam's `timelapse_url` | HTTP **404** or a redirect to the web app: the videos are not published | leaves the field as IdroGEO sends it |
-| landslide filters like events, `{"regione": "eq.16"}` | `invalid input syntax` or `not an embedded resource`: landslides take plain values (`{"tipo_movimento": 6}`) | types filters as `dict[str, Any]` and documents both |
+| `{"tipo_movimento": "eq.6"}` on landslides, like every other field | `invalid input syntax for type integer`: this one field wants a plain `6`, and no list | `landslide_filter(movement=6)` |
+| landslides of a region, `{"regione": "eq.16"}` | `not an embedded resource`; and `regione_2019`, which does filter, is **empty for 18%** of the landslides (35,543 in Campania) | no area filter for landslides: download `opendata(layer, area)` |
+| several landslides by id, `{"id_frana": "in.(…)"}` | an empty list, no error | `landslide(id)` for each one |
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
 
 All checked against the live service on 3 November 2026.

@@ -18,6 +18,9 @@ All notable changes to this project are documented here. The format follows
   one in their own CRS (EPSG:4326 points, EPSG:32632 landslides, EPSG:3857
   webcams), `add_labels` adds `<column>_label` columns; `.to_parquet` writes
   GeoParquet.
+- `landslide_filter`, `event_filter`, `site_filter`: search filters by
+  movement, activity, district, area (ISTAT codes) and dates, in the syntax
+  each search wants.
 - The `idrogeo` command: `fetch`, `summary`, `municipalities`, `landslides`,
   `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`;
   downloads print their path, the rest prints JSON Lines.
