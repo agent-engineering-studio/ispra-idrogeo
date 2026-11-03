@@ -13,7 +13,7 @@ from typing import Any
 import httpx
 import pytest
 
-from ispra_idrogeo import IdroGEO, IdrogeoError, mosaic, opendata, sensor_data
+from ispra_idrogeo import CODE_DICTIONARIES, IdroGEO, IdrogeoError, mosaic, opendata, sensor_data
 
 Handler = Callable[[httpx.Request], httpx.Response]
 ETAG = '"6ae99507-416c44"'
@@ -196,6 +196,38 @@ async def test_api() -> None:
         kw: dict[str, Any] = {"limit": 2, "select": ["id_frana"]}
         assert len(await idrogeo.search_landslides({"regione": "eq.16"}, **kw)) == 2
         assert len(await idrogeo.search_events({"regione": "eq.16"}, **kw)) == 2
+
+
+def _dictionaries(request: httpx.Request) -> httpx.Response:
+    name = request.url.path.removeprefix("/api/dizionari/")
+    assert name in ("tipo_movimento", "stato_monitoraggio")
+    return httpx.Response(
+        200, json=[{"codice": "1", "descrizione": f"{name} it", "descrizione_en": f"{name} en"}]
+    )
+
+
+async def test_code_labels() -> None:
+    calls: list[str] = []
+
+    def counting(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        return _dictionaries(request)
+
+    async with _idrogeo(counting) as idrogeo:
+        assert await idrogeo.labels("tipo_movimento", "it") == {"1": "tipo_movimento it"}
+        calls.clear()
+        labels = await idrogeo.code_labels(["tipo_movim", "tipo_movimento", "stato_monitoraggio"])
+        assert labels["tipo_movim"] == labels["tipo_movimento"] == {"1": "tipo_movimento en"}
+        assert labels["stato_monitoraggio"] == {"1": "stato_monitoraggio en"}
+        assert len(calls) == 2  # one call per dictionary, not per field
+        with pytest.raises(ValueError, match="no dictionary known"):
+            await idrogeo.code_labels(["nome_tipo"])
+
+    def every(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[])
+
+    async with _idrogeo(every) as idrogeo:
+        assert set(await idrogeo.code_labels()) == set(CODE_DICTIONARIES)
 
 
 async def test_api_retries_then_raises() -> None:

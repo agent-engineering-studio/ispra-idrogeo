@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `IdroGEO.labels(name, lang)` and `IdroGEO.code_labels(fields, lang)`: the
+  API's code lists as `{code: label}`, in Italian, English, French or German.
+- `decode(record, labels)`: a copy of a record (API, site or shapefile row)
+  with `<field>_label` next to each coded field; `CODE_DICTIONARIES` says
+  which code list decodes which field.
+
+### Fixed
+
+- README: the code lists come in four languages, not five.
+
 ## [0.4.0] - 2026-11-03
 
 ### Added

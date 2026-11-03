@@ -16,7 +16,7 @@ status). Pass ``retries=0`` to put your own retry policy around the calls.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -35,6 +35,7 @@ from ispra_idrogeo.cache import (
     write_json,
     write_validators,
 )
+from ispra_idrogeo.codes import CODE_DICTIONARIES, Language, parse_labels
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.sources import Dataset
 
@@ -229,6 +230,28 @@ class IdroGEO:
     async def dictionary(self, name: str) -> Any:
         """One code list (``IdrogeoError`` if it does not exist)."""
         return await self._get(f"dizionari/{name}")
+
+    async def labels(self, name: str, lang: Language = "en") -> dict[str, str]:
+        """One dictionary as ``{code: label}`` in ``lang`` (Italian where untranslated)."""
+        return parse_labels(await self.dictionary(name), lang)
+
+    async def code_labels(
+        self, fields: Iterable[str] | None = None, lang: Language = "en"
+    ) -> dict[str, dict[str, str]]:
+        """``{field: {code: label}}`` for :func:`~ispra_idrogeo.codes.decode`.
+
+        ``fields`` defaults to every field in
+        :data:`~ispra_idrogeo.codes.CODE_DICTIONARIES`; each dictionary is
+        asked for once.
+        """
+        wanted = list(CODE_DICTIONARIES if fields is None else fields)
+        unknown = [f for f in wanted if f not in CODE_DICTIONARIES]
+        if unknown:
+            raise ValueError(f"no dictionary known for {unknown}: see CODE_DICTIONARIES")
+        names = sorted({CODE_DICTIONARIES[f] for f in wanted})
+        words = await asyncio.gather(*(self.labels(n, lang) for n in names))
+        found = dict(zip(names, words, strict=True))
+        return {f: found[CODE_DICTIONARIES[f]] for f in wanted}
 
     async def landslide(self, id_frana: str) -> dict[str, Any]:
         """The full record of one validated IFFI landslide (~140 fields).

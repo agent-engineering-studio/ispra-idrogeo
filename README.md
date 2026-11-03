@@ -439,14 +439,26 @@ census, so a monthly refresh is plenty.
 
 ### Translate the codes
 
-The files store codes; the API has the code lists, in five languages:
+The data stores codes (`tipo_movimento = 4`); the API has 73 code lists that
+say what they mean, in Italian, English, French and German. `decode` adds a
+`<field>_label` next to every coded field it knows:
 
 ```python
+from ispra_idrogeo import IdroGEO, decode
+
 async with IdroGEO() as idrogeo:
-    print(len(await idrogeo.dictionaries()))  # 73 lists: causes, damage, materials…
-    types = {d["codice"]: d["descrizione_en"] for d in await idrogeo.dictionary("tipo_movimento")}
-    # {'1': 'fall/topple', '2': 'rotational/translational slide', '4': 'slow earth flow', …}
+    labels = await idrogeo.code_labels(lang="en")  # one call per code list
+    record = decode(await idrogeo.landslide("0017680500"), labels)
+print(record["tipo_movimento_label"], "·", record["stato_attivita_1liv_label"])
+# rapid debris flow · active/reactivated/suspended
 ```
+
+It works on monitoring sites too (`strumentazione = [15, 22, 25]` becomes
+`['inclinometer', 'topographic monitoring', 'Satellite SAR interferometry']`)
+and on the rows of a shapefile, where the field is called `tipo_movim`.
+`CODE_DICTIONARIES` lists which code list decodes which field, and
+`labels("cause", "it")` gives one code list as `{code: label}`. A code that
+is not in its list becomes `None` rather than a guess.
 
 ### Walk through every landslide or event
 
@@ -650,7 +662,6 @@ issue to discuss one before starting.
 | 📊 **Progress bar** for the big downloads | 1.2 GB feels less like a black box | first contribution |
 | 🐼 **Load into GeoPandas / GeoParquet** (optional extra) | Layers and summaries as data frames in one line | intermediate |
 | 🔎 **Typed search filters** | Build filters without reading the manual | intermediate |
-| 🌍 **Translate codes in the files** with the dictionaries | `tipo_movim = 4` → "slow earth flow", in five languages | intermediate |
 | 📈 **Read the monitoring CSV** (`sensor_data()`) | Sensor time series next to the landslides | intermediate |
 | 📚 **Documentation site** | Search, API reference, tutorials | anyone |
 

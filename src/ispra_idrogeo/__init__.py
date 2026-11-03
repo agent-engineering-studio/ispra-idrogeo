@@ -30,6 +30,7 @@ from ispra_idrogeo.cache import (
     write_validators,
 )
 from ispra_idrogeo.client import Download, IdroGEO
+from ispra_idrogeo.codes import CODE_DICTIONARIES, Language, decode, parse_labels
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.sources import (
     BASE_URL,
@@ -56,6 +57,7 @@ __version__ = version("ispra-idrogeo")
 __all__ = [
     "API_URL",
     "BASE_URL",
+    "CODE_DICTIONARIES",
     "CODE_FIELDS",
     "ENV_DATA_DIR",
     "EVENT_LAYERS",
@@ -71,18 +73,21 @@ __all__ = [
     "IdroGEO",
     "IdrogeoError",
     "LandslideLayer",
+    "Language",
     "Layer",
     "Level",
     "Mosaic",
     "Summary",
     "Validators",
     "__version__",
+    "decode",
     "default_directory",
     "extract",
     "level_codes",
     "mosaic",
     "opendata",
     "parse",
+    "parse_labels",
     "parse_list",
     "read_json",
     "read_validators",
