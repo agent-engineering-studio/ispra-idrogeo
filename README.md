@@ -560,6 +560,21 @@ dictionary). `id_frane_correlati` links 880 sites to their IFFI landslides,
 so you can tell which landslides someone is already watching. Look a site up
 by its `uid` (`"SIPIE001"`), not by its `id`.
 
+### Geology, aerial photos, bibliography
+
+```python
+async with IdroGEO() as idrogeo:
+    units = await idrogeo.lookup("formazioni", "argille", limit=2)
+    # [{'sigla': 'AAC', 'nome_unita': 'ARGILLE E ARENARIE GLAUCONITICHE DI CATENANUOVA', …}, …]
+    flights = await idrogeo.lookup("voli", "1954")  # [{'id': '0001', 'nome': 'Volo GAI', …}]
+```
+
+The reference lists behind the landslide records, searched by text:
+geological units (`formazioni`), aerial survey flights (`voli`),
+bibliography (`bibliografie`), institutions (`istituzioni`), professional
+bodies (`ordini`) and funding sources (`finanziamenti`). Ten answers by
+default; `limit` asks for more. Also `idrogeo lookup formazioni argille`.
+
 ### For AI agents: the MCP server
 
 ```bash
@@ -680,6 +695,7 @@ All checked against the live service on 3 November 2026.
 | `REGIONS` / `PROVINCES` / `region_area(cod_reg)` | Area file names by ISTAT code. |
 | `LANDSLIDE_LAYERS` / `EVENT_LAYERS` / `MOSAICS` | What there is. |
 | `default_directory()` | Where downloads go when no directory is given. |
+| `.lookup(kind, text, limit=10)` | Search geological units, flights, bibliography, institutions, funding. |
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
 | `.labels(name, lang)` / `.code_labels(fields, lang)` / `decode(record, labels)` | Code lists, and records with `<field>_label` added. |
 | `ispra_idrogeo.geo.read(path)` | A downloaded file or folder as a GeoDataFrame (extra `[geo]`). |
@@ -746,12 +762,12 @@ issue to discuss one before starting.
 
 | Idea | Why it matters | Good for |
 |---|---|---|
-| 📓 **Example notebooks** (a town, a valley, a flood plain) | Show what the data can do | first contribution, GIS users |
-| 🖥️ **Command line**: `idrogeo fetch frane_piff --area puglia` | Use it with no Python | first contribution |
-| 📊 **Progress bar** for the big downloads | 1.2 GB feels less like a black box | first contribution |
-| 🐼 **Load into GeoPandas / GeoParquet** (optional extra) | Layers and summaries as data frames in one line | intermediate |
-| 🔎 **Typed search filters** | Build filters without reading the manual | intermediate |
-| 📈 **Read the monitoring CSV** (`sensor_data()`) | Sensor time series next to the landslides | intermediate |
+| 📓 **Example notebooks** (a town, a valley, a flood plain) | Show what the data can do, from download to map | first contribution, GIS users |
+| 📊 **Progress bar** for the big downloads (`idrogeo fetch`) | 1.2 GB feels less like a black box | first contribution |
+| 🗺️ **Landslides of an area through the API** | The search has no reliable area filter today (see the traps); a spatial filter would fill the gap | intermediate |
+| 🔔 **A changes feed**: `idrogeo watch` printing new and changed landslides and events | Alerts and dashboards without polling by hand | intermediate |
+| 🧠 **More MCP tools** (hazard at a point, nearest landslides) | Agents that answer "is my house at risk?" | intermediate, AI users |
+| 🧩 **A GeoServer bootstrap** that publishes the downloads, for [mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server) | From open data to a live map server in one command | advanced |
 | 📚 **Documentation site** | Search, API reference, tutorials | anyone |
 
 Found something odd in IdroGEO? That is a contribution too: open an issue

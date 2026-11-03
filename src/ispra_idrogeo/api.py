@@ -25,6 +25,20 @@ API_URL = f"{BASE_URL}/api"
 Summary = Literal["iffi", "pir"]
 Level = Literal["italia", "macroregioni", "regioni", "province", "comuni"]
 
+#: The reference lists you search by text, and what the text is matched on:
+#: geological units (sigla, nome_unita), aerial survey flights (id, nome,
+#: data), bibliography (authors, title, journal), institutions and
+#: professional bodies (name), funding sources.
+Lookup = Literal["formazioni", "voli", "bibliografie", "istituzioni", "ordini", "finanziamenti"]
+LOOKUPS: tuple[Lookup, ...] = (
+    "formazioni",
+    "voli",
+    "bibliografie",
+    "istituzioni",
+    "ordini",
+    "finanziamenti",
+)
+
 #: The levels that have a list, and the field of each item that is its code.
 CODE_FIELDS: dict[Level, str] = {"regioni": "cod_reg", "province": "cod_prov", "comuni": "pro_com"}
 
@@ -69,6 +83,17 @@ def since_filter(filters: dict[str, Any] | None, since: datetime | None) -> dict
         raise ValueError("give since or a 'modified' filter, not both")
     out["modified"] = f"gte.{since.isoformat()}"
     return out
+
+
+def lookup_params(kind: str, text: str, limit: int) -> dict[str, str]:
+    """The query string of a text search in a reference list."""
+    if kind not in LOOKUPS:
+        raise ValueError(f"unknown list {kind!r}: one of {LOOKUPS}")
+    if not text.strip():
+        raise ValueError("give some text to search for")
+    if limit < 1:
+        raise ValueError("limit must be ≥ 1")
+    return {"q": text.strip(), "limit": str(limit)}
 
 
 def search_params(

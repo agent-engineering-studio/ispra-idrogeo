@@ -253,6 +253,16 @@ class IdroGEO:
         found = dict(zip(names, words, strict=True))
         return {f: found[CODE_DICTIONARIES[f]] for f in wanted}
 
+    async def lookup(self, kind: api.Lookup, text: str, *, limit: int = 10) -> list[Any]:
+        """Search a reference list by text: geological units, flights, bibliography…
+
+        ``kind`` is one of :data:`~ispra_idrogeo.api.LOOKUPS`. Most lists
+        answer objects; ``"ordini"`` and ``"finanziamenti"`` answer names.
+        """
+        params = api.lookup_params(kind, text, limit)
+        response = await self._send("GET", f"{self._api}/{kind}", params=params)
+        return api.parse_list(response.status_code, response.content)
+
     async def landslide(self, id_frana: str) -> dict[str, Any]:
         """The full record of one validated IFFI landslide (~140 fields).
 

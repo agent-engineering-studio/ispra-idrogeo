@@ -35,6 +35,8 @@ def _server(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=[{"codice": "1", "descrizione_en": "weak material"}])
     if path == "dizionari":
         return httpx.Response(200, json=["cause"])
+    if path == "ordini":
+        return httpx.Response(200, json=["Ordine dei Geologi Abruzzo", request.url.params["limit"]])
     raise AssertionError(path)
 
 
@@ -87,6 +89,10 @@ async def test_api_commands() -> None:
     assert await _run("landslide", "0017680500") == [{"id_frana": "0017680500"}]
     assert await _run("labels", "cause") == [{"1": "weak material"}]
     assert await _run("dictionaries") == [["cause"]]
+    assert await _run("lookup", "ordini", "geologi", "--limit", "3") == [
+        "Ordine dei Geologi Abruzzo",
+        "3",
+    ]
 
 
 async def test_fetch_and_municipalities(tmp_path: Path) -> None:

@@ -7,6 +7,7 @@ import pytest
 from ispra_idrogeo import (
     IdrogeoError,
     level_codes,
+    lookup_params,
     parse,
     parse_list,
     search_params,
@@ -55,6 +56,16 @@ def test_since_filter() -> None:
         since_filter(None, datetime(2026, 11, 1))
     with pytest.raises(ValueError, match="not both"):
         since_filter({"modified": "gte.2026-01-01"}, since)
+
+
+def test_lookup_params() -> None:
+    assert lookup_params("formazioni", " argille ", 5) == {"q": "argille", "limit": "5"}
+    with pytest.raises(ValueError, match="unknown list"):
+        lookup_params("frane", "x", 5)
+    with pytest.raises(ValueError, match="some text"):
+        lookup_params("voli", "  ", 5)
+    with pytest.raises(ValueError, match="limit"):
+        lookup_params("voli", "1954", 0)
 
 
 def test_search_params() -> None:

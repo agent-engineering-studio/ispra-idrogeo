@@ -230,6 +230,16 @@ async def test_code_labels() -> None:
         assert set(await idrogeo.code_labels()) == set(CODE_DICTIONARIES)
 
 
+async def test_lookup() -> None:
+    def lists(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/voli"
+        assert request.url.params["q"] == "1954" and request.url.params["limit"] == "2"
+        return httpx.Response(200, json=[{"id": "0001", "nome": "Volo GAI", "data": "1954"}])
+
+    async with _idrogeo(lists) as idrogeo:
+        assert (await idrogeo.lookup("voli", "1954", limit=2))[0]["nome"] == "Volo GAI"
+
+
 async def test_api_retries_then_raises() -> None:
     calls: list[int] = []
 

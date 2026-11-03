@@ -9,6 +9,7 @@ a database loader.
     idrogeo municipalities --max-age-days 30 > comuni.jsonl
     idrogeo landslides --since 2026-11-01T00:00:00Z --select '*'
     idrogeo sites --filter stato_monitoraggio=eq.1
+    idrogeo lookup formazioni argille
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, TextIO
 
+from ispra_idrogeo.api import LOOKUPS
 from ispra_idrogeo.client import IdroGEO
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.sources import (
@@ -82,6 +84,11 @@ def parser() -> argparse.ArgumentParser:
     labels.add_argument("--lang", choices=("it", "en", "fr", "de"), default="en")
 
     commands.add_parser("dictionaries", help="the names of the code lists")
+
+    lookup = commands.add_parser("lookup", help="search a reference list by text")
+    lookup.add_argument("kind", choices=LOOKUPS)
+    lookup.add_argument("text")
+    lookup.add_argument("--limit", type=int, default=10)
     return top
 
 
@@ -162,6 +169,9 @@ async def run(args: argparse.Namespace, idrogeo: IdroGEO, out: TextIO) -> None:
         write(await idrogeo.landslide(args.id_frana))
     elif command == "labels":
         write(await idrogeo.labels(args.name, args.lang))
+    elif command == "lookup":
+        for row in await idrogeo.lookup(args.kind, args.text, limit=args.limit):
+            write(row)
     else:  # dictionaries
         write(await idrogeo.dictionaries())
 

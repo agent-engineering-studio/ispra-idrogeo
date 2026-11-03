@@ -26,8 +26,12 @@ All notable changes to this project are documented here. The format follows
   `landslide`, `search_landslides`, `search_events`, `monitoring_sites`,
   `webcams`, `code_list`, `download_dataset`), codes decoded, answers capped
   at `limit` rows.
+- `IdroGEO.lookup(kind, text, limit)` and `idrogeo lookup`: text search in
+  the reference lists (geological units, aerial survey flights,
+  bibliography, institutions, professional bodies, funding sources).
 - The `idrogeo` command: `fetch`, `summary`, `municipalities`, `landslides`,
-  `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`;
+  `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`,
+  `lookup`;
   downloads print their path, the rest prints JSON Lines.
 
 ### Fixed
