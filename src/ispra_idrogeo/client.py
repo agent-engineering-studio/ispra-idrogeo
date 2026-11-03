@@ -38,6 +38,7 @@ from ispra_idrogeo.cache import (
 from ispra_idrogeo.codes import CODE_DICTIONARIES, Language, parse_labels
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.sources import Dataset
+from ispra_idrogeo.wms import WMS_URL, PointHazard, area_params, nearby, parse_hazard, point_params
 
 _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 _CHUNK = 1 << 20
@@ -66,6 +67,7 @@ class IdroGEO:
         client: httpx.AsyncClient | None = None,
         *,
         api_url: str = api.API_URL,
+        wms_url: str = WMS_URL,
         retries: int = 3,
         backoff_s: float = 2.0,
         sleep: Callable[[float], Awaitable[Any]] = asyncio.sleep,
@@ -75,6 +77,7 @@ class IdroGEO:
             timeout=httpx.Timeout(60, read=300), follow_redirects=True
         )
         self._api = api_url.rstrip("/")
+        self._wms = wms_url
         self._retries = retries
         self._backoff_s = backoff_s
         self._sleep = sleep
@@ -252,6 +255,37 @@ class IdroGEO:
         words = await asyncio.gather(*(self.labels(n, lang) for n in names))
         found = dict(zip(names, words, strict=True))
         return {f: found[CODE_DICTIONARIES[f]] for f in wanted}
+
+    async def hazard_at(self, lat: float, lon: float, *, lithology: bool = False) -> PointHazard:
+        """PAI landslide hazard, flood scenarios, municipality and slope of a point.
+
+        One request to IdroGEO's public map service, about a second;
+        latitude and longitude in degrees (WGS 84). ``lithology=True`` adds
+        the rock type, but the map service takes ~16 s more to answer it. A
+        point outside Italy, or at sea, answers ``None`` everywhere.
+        """
+        params = point_params(lat, lon, lithology=lithology)
+        return parse_hazard(lat, lon, await self._features(params))
+
+    async def landslides_near(
+        self, lat: float, lon: float, radius_m: float = 500, *, limit: int = 200
+    ) -> list[dict[str, Any]]:
+        """The IFFI landslides within ``radius_m`` of a point, nearest first.
+
+        Each row has the landslide's fields, ``distance_m`` (0 when the point
+        is inside it) and ``shapes`` (polygon, line, point…). One request;
+        ``limit`` caps the features the map service returns (1,000 at most),
+        so a dense area may need a smaller radius.
+        """
+        params = area_params(lat, lon, radius_m, limit)
+        return nearby(lat, lon, await self._features(params), radius_m)
+
+    async def _features(self, params: dict[str, str]) -> list[dict[str, Any]]:
+        response = await self._send("GET", self._wms, params=params)
+        data = api.parse(response.status_code, response.content)
+        if not isinstance(data, dict) or not isinstance(data.get("features"), list):
+            raise IdrogeoError(f"IdroGEO map service answered {str(data)[:200]!r}")
+        return list(data["features"])
 
     async def lookup(self, kind: api.Lookup, text: str, *, limit: int = 10) -> list[Any]:
         """Search a reference list by text: geological units, flights, bibliography…

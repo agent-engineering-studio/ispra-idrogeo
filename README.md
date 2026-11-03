@@ -179,6 +179,7 @@ idrogeo municipalities --max-age-days 30 > comuni.jsonl
 idrogeo landslides --since 2026-11-01T00:00:00Z --select '*' > changed.jsonl
 idrogeo sites --filter stato_monitoraggio=eq.1 --select uid,point
 idrogeo labels tipo_movimento --lang it
+idrogeo hazard 40.829 14.617                        # P4, Sarno, 12.3°
 ```
 
 Downloads print the path they wrote; everything else prints JSON, one object
@@ -560,6 +561,42 @@ dictionary). `id_frane_correlati` links 880 sites to their IFFI landslides,
 so you can tell which landslides someone is already watching. Look a site up
 by its `uid` (`"SIPIE001"`), not by its `id`.
 
+### Is this place at risk? Hazard at a point
+
+```python
+async with IdroGEO() as idrogeo:
+    here = await idrogeo.hazard_at(40.829, 14.617)  # the hills above Sarno
+print(here.landslide, here.flood, here.municipality_name, here.slope_deg)
+# P4 None Sarno 12.3
+
+async with IdroGEO() as idrogeo:
+    venice = await idrogeo.hazard_at(45.438, 12.330)
+print(venice.flood, venice.flood_scenarios)  # P3 ('P3', 'P2', 'P1')
+```
+
+One request, about a second, to IdroGEO's public map service: no 1.2 GB
+mosaic to download. You get the PAI **landslide** class (`P4` very high,
+`P3` high, `P2` medium, `P1` moderate, `AA` attention area), the **flood**
+scenarios that reach the point (`P3` frequent floods, `P2` every 100–200
+years, `P1` rare and extreme), the **municipality** (ISTAT code, ready for
+`summary("pir", "comuni", code)`) and the **slope** in degrees.
+`lithology=True` adds the rock type, but takes about 16 seconds more.
+
+### Landslides near a point
+
+```python
+async with IdroGEO() as idrogeo:
+    near = await idrogeo.landslides_near(40.838, 14.630, radius_m=500)
+for f in near[:3]:
+    print(f["id_frana"], f["nome_tipo"], f["nome_com"], f["distance_m"], f["shapes"])
+# 0640689600 Colamento rapido Quindici 397.7 ['polygon', 'point']   ← a rapid debris flow
+```
+
+Every IFFI landslide within `radius_m` (up to 5 km), nearest first, with its
+type and area, `distance_m` (0 when the point is on it) and the shapes it is
+mapped as. The distance is computed from the real outline, not from a
+centre point. Also: `idrogeo hazard 40.829 14.617` and `idrogeo near 40.838 14.630`.
+
 ### Geology, aerial photos, bibliography
 
 ```python
@@ -584,7 +621,7 @@ pip install "ispra-idrogeo[mcp]"
 `idrogeo-mcp` is an [MCP](https://modelcontextprotocol.io) server, so Claude
 Desktop, an IDE or your own agent can answer questions like *"how many people
 live in high landslide hazard areas in Sarno, and is anyone monitoring the
-landslides there?"*. For Claude Desktop, add it to
+landslides there?"* or *"is this address in a flood zone?"*. For Claude Desktop, add it to
 `claude_desktop_config.json`:
 
 ```json
@@ -597,6 +634,8 @@ landslides there?"*. For Claude Desktop, add it to
 
 | Tool | What the agent gets |
 |---|---|
+| `hazard_at` | Landslide and flood hazard, municipality and slope of a point |
+| `landslides_near` | The landslides around a point, nearest first |
 | `find_area` | The ISTAT code of a region, province or municipality from its name |
 | `area_risk` | Hazard and exposure: residents, buildings, heritage per hazard class |
 | `area_landslides` | IFFI counts by type of movement, events, monitoring |
@@ -653,7 +692,10 @@ point to paths that no longer exist. This library handles these for you:
 |---|---|---|
 | `/opendata/iffi/<region>/iffi_<region>_<layer>.zip`, as in older guides | HTTP **404** in 2026: the files moved | uses `/opendata/frane/<layer>_<area>_opendata.zip` |
 | the dictionaries in `/opendata/iffi/dizionari/*.json` | HTTP **404**: they moved to the API | reads `/api/dizionari` |
-| the WFS at `geoserver/idrogeo/frane/ows` | HTTP **401**, and the GeoServer lists no layer anonymously | uses the open downloads and the API |
+| the WFS at `geoserver/idrogeo/frane/ows` | HTTP **401**: the WFS needs a login | reads features through the **WMS**, which is public: `GetFeatureInfo` on 101 queryable layers |
+| asking the WMS about a point with a 1×1 image or the point as the box | nothing, or the wrong pixel | a ~2 m box around the point and its middle pixel (`i=50`, `j=50`), lat,lon order as WMS 1.3.0 wants |
+| the lithology layer next to the hazard layers | ~16 s for the whole answer, against under one second without it | `hazard_at(..., lithology=False)` by default |
+| the slope at sea | `-9999.0` | `slope_deg = None` |
 | a file for `trentino-alto-adige` | there is none: it publishes per province | offers `bolzano` and `trento` in `PROVINCES` |
 | downloading the inventory again every day "to be safe" | ~870 MB a day, whether anything changed or not | conditional GET: one `304` when nothing changed |
 | `/api/evento/{id}`, which the OpenAPI lists with no login | HTTP **401** without a login (`/api/frana/{id}` does answer 200) | reads events through `search_events`, which is public |
@@ -695,13 +737,15 @@ All checked against the live service on 3 November 2026.
 | `REGIONS` / `PROVINCES` / `region_area(cod_reg)` | Area file names by ISTAT code. |
 | `LANDSLIDE_LAYERS` / `EVENT_LAYERS` / `MOSAICS` | What there is. |
 | `default_directory()` | Where downloads go when no directory is given. |
+| `.hazard_at(lat, lon, lithology=False)` | `PointHazard`: landslide class, flood scenarios, municipality, slope. |
+| `.landslides_near(lat, lon, radius_m=500, limit=200)` | IFFI landslides around a point, with `distance_m`. |
 | `.lookup(kind, text, limit=10)` | Search geological units, flights, bibliography, institutions, funding. |
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
 | `.labels(name, lang)` / `.code_labels(fields, lang)` / `decode(record, labels)` | Code lists, and records with `<field>_label` added. |
 | `ispra_idrogeo.geo.read(path)` | A downloaded file or folder as a GeoDataFrame (extra `[geo]`). |
 | `ispra_idrogeo.geo.frame(rows, geometry="point")` | API rows as a GeoDataFrame, in their own CRS. |
 | `ispra_idrogeo.geo.add_labels(frame, labels)` | `<column>_label` columns for coded columns. |
-| `idrogeo-mcp` | An MCP server with the same data as 10 tools (extra `[mcp]`). |
+| `idrogeo-mcp` | An MCP server with the same data as 12 tools (extra `[mcp]`). |
 | `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,

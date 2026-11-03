@@ -10,6 +10,8 @@ a database loader.
     idrogeo landslides --since 2026-11-01T00:00:00Z --select '*'
     idrogeo sites --filter stato_monitoraggio=eq.1
     idrogeo lookup formazioni argille
+    idrogeo hazard 40.829 14.617
+    idrogeo near 40.838 14.630 --radius 500
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ import asyncio
 import json
 import sys
 from collections.abc import AsyncIterable, Callable, Iterable, Sequence
+from dataclasses import asdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, TextIO
@@ -84,6 +87,17 @@ def parser() -> argparse.ArgumentParser:
     labels.add_argument("--lang", choices=("it", "en", "fr", "de"), default="en")
 
     commands.add_parser("dictionaries", help="the names of the code lists")
+
+    hazard = commands.add_parser("hazard", help="landslide and flood hazard of a point")
+    hazard.add_argument("lat", type=float)
+    hazard.add_argument("lon", type=float)
+    hazard.add_argument("--lithology", action="store_true", help="add the rock type (~16 s)")
+
+    near = commands.add_parser("near", help="the IFFI landslides around a point")
+    near.add_argument("lat", type=float)
+    near.add_argument("lon", type=float)
+    near.add_argument("--radius", type=float, default=500, help="metres (default 500)")
+    near.add_argument("--limit", type=int, default=200)
 
     lookup = commands.add_parser("lookup", help="search a reference list by text")
     lookup.add_argument("kind", choices=LOOKUPS)
@@ -169,6 +183,11 @@ async def run(args: argparse.Namespace, idrogeo: IdroGEO, out: TextIO) -> None:
         write(await idrogeo.landslide(args.id_frana))
     elif command == "labels":
         write(await idrogeo.labels(args.name, args.lang))
+    elif command == "hazard":
+        write(asdict(await idrogeo.hazard_at(args.lat, args.lon, lithology=args.lithology)))
+    elif command == "near":
+        for row in await idrogeo.landslides_near(args.lat, args.lon, args.radius, limit=args.limit):
+            write(row)
     elif command == "lookup":
         for row in await idrogeo.lookup(args.kind, args.text, limit=args.limit):
             write(row)

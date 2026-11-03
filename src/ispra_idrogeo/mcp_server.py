@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 from datetime import date, datetime
 from functools import wraps
 from typing import Any, Literal
@@ -35,8 +36,9 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
 AreaLevel = Literal["regioni", "province", "comuni"]
 INSTRUCTIONS = """\
 Italian landslide and flood data from ISPRA IdroGEO (CC BY 4.0: credit
-"ISPRA — IdroGEO"). Areas use ISTAT codes: call find_area first to turn a
-name into a code. area_risk gives hazard and exposure (residents, buildings,
+"ISPRA — IdroGEO"). For a place or an address, use its coordinates with
+hazard_at and landslides_near. Areas use ISTAT codes: call find_area first
+to turn a name into a code. area_risk gives hazard and exposure (residents, buildings,
 cultural heritage in each landslide class P1-P4/AA and flood class P1-P3);
 area_landslides the IFFI inventory counts. Search tools return at most
 `limit` rows; the totals are in area_landslides.
@@ -190,6 +192,31 @@ def server(idrogeo: IdroGEO | None = None) -> MCPServer[Any]:
     async def webcams(region: int | None = None) -> list[dict[str, Any]]:
         """Webcams pointed at landslides (geom in EPSG:3857 metres)."""
         return await client.webcams(site_filter(region=region))
+
+    @mcp.tool(annotations=_READ)
+    @_tool_errors
+    async def hazard_at(lat: float, lon: float, lithology: bool = False) -> dict[str, Any]:
+        """Landslide and flood hazard of a point (WGS 84 degrees), with its
+        municipality (ISTAT code) and slope in degrees.
+
+        landslide: PAI class P4 very high, P3 high, P2 medium, P1 moderate,
+        AA attention area, null outside. flood: the most frequent scenario
+        reaching the point, P3 high probability (frequent floods), P2 medium,
+        P1 low (rare, extreme). lithology=true adds the rock type but takes
+        ~16 s longer.
+        """
+        return asdict(await client.hazard_at(lat, lon, lithology=lithology))
+
+    @mcp.tool(annotations=_READ)
+    @_tool_errors
+    async def landslides_near(
+        lat: float, lon: float, radius_m: float = 500, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """IFFI landslides within radius_m (at most 5,000) of a point, nearest
+        first, with distance_m (0 when the point is on the landslide) and the
+        type of movement."""
+        found = await client.landslides_near(lat, lon, radius_m, limit=1000)
+        return found[: _page(limit)]
 
     @mcp.tool(annotations=_READ)
     @_tool_errors

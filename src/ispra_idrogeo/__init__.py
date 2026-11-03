@@ -55,6 +55,7 @@ from ispra_idrogeo.sources import (
     region_area,
     sensor_data,
 )
+from ispra_idrogeo.wms import WMS_URL, PointHazard, distance_m
 
 __version__ = version("ispra-idrogeo")
 
@@ -71,6 +72,7 @@ __all__ = [
     "MOSAICS",
     "PROVINCES",
     "REGIONS",
+    "WMS_URL",
     "Dataset",
     "Download",
     "EventLayer",
@@ -83,11 +85,13 @@ __all__ = [
     "Level",
     "Lookup",
     "Mosaic",
+    "PointHazard",
     "Summary",
     "Validators",
     "__version__",
     "decode",
     "default_directory",
+    "distance_m",
     "event_filter",
     "extract",
     "landslide_filter",

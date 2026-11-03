@@ -39,6 +39,19 @@ def _labels(name: str) -> list[dict[str, str]]:
 
 def _api(request: httpx.Request) -> httpx.Response:
     path = request.url.path
+    if path == "/geoserver/wms":
+        if "buffer" in request.url.params:
+            points = [[14.63, 40.838], [14.6301, 40.838]]
+            features = [
+                {
+                    "id": f"frane_piff_opendata.{n}",
+                    "geometry": {"type": "Point", "coordinates": p},
+                    "properties": {"id_frana": str(n)},
+                }
+                for n, p in enumerate(points)
+            ]
+            return httpx.Response(200, json={"features": features})
+        return httpx.Response(200, json={"features": [{"properties": {"cod_per_it": 3}}]})
     if path.startswith("/opendata/"):
         return httpx.Response(200, content=_ZIP)
     path = path.removeprefix("/api/")
@@ -99,6 +112,8 @@ async def test_tools_are_listed_and_read_only() -> None:
         "webcams",
         "code_list",
         "download_dataset",
+        "hazard_at",
+        "landslides_near",
     }
     assert tools["area_risk"].annotations.read_only_hint
     assert not tools["download_dataset"].annotations.read_only_hint
@@ -132,6 +147,10 @@ async def test_landslides_events_sites() -> None:
     assert sites[0]["body"] == {"regione": "eq.1", "stato_monitoraggio": "eq.1"}
     assert (await _call(mcp, "webcams", region=3))[0]["body"] == {"regione": "eq.3"}
     assert (await _call(mcp, "code_list", name="cause")) == {"1": "cause 1"}
+    hazard = await _call(mcp, "hazard_at", lat=40.829, lon=14.617)
+    assert hazard["landslide"] == "P3" and hazard["flood"] is None
+    near = await _call(mcp, "landslides_near", lat=40.838, lon=14.63, radius_m=100, limit=1)
+    assert [r["id_frana"] for r in near] == ["0"]
 
 
 async def test_download(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

@@ -17,6 +17,19 @@ async def _sleep(_s: float) -> None:
 
 def _server(request: httpx.Request) -> httpx.Response:
     path = request.url.path
+    if path == "/geoserver/wms":
+        if "buffer" in request.url.params:
+            point = {"type": "Point", "coordinates": [14.63, 40.838]}
+            feature = {
+                "id": "frane_piff_opendata.1",
+                "geometry": point,
+                "properties": {"id_frana": "1"},
+            }
+            return httpx.Response(200, json={"features": [feature]})
+        layers = request.url.params["layers"]
+        return httpx.Response(
+            200, json={"features": [{"properties": {"cod_per_it": 4}}], "layers": layers}
+        )
     body = json.loads(request.content) if request.content else None
     if path.startswith("/opendata/"):
         return httpx.Response(200, content=b"BZ2", headers={"ETag": '"1"'})
@@ -89,6 +102,11 @@ async def test_api_commands() -> None:
     assert await _run("landslide", "0017680500") == [{"id_frana": "0017680500"}]
     assert await _run("labels", "cause") == [{"1": "weak material"}]
     assert await _run("dictionaries") == [["cause"]]
+    [hazard] = await _run("hazard", "40.829", "14.617")
+    assert hazard["landslide"] == "P4" and hazard["lat"] == 40.829
+    assert (await _run("hazard", "40.829", "14.617", "--lithology"))[0]["landslide"] == "P4"
+    [near] = await _run("near", "40.838", "14.630", "--radius", "100")
+    assert near["id_frana"] == "1" and near["distance_m"] == 0.0
     assert await _run("lookup", "ordini", "geologi", "--limit", "3") == [
         "Ordine dei Geologi Abruzzo",
         "3",

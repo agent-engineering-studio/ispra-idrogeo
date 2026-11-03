@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `IdroGEO.hazard_at(lat, lon)`: the PAI landslide hazard class, the flood
+  scenarios, the municipality and the slope of a point, in one request to
+  IdroGEO's public WMS (`GetFeatureInfo`); `lithology=True` adds the rock
+  type (slower). `idrogeo hazard`, and the MCP tool `hazard_at`.
+- `IdroGEO.landslides_near(lat, lon, radius_m)`: the IFFI landslides around a
+  point, nearest first, with the distance to their real outline.
+  `idrogeo near`, and the MCP tool `landslides_near`.
+- `ispra_idrogeo.wms`: the pure request builders and parsers behind them,
+  and `distance_m` from a point to any GeoJSON geometry.
+
+### Fixed
+
+- README: IdroGEO's GeoServer is public over WMS; only the WFS asks for a
+  login.
+
 ## [0.5.0] - 2026-11-03
 
 ### Added

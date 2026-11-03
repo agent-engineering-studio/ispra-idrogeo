@@ -240,6 +240,46 @@ async def test_lookup() -> None:
         assert (await idrogeo.lookup("voli", "1954", limit=2))[0]["nome"] == "Volo GAI"
 
 
+def _wms(request: httpx.Request) -> httpx.Response:
+    assert request.url.path == "/geoserver/wms"
+    params = request.url.params
+    if "buffer" in params:
+        point = {"type": "Point", "coordinates": [14.6301, 40.8380]}
+        return httpx.Response(
+            200,
+            json={
+                "features": [
+                    {
+                        "id": "frane_piff_opendata.9",
+                        "geometry": point,
+                        "properties": {"id_frana": "0640689600"},
+                    }
+                ]
+            },
+        )
+    if params["bbox"].startswith("0."):
+        return httpx.Response(200, json={"error": "nothing"})
+    return httpx.Response(
+        200,
+        json={
+            "features": [
+                {"id": "pericolosita_frane.1", "properties": {"cod_per_it": 4}},
+                {"id": "comuni_2019.1", "properties": {"pro_com": 65135, "comune": "Sarno"}},
+            ]
+        },
+    )
+
+
+async def test_hazard_at_and_landslides_near() -> None:
+    async with _idrogeo(_wms) as idrogeo:
+        hazard = await idrogeo.hazard_at(40.829, 14.617)
+        assert hazard.landslide == "P4" and hazard.municipality_name == "Sarno"
+        near = await idrogeo.landslides_near(40.838, 14.630, 100)
+        assert near[0]["id_frana"] == "0640689600" and near[0]["distance_m"] < 20
+        with pytest.raises(IdrogeoError, match="map service"):
+            await idrogeo.hazard_at(0.0001, 0.0001)
+
+
 async def test_api_retries_then_raises() -> None:
     calls: list[int] = []
 
