@@ -1,0 +1,217 @@
+"""An async client for the IdroGEO downloads and API.
+
+Give it your ``httpx.AsyncClient`` and timeouts, proxies and pooling stay
+yours; give it none and it opens (and closes) its own.
+
+Downloads are streamed to a ``.part`` file and renamed when complete, so a
+file that exists is whole and memory stays flat (the national landslide
+polygons are ~570 MB). Each is revalidated with a conditional GET: an
+unchanged file costs one 304.
+
+Network errors and 429/5xx are retried ``retries`` times with exponential
+backoff, then propagate as ``httpx`` exceptions (``HTTPStatusError`` for a
+status). Pass ``retries=0`` to put your own retry policy around the calls.
+"""
+
+from __future__ import annotations
+
+import asyncio
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
+from pathlib import Path
+from types import TracebackType
+from typing import Any
+
+import httpx
+
+from ispra_idrogeo import api
+from ispra_idrogeo.cache import (
+    Validators,
+    default_directory,
+    extract,
+    read_validators,
+    write_validators,
+)
+from ispra_idrogeo.errors import IdrogeoError
+from ispra_idrogeo.sources import Dataset
+
+_RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
+_CHUNK = 1 << 20
+
+
+@dataclass(frozen=True, slots=True)
+class Download:
+    """A file on disk, and whether this call changed it."""
+
+    path: Path
+    changed: bool
+
+
+class IdroGEO:
+    """Open-data downloads into a persistent folder, and the read-only API."""
+
+    def __init__(
+        self,
+        client: httpx.AsyncClient | None = None,
+        *,
+        api_url: str = api.API_URL,
+        retries: int = 3,
+        backoff_s: float = 2.0,
+        sleep: Callable[[float], Awaitable[Any]] = asyncio.sleep,
+    ) -> None:
+        self._own = client is None
+        self._client = client or httpx.AsyncClient(
+            timeout=httpx.Timeout(60, read=300), follow_redirects=True
+        )
+        self._api = api_url.rstrip("/")
+        self._retries = retries
+        self._backoff_s = backoff_s
+        self._sleep = sleep
+
+    async def __aenter__(self) -> IdroGEO:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        await self.aclose()
+
+    async def aclose(self) -> None:
+        """Close the HTTP client if this instance opened it."""
+        if self._own:
+            await self._client.aclose()
+
+    async def download(self, dataset: Dataset, directory: Path | None = None) -> Download:
+        """The file in ``directory``, downloaded only if missing or changed upstream.
+
+        ``directory`` defaults to :func:`~ispra_idrogeo.cache.default_directory`.
+        A 404 raises :class:`IdrogeoError`: the layer or area does not exist.
+        """
+        directory = directory or default_directory()
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / dataset.filename
+        known = read_validators(path, dataset.url)
+        headers = known.headers() if known is not None else {}
+        partial = path.with_name(f"{path.name}.part")
+        for attempt in range(self._retries + 1):
+            try:
+                async with self._client.stream("GET", dataset.url, headers=headers) as response:
+                    status = response.status_code
+                    if status == 304 and known is not None:
+                        return Download(path, changed=False)
+                    if status == 200:
+                        with partial.open("wb") as out:
+                            async for chunk in response.aiter_bytes(_CHUNK):
+                                out.write(chunk)
+                        partial.replace(path)
+                        write_validators(
+                            path,
+                            Validators(
+                                url=dataset.url,
+                                etag=response.headers.get("etag"),
+                                last_modified=response.headers.get("last-modified"),
+                            ),
+                        )
+                        return Download(path, changed=True)
+                    if status == 404:
+                        raise IdrogeoError(f"{dataset.url} does not exist (HTTP 404)")
+                    if status not in _RETRY_STATUS or attempt == self._retries:
+                        await response.aread()
+                        response.raise_for_status()
+                        raise IdrogeoError(f"{dataset.url}: unexpected HTTP {status}")
+            except httpx.TransportError:
+                partial.unlink(missing_ok=True)
+                if attempt == self._retries:
+                    raise
+            await self._sleep(self._backoff_s * 2**attempt)
+        raise AssertionError("unreachable")  # pragma: no cover
+
+    async def fetch(
+        self, dataset: Dataset, directory: Path | None = None, *, unpack: bool = True
+    ) -> Path:
+        """The dataset ready to read: the folder its ZIP unpacks to, or the file.
+
+        The folder is ``<directory>/<dataset.stem>`` and is unpacked again
+        only when the download changed (or the folder is missing).
+        """
+        directory = directory or default_directory()
+        got = await self.download(dataset, directory)
+        if not unpack or not dataset.filename.endswith(".zip"):
+            return got.path
+        folder = directory / dataset.stem
+        if got.changed or not folder.is_dir():
+            await asyncio.to_thread(extract, got.path, folder)
+        return folder
+
+    async def summary(self, summary: api.Summary, level: api.Level, code: int | None = None) -> Any:
+        """IFFI counts (``"iffi"``) or hazard indicators (``"pir"``), or a level's list."""
+        return await self._get(api.summary_path(summary, level, code))
+
+    async def dictionaries(self) -> list[str]:
+        """The names of the code lists."""
+        return [str(n) for n in await self._get("dizionari")]
+
+    async def dictionary(self, name: str) -> Any:
+        """One code list (``IdrogeoError`` if it does not exist)."""
+        return await self._get(f"dizionari/{name}")
+
+    async def search_landslides(
+        self,
+        filters: dict[str, str] | None = None,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        select: list[str] | None = None,
+        order: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """One page of IFFI landslides matching ``filters``."""
+        return await self._search("frana/searchfilter", filters, limit, offset, select, order)
+
+    async def search_events(
+        self,
+        filters: dict[str, str] | None = None,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        select: list[str] | None = None,
+        order: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """One page of validated landslide events matching ``filters``."""
+        return await self._search("evento/main/filter", filters, limit, offset, select, order)
+
+    async def _search(
+        self,
+        path: str,
+        filters: dict[str, str] | None,
+        limit: int,
+        offset: int,
+        select: list[str] | None,
+        order: str | None,
+    ) -> list[dict[str, Any]]:
+        params = api.search_params(limit=limit, offset=offset, select=select, order=order)
+        response = await self._send(
+            "POST", f"{self._api}/{path}", params=params, json=filters or {}
+        )
+        return api.parse_list(response.status_code, response.content)
+
+    async def _get(self, path: str) -> Any:
+        response = await self._send("GET", f"{self._api}/{path}")
+        return api.parse(response.status_code, response.content)
+
+    async def _send(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        for attempt in range(self._retries + 1):
+            try:
+                response = await self._client.request(method, url, **kwargs)
+            except httpx.TransportError:
+                if attempt == self._retries:
+                    raise
+            else:
+                if response.status_code not in _RETRY_STATUS:
+                    return response
+                if attempt == self._retries:
+                    response.raise_for_status()
+            await self._sleep(self._backoff_s * 2**attempt)
+        raise AssertionError("unreachable")  # pragma: no cover

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import package_name
+import ispra_idrogeo
 
 
 def test_version_is_exposed() -> None:
-    assert package_name.__version__
+    assert ispra_idrogeo.__version__
