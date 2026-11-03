@@ -37,7 +37,7 @@ geo = [
 ]
 # The idrogeo-mcp server for AI agents: ispra_idrogeo.mcp_server.
 mcp = [
-    "mcp>=1.9",
+    "mcp>=2.0",  # MCPServer; FastMCP before 2.0
 ]
 
 [project.urls]

@@ -536,7 +536,7 @@ dev = [
 requires-dist = [
     { name = "geopandas", marker = "extra == 'geo'", specifier = ">=1.0" },
     { name = "httpx", specifier = ">=0.27" },
-    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.9" },
+    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=2.0" },
     { name = "pyarrow", marker = "extra == 'geo'", specifier = ">=15" },
 ]
 provides-extras = ["geo", "mcp"]
