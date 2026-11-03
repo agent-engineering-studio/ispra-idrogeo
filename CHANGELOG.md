@@ -16,6 +16,11 @@ All notable changes to this project are documented here. The format follows
 - `level_codes`, `CODE_FIELDS`, `read_json`, `write_json`: the pure pieces
   behind it.
 
+### Fixed
+
+- README: `/api/frana/{id}` answers without a login; the detail endpoint
+  that asks for one is `/api/evento/{id}`.
+
 ## [0.1.0] - 2026-11-03
 
 ### Added
