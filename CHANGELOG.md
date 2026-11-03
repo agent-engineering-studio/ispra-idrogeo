@@ -13,6 +13,14 @@ All notable changes to this project are documented here. The format follows
 - `decode(record, labels)`: a copy of a record (API, site or shapefile row)
   with `<field>_label` next to each coded field; `CODE_DICTIONARIES` says
   which code list decodes which field.
+- Extra `[geo]` (geopandas, pyarrow) and `ispra_idrogeo.geo`: `read` opens a
+  downloaded file or folder as a GeoDataFrame, `frame` turns API rows into
+  one in their own CRS (EPSG:4326 points, EPSG:32632 landslides, EPSG:3857
+  webcams), `add_labels` adds `<column>_label` columns; `.to_parquet` writes
+  GeoParquet.
+- The `idrogeo` command: `fetch`, `summary`, `municipalities`, `landslides`,
+  `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`;
+  downloads print their path, the rest prints JSON Lines.
 
 ### Fixed
 

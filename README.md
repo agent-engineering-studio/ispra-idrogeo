@@ -119,7 +119,8 @@ it.
 ### 1. Install
 
 ```bash
-pip install ispra-idrogeo
+pip install ispra-idrogeo            # downloads, API, the idrogeo command
+pip install "ispra-idrogeo[geo]"     # + GeoDataFrames and GeoParquet (geopandas, pyarrow)
 ```
 
 Python 3.12 or newer. No account and no API key: IdroGEO open data is public.
@@ -148,24 +149,42 @@ each. Run it again and it costs one `304 Not Modified`.
 
 ### 3. Look at it
 
-With `pip install geopandas matplotlib`:
+With `pip install "ispra-idrogeo[geo]" matplotlib`:
 
 ```python
-import geopandas as gpd
+from ispra_idrogeo.geo import add_labels, read
 
-landslides = gpd.read_file(next(folder.glob("*.shp")))
+labels = await idrogeo.code_labels(["tipo_movim"])  # inside the `async with` above
+landslides = add_labels(read(folder), labels)  # the folder from step 2
 print(landslides.crs)  # EPSG:32632 (WGS 84 / UTM 32N)
-print(landslides["nome_tipo"].value_counts().head(3))
-# Colamento lento                        9168   ← slow earth flow
-# Complesso                              7606   ← complex
-# Scivolamento rotazionale/traslativo    4279   ← slide
+print(landslides["tipo_movim_label"].value_counts().head(3))
+# slow earth flow                   9168
+# complex                           7606
+# rotational/translational slide    4279
 
-landslides.plot(column="nome_tipo", markersize=1, legend=True, figsize=(10, 8))
+landslides.plot(column="tipo_movim_label", markersize=1, legend=True, figsize=(10, 8))
+landslides.to_parquet("molise.parquet")  # GeoParquet, for DuckDB, QGIS, BigQuery…
 ```
 
 Each point carries the landslide's IFFI id (`id_frana`), its type of movement
 (`tipo_movim`, `nome_tipo`), and the region, province, municipality and river
 basin district it falls in.
+
+### 3b. Or from the command line
+
+```bash
+idrogeo fetch frane_piff --area molise              # prints the unpacked folder
+idrogeo summary pir comuni 72006 | jq .popidp2_p    # 1.278
+idrogeo municipalities --max-age-days 30 > comuni.jsonl
+idrogeo landslides --since 2026-11-01T00:00:00Z --select '*' > changed.jsonl
+idrogeo sites --filter stato_monitoraggio=eq.1 --select uid,point
+idrogeo labels tipo_movimento --lang it
+```
+
+Downloads print the path they wrote; everything else prints JSON, one object
+per line for lists (JSON Lines), ready for `jq`, a file or a database loader.
+`idrogeo --help` and `idrogeo <command> --help` list every option. An error
+prints one line on stderr and exits with status 1.
 
 ### 4. Ask the API
 
@@ -492,6 +511,22 @@ The full record of a validated landslide. Many fields are often empty, so
 check before you rely on them. An unknown id raises `IdrogeoError` (IdroGEO
 answers 401 to it, not 404).
 
+### API rows on a map
+
+`frame` turns API rows into a GeoDataFrame in the right coordinate system:
+
+```python
+from ispra_idrogeo.geo import frame
+
+async with IdroGEO() as idrogeo:
+    sites = frame(await idrogeo.sites())  # "point": lon/lat, EPSG:4326
+    cams = frame(await idrogeo.webcams(), geometry="geom")  # EPSG:3857, as IdroGEO sends it
+    changed = frame(
+        [f async for f in idrogeo.iter_landslides(modified_since=since, select=["*"])],
+        geometry="geom_polygon",  # or "geom" (point, EPSG:32632), "geom_linestring"
+    )
+```
+
 ### Who is watching a landslide: monitoring sites and webcams
 
 ```python
@@ -598,6 +633,11 @@ All checked against the live service on 3 November 2026.
 | `LANDSLIDE_LAYERS` / `EVENT_LAYERS` / `MOSAICS` | What there is. |
 | `default_directory()` | Where downloads go when no directory is given. |
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
+| `.labels(name, lang)` / `.code_labels(fields, lang)` / `decode(record, labels)` | Code lists, and records with `<field>_label` added. |
+| `ispra_idrogeo.geo.read(path)` | A downloaded file or folder as a GeoDataFrame (extra `[geo]`). |
+| `ispra_idrogeo.geo.frame(rows, geometry="point")` | API rows as a GeoDataFrame, in their own CRS. |
+| `ispra_idrogeo.geo.add_labels(frame, labels)` | `<column>_label` columns for coded columns. |
+| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,
