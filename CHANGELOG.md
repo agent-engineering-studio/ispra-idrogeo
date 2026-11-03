@@ -12,11 +12,17 @@ All notable changes to this project are documented here. The format follows
   landslide; `IdrogeoError` for an unknown id (IdroGEO answers 401).
 - `IdroGEO.iter_landslides` / `IdroGEO.iter_events`: async iterators over
   every matching record, page after page, in a stable order.
+- `IdroGEO.sites`, `site(uid)`, `stations(uid)`: the 1,063 landslide
+  monitoring sites, one site, and its stations with instruments and sensors.
+- `IdroGEO.webcams`: the webcams pointed at landslides (coordinates in
+  EPSG:3857).
 
 ### Fixed
 
 - Search filters are typed `dict[str, Any]`: landslide filters take plain
   values (`{"tipo_movimento": 6}`), not only strings.
+- `parse` returns `None` for a JSON `null` instead of raising "did not
+  return JSON".
 
 ## [0.2.0] - 2026-11-03
 

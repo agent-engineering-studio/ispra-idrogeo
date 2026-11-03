@@ -272,6 +272,46 @@ async def test_landslide() -> None:
             await idrogeo.landslide("../evento")
 
 
+def _monitoring(request: httpx.Request) -> httpx.Response:
+    path = request.url.path.removeprefix("/api/")
+    params = request.url.params
+    if path == "sito/filter":
+        assert params["order"] == "uid" and params["limit"] == "1000"
+        assert json.loads(request.content) == {"stato_monitoraggio": "eq.1"}
+        return httpx.Response(200, json=[{"uid": "SIPIE001", "point": [8.47, 44.66]}])
+    if path == "webcam/filter":
+        assert "order" not in params and "select" not in params
+        return httpx.Response(200, json=[{"id_sensore": "SW00000001"}])
+    if path == "sito/SIPIE001":
+        return httpx.Response(200, json={"uid": "SIPIE001"})
+    if path == "sito/SIPIE001/listing":
+        return httpx.Response(200, json={"uid": "SIPIE001", "stazioni": [{"uid": "SIPIE001ST001"}]})
+    if path == "sito/SIXXX999":
+        return httpx.Response(404, json={"message": "Not found"})
+    if path == "sito/SIXXX999/listing":
+        return httpx.Response(200, content=b"null")
+    if path == "sito/LIST":
+        return httpx.Response(200, json=[])
+    raise AssertionError(path)
+
+
+async def test_monitoring_sites_and_webcams() -> None:
+    async with _idrogeo(_monitoring) as idrogeo:
+        active = await idrogeo.sites({"stato_monitoraggio": "eq.1"})
+        assert active == [{"uid": "SIPIE001", "point": [8.47, 44.66]}]
+        assert await idrogeo.webcams() == [{"id_sensore": "SW00000001"}]
+        assert (await idrogeo.site("SIPIE001"))["uid"] == "SIPIE001"
+        assert await idrogeo.stations("SIPIE001") == [{"uid": "SIPIE001ST001"}]
+        with pytest.raises(IdrogeoError, match="Not found"):
+            await idrogeo.site("SIXXX999")
+        with pytest.raises(IdrogeoError, match="unknown"):
+            await idrogeo.stations("SIXXX999")
+        with pytest.raises(IdrogeoError, match="returned list"):
+            await idrogeo.site("LIST")
+        with pytest.raises(ValueError, match="letters and digits"):
+            await idrogeo.site("../frana")
+
+
 class _Comuni:
     """A fake list of three municipalities, counting the detail calls."""
 

@@ -67,16 +67,19 @@ def search_params(
     return params
 
 
+_NOT_JSON = object()
+
+
 def parse(status_code: int, body: bytes | str) -> Any:
     """The decoded JSON of a 200; :class:`IdrogeoError` with the API's message otherwise."""
     try:
         data: Any = json.loads(body)
     except ValueError:
-        data = None
+        data = _NOT_JSON
     if status_code != 200:
         detail = data.get("message") if isinstance(data, dict) else str(body)[:200]
         raise IdrogeoError(f"IdroGEO API refused (HTTP {status_code}): {detail}")
-    if data is None:
+    if data is _NOT_JSON:
         raise IdrogeoError(f"IdroGEO API did not return JSON: {str(body)[:200]!r}")
     return data
 

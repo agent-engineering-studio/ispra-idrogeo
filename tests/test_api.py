@@ -55,6 +55,7 @@ def test_parse() -> None:
         parse(502, b"<html>bad gateway</html>")
     with pytest.raises(IdrogeoError, match="not return JSON"):
         parse(200, b"<html></html>")
+    assert parse(200, b"null") is None  # a JSON null is an answer, not an error
 
 
 def test_parse_list() -> None:

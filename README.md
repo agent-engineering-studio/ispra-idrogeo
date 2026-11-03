@@ -90,7 +90,7 @@ Some of what is in there, straight from the API:
 | 💾 | **A folder that stays** | Files go to a persistent folder and are unpacked next to themselves, ready for GeoPandas or QGIS. |
 | 🔁 | **Download once, then only what changed** | Each file remembers its `ETag` and `Last-Modified`. The next run asks "changed?" and gets a `304` for a few hundred bytes. |
 | 🛡️ | **Never half a file** | Downloads stream to `.part` and are renamed when complete; ZIPs unpack beside the old folder and are swapped in whole. Memory stays flat even for 1.2 GB. |
-| 📊 | **The REST API** | Landslide counts and hazard and risk indicators for Italy, macro-regions, regions, provinces, municipalities; every municipality at once, kept on disk; code lists; paged searches. |
+| 📊 | **The REST API** | Landslide counts and hazard and risk indicators for Italy, macro-regions, regions, provinces, municipalities; every municipality at once, kept on disk; full landslide records; monitoring sites and webcams; code lists; paged searches. |
 | 🔄 | **Retries built in** | Network errors, 429 and 5xx are retried with exponential backoff. Bring your own `httpx.AsyncClient` if you want to tune it. |
 | 🧪 | **Pure functions too** | URL builders, request builders and parsers have no network, for your own HTTP stack. |
 
@@ -448,6 +448,28 @@ The full record of a validated landslide. Many fields are often empty, so
 check before you rely on them. An unknown id raises `IdrogeoError` (IdroGEO
 answers 401 to it, not 404).
 
+### Who is watching a landslide: monitoring sites and webcams
+
+```python
+async with IdroGEO() as idrogeo:
+    active = await idrogeo.sites({"stato_monitoraggio": "eq.1"})
+    print(len(active))  # 558 of 1,063 sites are active
+    site = active[0]
+    print(site["uid"], site["point"], site["id_frane_correlati"])
+    # SIABR001 [14.03, 42.24] ['0680013800']   ← lon/lat, and its IFFI landslides
+    for station in await idrogeo.stations(site["uid"]):
+        print(station["uid"], station["strumentazione"])
+
+    cams = await idrogeo.webcams()  # 14, all in Lombardy
+```
+
+A **site** is a place where an agency (often an ARPA) monitors a landslide.
+It has **stations**, and each station has **instruments** (inclinometers,
+piezometers, rain gauges…, decoded by the `strumento_monitoraggio`
+dictionary). `id_frane_correlati` links 880 sites to their IFFI landslides,
+so you can tell which landslides someone is already watching. Look a site up
+by its `uid` (`"SIPIE001"`), not by its `id`.
+
 ### Bring your own HTTP client
 
 ```python
@@ -495,6 +517,11 @@ point to paths that no longer exist. This library handles these for you:
 | a file for `trentino-alto-adige` | there is none: it publishes per province | offers `bolzano` and `trento` in `PROVINCES` |
 | downloading the inventory again every day "to be safe" | ~870 MB a day, whether anything changed or not | conditional GET: one `304` when nothing changed |
 | `/api/evento/{id}`, which the OpenAPI lists with no login | HTTP **401** without a login (`/api/frana/{id}` does answer 200) | reads events through `search_events`, which is public |
+| `/api/frana/{id}` with an id that does not exist | HTTP **401** "Missing authorization header", not 404 | raises `IdrogeoError`: unknown or not public |
+| `/api/sito/{id}` with the site's `id` (a UUID) | HTTP **404**: the path wants the `uid` (`SIPIE001`); `/listing` of an unknown site answers `null` with HTTP 200 | `site(uid)` and `stations(uid)`, which raise `IdrogeoError` for both |
+| webcam `geom` as longitude and latitude | it is **EPSG:3857** metres, while sites use lon/lat | says so in `webcams()` |
+| a webcam's `timelapse_url` | HTTP **404** or a redirect to the web app: the videos are not published | leaves the field as IdroGEO sends it |
+| landslide filters like events, `{"regione": "eq.16"}` | `invalid input syntax` or `not an embedded resource`: landslides take plain values (`{"tipo_movimento": 6}`) | types filters as `dict[str, Any]` and documents both |
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
 
 All checked against the live service on 3 November 2026.
@@ -513,6 +540,9 @@ All checked against the live service on 3 November 2026.
 | `.landslide(id_frana)` | The full record of one validated landslide. |
 | `.iter_landslides(filters, page_size=1000, select=, order="id_frana")` | Every matching IFFI landslide, page after page. |
 | `.iter_events(filters, page_size=1000, select=, order="uid")` | Every matching landslide event, page after page. |
+| `.sites(filters, select=)` | The monitoring sites (1,063). |
+| `.site(uid)` / `.stations(uid)` | One site / its stations, instruments and sensors. |
+| `.webcams(filters)` | The webcams pointed at landslides. |
 | `.search_landslides(filters, limit=, offset=, select=, order=)` | One page of IFFI landslides. |
 | `.search_events(filters, limit=, offset=, select=, order=)` | One page of validated landslide events. |
 | `.municipalities(summary="pir", directory=None, *, concurrency=8, max_age=None)` | The summary of all 7,899 municipalities, saved one JSON per municipality. |

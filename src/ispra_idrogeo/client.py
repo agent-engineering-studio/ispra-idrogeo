@@ -42,6 +42,13 @@ _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 _CHUNK = 1 << 20
 
 
+def _code(uid: str) -> str:
+    """A site or station ``uid`` as a path segment: letters and digits only."""
+    if not uid.isalnum():
+        raise ValueError(f"a site uid is letters and digits only, like 'SIPIE001' (got {uid!r})")
+    return uid
+
+
 @dataclass(frozen=True, slots=True)
 class Download:
     """A file on disk, and whether this call changed it."""
@@ -273,13 +280,46 @@ class IdroGEO:
         """
         return self._pages("evento/main/filter", filters, page_size, select, order)
 
+    async def sites(
+        self, filters: dict[str, Any] | None = None, *, select: list[str] | None = None
+    ) -> list[dict[str, Any]]:
+        """The landslide monitoring sites matching ``filters`` (1,063 in all).
+
+        Filters take operators (``{"stato_monitoraggio": "eq.1"}`` for the
+        active ones). ``point`` is longitude and latitude (WGS 84);
+        ``id_frane_correlati`` links a site to its IFFI landslides.
+        """
+        return [s async for s in self._pages("sito/filter", filters, 1000, select, "uid")]
+
+    async def site(self, uid: str) -> dict[str, Any]:
+        """One monitoring site by its ``uid`` (``"SIPIE001"``), not by its ``id``."""
+        data = await self._get(f"sito/{_code(uid)}")
+        if not isinstance(data, dict):
+            raise IdrogeoError(f"IdroGEO returned {type(data).__name__} for site {uid}")
+        return data
+
+    async def stations(self, uid: str) -> list[dict[str, Any]]:
+        """The stations of a monitoring site, with their instruments and sensors."""
+        data = await self._get(f"sito/{_code(uid)}/listing")
+        if not isinstance(data, dict) or not isinstance(data.get("stazioni"), list):
+            raise IdrogeoError(f"site {uid} is unknown (IdroGEO answered {data!r})")
+        return list(data["stazioni"])
+
+    async def webcams(self, filters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        """The webcams pointed at landslides (14, all in Lombardy in 2026).
+
+        Filters take operators (``{"regione": "eq.3"}``). Mind ``geom``: its
+        coordinates are EPSG:3857 metres, not longitude and latitude.
+        """
+        return [w async for w in self._pages("webcam/filter", filters, 1000, None, None)]
+
     async def _pages(
         self,
         path: str,
         filters: dict[str, Any] | None,
         page_size: int,
         select: list[str] | None,
-        order: str,
+        order: str | None,
     ) -> AsyncIterator[dict[str, Any]]:
         offset = 0
         while True:
