@@ -1,6 +1,6 @@
 [project]
 name = "ispra-idrogeo"
-version = "0.3.0"
+version = "0.4.0"
 description = "Downloads and API client for ISPRA IdroGEO: IFFI landslide inventory, hazard mosaics and events, with a persistent conditional-GET cache"
 readme = "README.md"
 keywords = ["ispra", "idrogeo", "iffi", "landslide", "frane", "hazard", "pai", "flood", "italy", "gis"]
