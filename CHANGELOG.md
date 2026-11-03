@@ -34,6 +34,9 @@ All notable changes to this project are documented here. The format follows
 - `ispra_idrogeo.wms`: the pure request builders and parsers behind them,
   and `distance_m` from a point to any GeoJSON geometry.
 
+- `examples/`: three notebooks run on the live service (a town and its
+  landslides, Italy in numbers, what changed).
+
 ### Fixed
 
 - README: IdroGEO's GeoServer is public over WMS; only the WFS asks for a

@@ -36,6 +36,7 @@ async with IdroGEO() as idrogeo:
 - [Where downloads are saved](#where-downloads-are-saved)
 - [How it works](#how-it-works)
 - [Recipes](#recipes)
+- [Example notebooks](#example-notebooks)
 - [The traps we already fell into](#the-traps-we-already-fell-into)
 - [API at a glance](#api-at-a-glance)
 - [Contributing](#contributing) · [Ideas to work on](#ideas-to-work-on)
@@ -742,6 +743,16 @@ An unknown layer, area or mosaic name raises `ValueError` before any request.
 
 ---
 
+## Example notebooks
+
+[`examples/`](examples/) has three notebooks run on the live service, with
+their outputs: **a town and its landslides** (Sarno, from exposure figures
+to a map of its debris flows), **Italy in numbers** (who lives in hazard
+areas, municipality by municipality) and **what changed** (following the
+inventory day by day).
+
+---
+
 ## The traps we already fell into
 
 IdroGEO works well, but its older documentation and many scripts on the web
@@ -869,7 +880,6 @@ issue to discuss one before starting.
 
 | Idea | Why it matters | Good for |
 |---|---|---|
-| 📓 **Example notebooks** (a town, a valley, a flood plain) | Show what the data can do, from download to map | first contribution, GIS users |
 | 🧠 **More MCP tools** (hazard at a point, nearest landslides) | Agents that answer "is my house at risk?" | intermediate, AI users |
 | 🧩 **A GeoServer bootstrap** that publishes the downloads, for [mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server) | From open data to a live map server in one command | advanced |
 | 📚 **Documentation site** | Search, API reference, tutorials | anyone |
