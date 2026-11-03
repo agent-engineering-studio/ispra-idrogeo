@@ -334,6 +334,45 @@ async def test_iterators_walk_every_page() -> None:
             [r async for r in idrogeo.iter_events(page_size=0)]
 
 
+async def test_landslides_in_an_area() -> None:
+    rows = [
+        {"id_frana": "1", "regione": 15, "provincia": 65, "comune": 65135},
+        {
+            "id_frana": "2",
+            "regione": {"nome": "Campania", "cod_reg": 15},
+            "provincia": 64,
+            "comune": 64077,
+        },
+        {"id_frana": "3", "regione": 14, "provincia": 70, "comune": "x"},
+        {"id_frana": "4"},
+    ]
+    asked: list[httpx.Request] = []
+
+    def inventory(request: httpx.Request) -> httpx.Response:
+        asked.append(request)
+        return httpx.Response(200, json=rows)
+
+    async with _idrogeo(inventory) as idrogeo:
+        assert [r["id_frana"] async for r in idrogeo.iter_landslides_in(region=15)] == ["1", "2"]
+        found = idrogeo.iter_landslides_in(
+            region=15, municipality=65135, filters={"tipo_movimento": 5}
+        )
+        assert [r["id_frana"] async for r in found] == ["1"]
+        assert [r async for r in idrogeo.iter_landslides_in(municipality=1)] == []
+        own = idrogeo.iter_landslides_in(province=70, select=["id_frana", "provincia"])
+        assert [r["id_frana"] async for r in own] == ["3"]
+        everything = idrogeo.iter_landslides_in(province=70, select=["*"])
+        assert [r["id_frana"] async for r in everything] == ["3"]
+        with pytest.raises(ValueError, match="region, a province or a municipality"):
+            [r async for r in idrogeo.iter_landslides_in()]
+    assert asked[0].url.params["select"] == "id_frana,tipo_movimento,stato,modified,regione"
+    assert asked[0].url.params["limit"] == "1000000"  # one page: deep offsets are slow
+    assert json.loads(asked[1].content) == {"tipo_movimento": 5}
+    assert asked[1].url.params["select"].endswith("regione,comune")
+    assert asked[3].url.params["select"] == "id_frana,provincia"
+    assert asked[4].url.params["select"] == "*"
+
+
 async def test_modified_since_reaches_every_search() -> None:
     since = datetime(2026, 11, 1, tzinfo=UTC)
     changed = {"modified": "gte.2026-11-01T00:00:00+00:00"}

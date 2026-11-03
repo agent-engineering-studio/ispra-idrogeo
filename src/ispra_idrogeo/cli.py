@@ -84,6 +84,11 @@ def parser() -> argparse.ArgumentParser:
     ):
         search = commands.add_parser(name, help=f"every matching record: {what}")
         _search_options(search)
+        if name == "landslides":
+            area = search.add_argument_group("area (ISTAT codes; reads the whole inventory)")
+            area.add_argument("--region", type=int)
+            area.add_argument("--province", type=int)
+            area.add_argument("--municipality", type=int)
 
     webcams = commands.add_parser("webcams", help="the webcams pointed at landslides")
     webcams.add_argument("--filter", action="append", default=[], metavar="FIELD=VALUE")
@@ -199,6 +204,16 @@ async def run(
         )
         for row in rows:
             write(row)
+    elif command == "landslides" and (args.region or args.province or args.municipality):
+        found = idrogeo.iter_landslides_in(
+            region=args.region,
+            province=args.province,
+            municipality=args.municipality,
+            filters=filters(args.filter),
+            modified_since=args.since,
+            select=_select(args),
+        )
+        await _lines(found, write)
     elif command in ("landslides", "events"):
         search = idrogeo.iter_landslides if command == "landslides" else idrogeo.iter_events
         found = search(filters(args.filter), modified_since=args.since, select=_select(args))

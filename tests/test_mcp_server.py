@@ -75,7 +75,9 @@ def _api(request: httpx.Request) -> httpx.Response:
         return httpx.Response(401, json={"message": "Missing authorization header"})
     elif path in ("frana/searchfilter", "evento/main/filter"):
         limit = int(request.url.params["limit"])
-        rows = [{"n": n, "body": body} for n in range(min(limit, 250))]
+        rows = [
+            {"n": n, "body": body, "regione": 15 if n % 2 else 14} for n in range(min(limit, 250))
+        ]
     elif path == "sito/filter":
         rows = [{"uid": f"SI{n}", "strumentazione": [15], "body": body} for n in range(3)]
     elif path == "webcam/filter":
@@ -139,6 +141,8 @@ async def test_landslides_events_sites() -> None:
         "tipo_movimento": 6,
         "stato_attivita_1liv": "eq.100",
     }
+    campania = await _call(mcp, "search_landslides", region=15, movement=5, limit=3)
+    assert [r["n"] for r in campania] == [1, 3, 5] and campania[0]["body"] == {"tipo_movimento": 5}
     events = await _call(mcp, "search_events", region=16, start="2023-01-01", end="2024-01-01")
     assert len(events) == 100  # the default limit
     assert events[0]["body"]["regione"] == "eq.16" and "and" in events[0]["body"]

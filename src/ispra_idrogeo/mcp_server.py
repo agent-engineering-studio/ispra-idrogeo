@@ -131,18 +131,30 @@ def server(idrogeo: IdroGEO | None = None) -> MCPServer[Any]:
     async def search_landslides(
         movement: int | None = None,
         activity: list[int] | None = None,
+        region: int | None = None,
+        province: int | None = None,
+        municipality: int | None = None,
         modified_since: datetime | None = None,
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         """IFFI landslides by movement code, activity codes (100 active, 200
-        dormant, 300 stabilised, 400 relict), or changed since a time. No area
-        filter: use area_landslides for an area's totals."""
-        found = client.iter_landslides(
-            landslide_filter(movement=movement, activity=activity),
-            modified_since=modified_since,
-            page_size=_page(limit),
-        )
-        return await _take(found, limit)
+        dormant, 300 stabilised, 400 relict), area (ISTAT codes) or changed
+        since a time. An area reads the whole inventory first (~20 s); for an
+        area's totals area_landslides is instant."""
+        wanted = landslide_filter(movement=movement, activity=activity)
+        if region or province or municipality:
+            found = client.iter_landslides_in(
+                region=region,
+                province=province,
+                municipality=municipality,
+                filters=wanted,
+                modified_since=modified_since,
+            )
+        else:
+            found = client.iter_landslides(
+                wanted, modified_since=modified_since, page_size=_page(limit)
+            )
+        return await _take(found, _page(limit))
 
     @mcp.tool(annotations=_READ)
     @_tool_errors

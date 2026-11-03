@@ -47,7 +47,8 @@ def _server(request: httpx.Request) -> httpx.Response:
     if watching:
         return httpx.Response(200, json=[])
     if path in ("frana/searchfilter", "evento/main/filter", "sito/filter", "webcam/filter"):
-        return httpx.Response(200, json=[{"path": path, "body": body, **request.url.params}])
+        echo: dict[str, Any] = {"path": path, "body": body, "regione": 15, **request.url.params}
+        return httpx.Response(200, json=[echo])
     if path == "frana/0017680500":
         return httpx.Response(200, json={"id_frana": "0017680500"})
     if path == "frana/0000000000":
@@ -97,6 +98,8 @@ async def test_searches_print_json_lines() -> None:
     assert row["path"] == "frana/searchfilter"
     assert row["body"] == {"tipo_movimento": 6, "modified": "gte.2026-11-01T00:00:00+00:00"}
     assert row["select"] == "id_frana,modified"
+    [area] = await _run("landslides", "--region", "15", "--filter", "tipo_movimento=5")
+    assert area["body"] == {"tipo_movimento": 5} and "regione" in area["select"]
     [event] = await _run("events", "--filter", "regione=eq.16")
     assert event["path"] == "evento/main/filter" and event["body"] == {"regione": "eq.16"}
     [site] = await _run("sites")

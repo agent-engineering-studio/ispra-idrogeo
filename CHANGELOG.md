@@ -15,6 +15,11 @@ All notable changes to this project are documented here. The format follows
 - `IdroGEO.landslides_near(lat, lon, radius_m)`: the IFFI landslides around a
   point, nearest first, with the distance to their real outline.
   `idrogeo near`, and the MCP tool `landslides_near`.
+- `IdroGEO.iter_landslides_in(region=, province=, municipality=)`: every
+  IFFI landslide of an area, checked on each record's own area fields since
+  the search has no reliable area filter; exact counts (Campania 55,254).
+  `idrogeo landslides --region/--province/--municipality`, and area
+  arguments on the MCP tool `search_landslides`.
 - `idrogeo watch`: prints the landslides, events and monitoring sites that
   change, once per change, resuming from `<dir>/watch.json`; `--once` for
   cron. `ispra_idrogeo.watch` (`changes`, `Mark`, `load_marks`,

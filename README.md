@@ -177,6 +177,7 @@ idrogeo fetch frane_piff --area molise              # prints the unpacked folder
 idrogeo summary pir comuni 72006 | jq .popidp2_p    # 1.278
 idrogeo municipalities --max-age-days 30 > comuni.jsonl
 idrogeo landslides --since 2026-11-01T00:00:00Z --select '*' > changed.jsonl
+idrogeo landslides --municipality 65135             # Sarno's 53 landslides
 idrogeo sites --filter stato_monitoraggio=eq.1 --select uid,point
 idrogeo labels tipo_movimento --lang it
 idrogeo hazard 40.829 14.617                        # P4, Sarno, 12.3°
@@ -517,6 +518,18 @@ unique key (`id_frana`, `uid`) so pages do not overlap. An empty filter
 matches everything; `search_landslides` and `search_events` return a single
 page, if you prefer to page yourself.
 
+For the landslides of an area, `iter_landslides_in` checks each record's
+own region, province or municipality, because the search has no reliable
+area filter (see the traps). It reads the whole inventory with a few fields,
+about 20 seconds for Italy, and gives the exact counts (Campania 55,254,
+Sarno 53):
+
+```python
+async with IdroGEO() as idrogeo:
+    sarno = [f async for f in idrogeo.iter_landslides_in(municipality=65135)]
+    debris_flows = idrogeo.iter_landslides_in(region=15, filters=landslide_filter(movement=5))
+```
+
 `landslide_filter`, `event_filter` and `site_filter` build the filters, because each
 search reads them its own way: landslides want `{"tipo_movimento": 6}` but
 `{"stato_attivita_1liv": "eq.100"}`, events and sites want operators
@@ -719,7 +732,8 @@ point to paths that no longer exist. This library handles these for you:
 | webcam `geom` as longitude and latitude | it is **EPSG:3857** metres, while sites use lon/lat | says so in `webcams()` |
 | a webcam's `timelapse_url` | HTTP **404** or a redirect to the web app: the videos are not published | leaves the field as IdroGEO sends it |
 | `{"tipo_movimento": "eq.6"}` on landslides, like every other field | `invalid input syntax for type integer`: this one field wants a plain `6`, and no list | `landslide_filter(movement=6)` |
-| landslides of a region, `{"regione": "eq.16"}` | `not an embedded resource`; and `regione_2019`, which does filter, is **empty for 18%** of the landslides (35,543 in Campania) | no area filter for landslides: download `opendata(layer, area)` |
+| landslides of a region, `{"regione": "eq.16"}` | `not an embedded resource`; `regione_2019`, which does filter, is **empty for 18%** of the landslides, and `regione_orig` is worse (Campania: 19,710 and 6,224 of 55,254) | `iter_landslides_in(region=15)` checks the record's own `regione`, which is always set: 55,254 |
+| paging the whole inventory 100,000 at a time | each page slower than the last (2.5 s at offset 0, 6.7 s at 600,000), and `id_frana` takes no `gt.` for keyset paging | one page of a million rows for area scans: ~20 s for Italy |
 | several landslides by id, `{"id_frana": "in.(…)"}` | an empty list, no error | `landslide(id)` for each one |
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
 
@@ -742,6 +756,7 @@ All checked against the live service on 3 November 2026.
 | `.sites(filters, modified_since=, select=)` | The monitoring sites (1,063). |
 | `.site(uid)` / `.stations(uid)` | One site / its stations, instruments and sensors. |
 | `.webcams(filters)` | The webcams pointed at landslides. |
+| `.iter_landslides_in(region=, province=, municipality=, filters=, select=)` | Every landslide of an area, checked on the record's own area fields. |
 | `.search_landslides(filters, limit=, offset=, select=, order=)` | One page of IFFI landslides. |
 | `.search_events(filters, limit=, offset=, select=, order=)` | One page of validated landslide events. |
 | `.municipalities(summary="pir", directory=None, *, concurrency=8, max_age=None)` | The summary of all 7,899 municipalities, saved one JSON per municipality. |
@@ -824,7 +839,6 @@ issue to discuss one before starting.
 | Idea | Why it matters | Good for |
 |---|---|---|
 | 📓 **Example notebooks** (a town, a valley, a flood plain) | Show what the data can do, from download to map | first contribution, GIS users |
-| 🗺️ **Landslides of an area through the API** | The search has no reliable area filter today (see the traps); a spatial filter would fill the gap | intermediate |
 | 🧠 **More MCP tools** (hazard at a point, nearest landslides) | Agents that answer "is my house at risk?" | intermediate, AI users |
 | 🧩 **A GeoServer bootstrap** that publishes the downloads, for [mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server) | From open data to a live map server in one command | advanced |
 | 📚 **Documentation site** | Search, API reference, tutorials | anyone |

@@ -47,6 +47,16 @@ type Progress = Callable[[int, int | None], None]
 _CHUNK = 1 << 20
 
 
+def _area_code(value: Any) -> int | None:
+    """An area field as an ISTAT code: a number, or the object the default fields embed."""
+    if isinstance(value, dict):
+        value = value.get("cod_reg", value.get("cod_prov", value.get("pro_com")))
+    try:
+        return None if value is None else int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _code(uid: str) -> str:
     """A site or station ``uid`` as a path segment: letters and digits only."""
     if not uid.isalnum():
@@ -361,6 +371,48 @@ class IdroGEO:
         """
         found = api.since_filter(filters, modified_since)
         return self._pages("frana/searchfilter", found, page_size, select, order)
+
+    async def iter_landslides_in(
+        self,
+        *,
+        region: int | None = None,
+        province: int | None = None,
+        municipality: int | None = None,
+        filters: dict[str, Any] | None = None,
+        modified_since: datetime | None = None,
+        select: list[str] | None = None,
+        page_size: int = 1_000_000,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Every IFFI landslide in a region, province or municipality (ISTAT codes).
+
+        The search has no reliable area filter (``regione_2019`` is empty
+        for 18% of the landslides), but every record knows its ``regione``,
+        ``provincia`` and ``comune``: the other filters run on the server and
+        the area is checked here. Without them it reads the whole inventory,
+        about 15 s with the default fields, in one page by default because
+        deep offsets are slow on IdroGEO (keyset paging is not possible:
+        ``id_frana`` takes no ``gt.``). Keep ``select`` short, and use
+        ``opendata(layer, area)`` for full records with geometry.
+        """
+        wanted = {
+            field: code
+            for field, code in (
+                ("regione", region),
+                ("provincia", province),
+                ("comune", municipality),
+            )
+            if code is not None
+        }
+        if not wanted:
+            raise ValueError("give a region, a province or a municipality")
+        fields = select or ["id_frana", "tipo_movimento", "stato", "modified"]
+        fields = [*fields, *(f for f in wanted if f not in fields and "*" not in fields)]
+        found = self.iter_landslides(
+            filters, modified_since=modified_since, page_size=page_size, select=fields
+        )
+        async for row in found:
+            if all(_area_code(row.get(field)) == code for field, code in wanted.items()):
+                yield row
 
     def iter_events(
         self,

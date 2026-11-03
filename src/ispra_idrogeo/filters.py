@@ -8,7 +8,7 @@ service, November 2026):
   but ``tipo_movimento`` takes a plain number and no list. There is no
   reliable area filter: ``regione`` is a relation the search refuses, and
   ``regione_2019`` is empty for 18% of the landslides (most of Campania).
-  For an area, download ``opendata(layer, area)``.
+  For an area, use :meth:`~ispra_idrogeo.IdroGEO.iter_landslides_in`.
 - **events** and **sites**: operators on every field, areas included; a
   range of dates is an ``"and"`` of two conditions.
 
