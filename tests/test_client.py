@@ -220,6 +220,58 @@ async def test_api_retries_then_raises() -> None:
             await idrogeo.dictionaries()
 
 
+class _Paged:
+    """A search endpoint holding ``rows`` records, honouring limit and offset."""
+
+    def __init__(self, rows: int) -> None:
+        self.rows = rows
+        self.calls: list[httpx.Request] = []
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        self.calls.append(request)
+        params = request.url.params
+        assert params["order"] in ("id_frana", "uid")
+        start, size = int(params["offset"]), int(params["limit"])
+        return httpx.Response(
+            200, json=[{"n": n} for n in range(start, min(start + size, self.rows))]
+        )
+
+
+async def test_iterators_walk_every_page() -> None:
+    for rows, pages in ((5, 3), (4, 3), (0, 1)):  # 2+2+1, 2+2+0, one empty page
+        server = _Paged(rows)
+        async with _idrogeo(server) as idrogeo:
+            found = idrogeo.iter_landslides({"tipo_movimento": 6}, page_size=2)
+            assert [r["n"] async for r in found] == list(range(rows))
+        assert len(server.calls) == pages
+        assert json.loads(server.calls[0].content) == {"tipo_movimento": 6}
+    async with _idrogeo(_Paged(3)) as idrogeo:
+        events = [r async for r in idrogeo.iter_events({"regione": "eq.16"}, select=["uid"])]
+        assert len(events) == 3
+        with pytest.raises(ValueError):
+            [r async for r in idrogeo.iter_events(page_size=0)]
+
+
+def _frana(request: httpx.Request) -> httpx.Response:
+    path = request.url.path.removeprefix("/api/frana/")
+    if path == "0017680500":
+        return httpx.Response(200, json={"id_frana": path, "tipo_movimento": 5})
+    if path == "0000000000":
+        return httpx.Response(401, json={"message": "Missing authorization header"})
+    return httpx.Response(200, json=[])
+
+
+async def test_landslide() -> None:
+    async with _idrogeo(_frana) as idrogeo:
+        assert (await idrogeo.landslide("0017680500"))["tipo_movimento"] == 5
+        with pytest.raises(IdrogeoError, match="unknown or not public"):
+            await idrogeo.landslide("0000000000")
+        with pytest.raises(IdrogeoError, match="returned list"):
+            await idrogeo.landslide("1")
+        with pytest.raises(ValueError, match="digits"):
+            await idrogeo.landslide("../evento")
+
+
 class _Comuni:
     """A fake list of three municipalities, counting the detail calls."""
 

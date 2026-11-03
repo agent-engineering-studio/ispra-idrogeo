@@ -416,19 +416,37 @@ async with IdroGEO() as idrogeo:
     # {'1': 'fall/topple', '2': 'rotational/translational slide', '4': 'slow earth flow', …}
 ```
 
-### Search landslides through the API
+### Walk through every landslide or event
 
 ```python
 async with IdroGEO() as idrogeo:
-    page = await idrogeo.search_landslides(limit=100, offset=0)
-    print(page[0])
-    # {'id_frana': '0017680500', 'tipo_movimento': 5, 'stato': 'validato_ispra',
-    #  'regione': {'nome': 'Piemonte', 'cod_reg': 1}, 'comune': {'nome': 'Chiaverano', …}}
-    events = await idrogeo.search_events(limit=50)
+    sinkholes = [f async for f in idrogeo.iter_landslides({"tipo_movimento": 6})]
+    print(len(sinkholes))  # 500, the same as IFFI's national count
+
+    async for event in idrogeo.iter_events({"regione": "eq.16"}):  # Puglia
+        print(event["uid"], event["computed_date"], event["comune_nome"])
 ```
 
-Filters are a JSON object whose syntax is in ISPRA's technical manual; an
-empty one matches everything, so always page with `limit` and `offset`.
+`iter_landslides` and `iter_events` ask for one page after another
+(`page_size`, 1,000 by default) and stop at the last one. They sort by a
+unique key (`id_frana`, `uid`) so pages do not overlap. Each search has
+its own filter syntax: landslides take plain values (`{"tipo_movimento":
+6}`), events take operators (`{"regione": "eq.16"}`). An empty filter
+matches everything. `search_landslides` and `search_events` return a single
+page, if you prefer to page yourself.
+
+### One landslide, in full
+
+```python
+async with IdroGEO() as idrogeo:
+    record = await idrogeo.landslide("0017680500")
+print(len(record), record["stato"])  # 142 validato_ispra
+# activations, causes, state and velocity, damage, interventions, precursors…
+```
+
+The full record of a validated landslide. Many fields are often empty, so
+check before you rely on them. An unknown id raises `IdrogeoError` (IdroGEO
+answers 401 to it, not 404).
 
 ### Bring your own HTTP client
 
@@ -492,6 +510,9 @@ All checked against the live service on 3 November 2026.
 | `.download(dataset, directory=None)` | `Download(path, changed)`: the file, and whether this call changed it. |
 | `.summary(summary, level, code=None)` | `"iffi"` counts or `"pir"` indicators; without `code`, the list of that level. |
 | `.dictionaries()` / `.dictionary(name)` | The names of the code lists / one list. |
+| `.landslide(id_frana)` | The full record of one validated landslide. |
+| `.iter_landslides(filters, page_size=1000, select=, order="id_frana")` | Every matching IFFI landslide, page after page. |
+| `.iter_events(filters, page_size=1000, select=, order="uid")` | Every matching landslide event, page after page. |
 | `.search_landslides(filters, limit=, offset=, select=, order=)` | One page of IFFI landslides. |
 | `.search_events(filters, limit=, offset=, select=, order=)` | One page of validated landslide events. |
 | `.municipalities(summary="pir", directory=None, *, concurrency=8, max_age=None)` | The summary of all 7,899 municipalities, saved one JSON per municipality. |

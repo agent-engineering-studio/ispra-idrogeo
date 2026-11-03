@@ -16,7 +16,7 @@ status). Pass ``retries=0`` to put your own retry policy around the calls.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -223,9 +223,76 @@ class IdroGEO:
         """One code list (``IdrogeoError`` if it does not exist)."""
         return await self._get(f"dizionari/{name}")
 
+    async def landslide(self, id_frana: str) -> dict[str, Any]:
+        """The full record of one validated IFFI landslide (~140 fields).
+
+        Causes, activations, state and velocity, damage, interventions,
+        precursors: many fields are often empty. ``IdrogeoError`` if the id
+        is unknown or the landslide is not public (IdroGEO answers 401, not
+        404, to both).
+        """
+        if not id_frana.isdigit():
+            raise ValueError(f"an IFFI id is digits only, like '0017680500' (got {id_frana!r})")
+        response = await self._send("GET", f"{self._api}/frana/{id_frana}")
+        if response.status_code == 401:
+            raise IdrogeoError(f"landslide {id_frana} is unknown or not public (HTTP 401)")
+        data = api.parse(response.status_code, response.content)
+        if not isinstance(data, dict):
+            raise IdrogeoError(f"IdroGEO returned {type(data).__name__} for landslide {id_frana}")
+        return data
+
+    def iter_landslides(
+        self,
+        filters: dict[str, Any] | None = None,
+        *,
+        page_size: int = 1000,
+        select: list[str] | None = None,
+        order: str = "id_frana",
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Every IFFI landslide matching ``filters``, page after page.
+
+        Filters take plain values (``{"tipo_movimento": 6}``). Pages are
+        ordered by ``order`` so that they do not overlap; IdroGEO changes
+        daily, so a record edited while you iterate may be seen twice or
+        missed.
+        """
+        return self._pages("frana/searchfilter", filters, page_size, select, order)
+
+    def iter_events(
+        self,
+        filters: dict[str, Any] | None = None,
+        *,
+        page_size: int = 1000,
+        select: list[str] | None = None,
+        order: str = "uid",
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Every validated landslide event matching ``filters``, page after page.
+
+        Filters take operators (``{"regione": "eq.16"}``); see
+        :meth:`iter_landslides` for the order.
+        """
+        return self._pages("evento/main/filter", filters, page_size, select, order)
+
+    async def _pages(
+        self,
+        path: str,
+        filters: dict[str, Any] | None,
+        page_size: int,
+        select: list[str] | None,
+        order: str,
+    ) -> AsyncIterator[dict[str, Any]]:
+        offset = 0
+        while True:
+            page = await self._search(path, filters, page_size, offset, select, order)
+            for row in page:
+                yield row
+            if len(page) < page_size:
+                return
+            offset += page_size
+
     async def search_landslides(
         self,
-        filters: dict[str, str] | None = None,
+        filters: dict[str, Any] | None = None,
         *,
         limit: int = 100,
         offset: int = 0,
@@ -237,7 +304,7 @@ class IdroGEO:
 
     async def search_events(
         self,
-        filters: dict[str, str] | None = None,
+        filters: dict[str, Any] | None = None,
         *,
         limit: int = 100,
         offset: int = 0,
@@ -250,7 +317,7 @@ class IdroGEO:
     async def _search(
         self,
         path: str,
-        filters: dict[str, str] | None,
+        filters: dict[str, Any] | None,
         limit: int,
         offset: int,
         select: list[str] | None,

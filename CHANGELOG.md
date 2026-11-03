@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `IdroGEO.landslide(id_frana)`: the full record of a validated IFFI
+  landslide; `IdrogeoError` for an unknown id (IdroGEO answers 401).
+- `IdroGEO.iter_landslides` / `IdroGEO.iter_events`: async iterators over
+  every matching record, page after page, in a stable order.
+
+### Fixed
+
+- Search filters are typed `dict[str, Any]`: landslide filters take plain
+  values (`{"tipo_movimento": 6}`), not only strings.
+
 ## [0.2.0] - 2026-11-03
 
 ### Added
