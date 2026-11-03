@@ -90,7 +90,7 @@ Some of what is in there, straight from the API:
 | 💾 | **A folder that stays** | Files go to a persistent folder and are unpacked next to themselves, ready for GeoPandas or QGIS. |
 | 🔁 | **Download once, then only what changed** | Each file remembers its `ETag` and `Last-Modified`. The next run asks "changed?" and gets a `304` for a few hundred bytes. |
 | 🛡️ | **Never half a file** | Downloads stream to `.part` and are renamed when complete; ZIPs unpack beside the old folder and are swapped in whole. Memory stays flat even for 1.2 GB. |
-| 📊 | **The REST API** | Landslide counts and hazard and risk indicators for Italy, macro-regions, regions, provinces, municipalities; code lists; paged searches. |
+| 📊 | **The REST API** | Landslide counts and hazard and risk indicators for Italy, macro-regions, regions, provinces, municipalities; every municipality at once, kept on disk; code lists; paged searches. |
 | 🔄 | **Retries built in** | Network errors, 429 and 5xx are retried with exponential backoff. Bring your own `httpx.AsyncClient` if you want to tune it. |
 | 🧪 | **Pure functions too** | URL builders, request builders and parsers have no network, for your own HTTP stack. |
 
@@ -376,6 +376,35 @@ landslide (`*_fr_*`) and flood (`*_idr_*`) hazard class. Levels are
 `"italia"`, `"macroregioni"`, `"regioni"`, `"province"` and `"comuni"`, by
 ISTAT code.
 
+### Every municipality, in one table
+
+```python
+from datetime import timedelta
+
+from ispra_idrogeo import IdroGEO
+
+async with IdroGEO() as idrogeo:
+    rows = await idrogeo.municipalities("pir", max_age=timedelta(days=30))
+print(len(rows))  # 7899
+worst = sorted(rows, key=lambda r: r["pop_fr_p3"] + r["pop_fr_p4"], reverse=True)[:3]
+for r in worst:
+    print(r["nome"], r["pop_fr_p3"] + r["pop_fr_p4"], f"{r['popfrp3p4p']:.1f} %")
+# Napoli 42390 4.6 %     ← residents in landslide hazard P3 + P4, and their share
+# Genova 30148 5.4 %
+# Sanremo 14607 27.6 %
+```
+
+One call lists the municipalities, then one call each asks for its
+indicators, 8 at a time: about a minute and 17 MB for all of Italy. Each
+answer is saved as `<directory>/pir_comuni/<ISTAT code>.json`, so the next
+run reads it back from disk (under two seconds), an interrupted run resumes
+where it stopped, and `max_age` decides when an answer is old enough to ask
+again. The indicators come from the 2020-2021 hazard mosaics and the 2021
+census, so a monthly refresh is plenty.
+
+`municipalities("iffi")` does the same with landslide counts, and
+`summaries(summary, "regioni" | "province" | "comuni")` with any level.
+
 ### Translate the codes
 
 The files store codes; the API has the code lists, in five languages:
@@ -465,6 +494,8 @@ All checked against the live service on 3 November 2026.
 | `.dictionaries()` / `.dictionary(name)` | The names of the code lists / one list. |
 | `.search_landslides(filters, limit=, offset=, select=, order=)` | One page of IFFI landslides. |
 | `.search_events(filters, limit=, offset=, select=, order=)` | One page of validated landslide events. |
+| `.municipalities(summary="pir", directory=None, *, concurrency=8, max_age=None)` | The summary of all 7,899 municipalities, saved one JSON per municipality. |
+| `.summaries(summary, level, directory=None, *, concurrency=8, max_age=None)` | The same for every region, province or municipality. |
 | `opendata(layer, area="ispra", fmt="shapefile")` | An open-data `Dataset` (URL + file name). |
 | `mosaic("pai_frane" \| "idraulica")` | A national hazard mosaic. |
 | `sensor_data()` | The monitoring network readings. |
@@ -474,7 +505,8 @@ All checked against the live service on 3 November 2026.
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
-`parse` / `parse_list`, `read_validators` / `write_validators`, `extract`.
+`level_codes`, `parse` / `parse_list`, `read_validators` / `write_validators`,
+`read_json` / `write_json`, `extract`.
 
 ---
 

@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from ispra_idrogeo import IdrogeoError, parse, parse_list, search_params, summary_path
+from ispra_idrogeo import (
+    IdrogeoError,
+    level_codes,
+    parse,
+    parse_list,
+    search_params,
+    summary_path,
+)
 
 
 def test_summary_paths() -> None:
@@ -14,6 +21,16 @@ def test_summary_paths() -> None:
         summary_path("iffi", "italia", 1)
     with pytest.raises(ValueError, match="no list"):
         summary_path("pir", "macroregioni")
+
+
+def test_level_codes() -> None:
+    assert level_codes("comuni", [{"pro_com": 72006}, {"pro_com": "1001"}]) == [72006, 1001]
+    assert level_codes("regioni", [{"cod_reg": 16}]) == [16]
+    assert level_codes("province", []) == []
+    with pytest.raises(ValueError, match="no list"):
+        level_codes("italia", [])
+    with pytest.raises(IdrogeoError, match="pro_com"):
+        level_codes("comuni", [{"nome": "Bari"}])
 
 
 def test_search_params() -> None:

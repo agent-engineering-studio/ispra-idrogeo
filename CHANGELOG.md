@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `IdroGEO.municipalities(summary="pir")` and `IdroGEO.summaries(summary,
+  level)`: the summary of every municipality (7,899), province or region,
+  `concurrency` calls at a time, saved one JSON per area under
+  `<directory>/<summary>_<level>/` and asked again only when older than
+  `max_age`; an interrupted run resumes.
+- `level_codes`, `CODE_FIELDS`, `read_json`, `write_json`: the pure pieces
+  behind it.
+
 ## [0.1.0] - 2026-11-03
 
 ### Added

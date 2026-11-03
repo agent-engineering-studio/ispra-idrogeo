@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import io
+import os
+import time
 import zipfile
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -11,7 +14,9 @@ from ispra_idrogeo import (
     Validators,
     default_directory,
     extract,
+    read_json,
     read_validators,
+    write_json,
     write_validators,
 )
 
@@ -72,3 +77,18 @@ def test_extract_refuses_members_outside_the_folder(tmp_path: Path, name: str) -
         extract(archive, tmp_path / "a")
     assert (tmp_path / "a" / "kept.shp").read_bytes() == b"old"
     assert not (tmp_path / "a.part").exists()
+
+
+def test_json_round_trip_and_age(tmp_path: Path) -> None:
+    f = tmp_path / "72006.json"
+    assert read_json(f) is None
+    write_json(f, {"nome": "Bari"})
+    assert read_json(f) == {"nome": "Bari"}
+    assert read_json(f, timedelta(days=1)) == {"nome": "Bari"}
+    old = time.time() - 2 * 86400
+    os.utime(f, (old, old))
+    assert read_json(f) == {"nome": "Bari"}  # no max_age: never stale
+    assert read_json(f, timedelta(days=1)) is None
+    f.write_text("{not json")
+    assert read_json(f) is None
+    assert not list(tmp_path.glob("*.part"))

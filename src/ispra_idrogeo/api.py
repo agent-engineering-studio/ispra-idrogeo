@@ -24,6 +24,9 @@ API_URL = f"{BASE_URL}/api"
 Summary = Literal["iffi", "pir"]
 Level = Literal["italia", "macroregioni", "regioni", "province", "comuni"]
 
+#: The levels that have a list, and the field of each item that is its code.
+CODE_FIELDS: dict[Level, str] = {"regioni": "cod_reg", "province": "cod_prov", "comuni": "pro_com"}
+
 
 def summary_path(summary: Summary, level: Level, code: int | None = None) -> str:
     """``iffi/regioni/16``; without ``code``, the list of that level (``italia`` takes none)."""
@@ -36,6 +39,18 @@ def summary_path(summary: Summary, level: Level, code: int | None = None) -> str
             raise ValueError("'macroregioni' has no list: give a code")
         return f"{summary}/{level}"
     return f"{summary}/{level}/{int(code)}"
+
+
+def level_codes(level: Level, items: list[dict[str, Any]]) -> list[int]:
+    """The ISTAT codes in the list of a level, in the order the API gives them."""
+    try:
+        field = CODE_FIELDS[level]
+    except KeyError:
+        raise ValueError(f"{level!r} has no list: one of {tuple(CODE_FIELDS)}") from None
+    try:
+        return [int(item[field]) for item in items]
+    except (KeyError, TypeError, ValueError):
+        raise IdrogeoError(f"IdroGEO list of {level!r} without {field!r} codes") from None
 
 
 def search_params(

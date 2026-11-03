@@ -9,8 +9,10 @@ from importlib.metadata import version
 
 from ispra_idrogeo.api import (
     API_URL,
+    CODE_FIELDS,
     Level,
     Summary,
+    level_codes,
     parse,
     parse_list,
     search_params,
@@ -21,7 +23,9 @@ from ispra_idrogeo.cache import (
     Validators,
     default_directory,
     extract,
+    read_json,
     read_validators,
+    write_json,
     write_validators,
 )
 from ispra_idrogeo.client import Download, IdroGEO
@@ -51,6 +55,7 @@ __version__ = version("ispra-idrogeo")
 __all__ = [
     "API_URL",
     "BASE_URL",
+    "CODE_FIELDS",
     "ENV_DATA_DIR",
     "EVENT_LAYERS",
     "ITALY",
@@ -73,14 +78,17 @@ __all__ = [
     "__version__",
     "default_directory",
     "extract",
+    "level_codes",
     "mosaic",
     "opendata",
     "parse",
     "parse_list",
+    "read_json",
     "read_validators",
     "region_area",
     "search_params",
     "sensor_data",
     "summary_path",
+    "write_json",
     "write_validators",
 ]

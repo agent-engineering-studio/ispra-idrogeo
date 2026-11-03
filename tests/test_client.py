@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import io
 import json
+import os
 import zipfile
 from collections.abc import Callable
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -215,6 +218,78 @@ async def test_api_retries_then_raises() -> None:
     async with _idrogeo(down, retries=0) as idrogeo:
         with pytest.raises(httpx.ConnectError):
             await idrogeo.dictionaries()
+
+
+class _Comuni:
+    """A fake list of three municipalities, counting the detail calls."""
+
+    def __init__(self) -> None:
+        self.asked: list[str] = []
+        self.missing: set[str] = set()
+        self.running = 0
+        self.peak = 0
+
+    async def __call__(self, request: httpx.Request) -> httpx.Response:
+        path = request.url.path.removeprefix("/api/")
+        if path == "pir/comuni":
+            return httpx.Response(200, json=[{"pro_com": c} for c in (1001, 72006, 99001)])
+        code = path.removeprefix("pir/comuni/")
+        self.asked.append(code)
+        self.running += 1
+        self.peak = max(self.peak, self.running)
+        await asyncio.sleep(0)
+        self.running -= 1
+        if code in self.missing:
+            return httpx.Response(404, json={"message": "Comune non trovato"})
+        return httpx.Response(200, json={"pro_com": int(code), "popfrp3p4p": 1.5})
+
+
+def _async_idrogeo(handler: _Comuni) -> IdroGEO:
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    return IdroGEO(client, api_url="https://x/api", sleep=_sleep)
+
+
+async def test_municipalities_are_kept_on_disk(tmp_path: Path) -> None:
+    server = _Comuni()
+    async with _async_idrogeo(server) as idrogeo:
+        rows = await idrogeo.municipalities(directory=tmp_path, concurrency=2)
+        assert [r["pro_com"] for r in rows] == [1001, 72006, 99001]  # the list's order
+        assert sorted(server.asked) == ["1001", "72006", "99001"]
+        assert server.peak <= 2
+        assert sorted(p.name for p in (tmp_path / "pir_comuni").iterdir()) == [
+            "1001.json",
+            "72006.json",
+            "99001.json",
+        ]
+        server.asked.clear()
+        assert await idrogeo.municipalities(directory=tmp_path) == rows
+        assert server.asked == []  # read back, only the list asked again
+        bari = tmp_path / "pir_comuni" / "72006.json"
+        old = bari.stat().st_mtime - 3 * 86400
+        os.utime(bari, (old, old))
+        await idrogeo.municipalities(directory=tmp_path, max_age=timedelta(days=1))
+        assert server.asked == ["72006"]  # only the stale one
+
+
+async def test_municipalities_resume_after_a_failure(tmp_path: Path) -> None:
+    server = _Comuni()
+    server.missing = {"99001"}
+    async with _async_idrogeo(server) as idrogeo:
+        with pytest.raises(IdrogeoError, match="non trovato"):
+            await idrogeo.municipalities(directory=tmp_path, concurrency=1)
+        assert (tmp_path / "pir_comuni" / "1001.json").exists()
+        server.missing.clear()
+        server.asked.clear()
+        assert len(await idrogeo.municipalities(directory=tmp_path)) == 3
+        assert server.asked == ["99001"]
+
+
+async def test_summaries_check_their_arguments(tmp_path: Path) -> None:
+    async with _async_idrogeo(_Comuni()) as idrogeo:
+        with pytest.raises(ValueError, match="no list"):
+            await idrogeo.summaries("pir", "italia", tmp_path)
+        with pytest.raises(ValueError, match="concurrency"):
+            await idrogeo.summaries("pir", "comuni", tmp_path, concurrency=0)
 
 
 async def test_own_client_is_closed() -> None:

@@ -11,9 +11,12 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import time
 import zipfile
 from dataclasses import asdict, dataclass
+from datetime import timedelta
 from pathlib import Path, PurePosixPath
+from typing import Any
 
 from ispra_idrogeo.errors import IdrogeoError
 
@@ -76,10 +79,24 @@ def read_validators(path: Path, url: str) -> Validators | None:
 
 
 def write_validators(path: Path, validators: Validators) -> None:
-    target = meta_path(path)
-    partial = target.with_name(f"{target.name}.part")
-    partial.write_text(json.dumps(asdict(validators)))
-    partial.replace(target)
+    write_json(meta_path(path), asdict(validators))
+
+
+def read_json(path: Path, max_age: timedelta | None = None) -> Any | None:
+    """A saved API answer, or ``None`` if missing, unreadable or older than ``max_age``."""
+    try:
+        if max_age is not None and time.time() - path.stat().st_mtime > max_age.total_seconds():
+            return None
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def write_json(path: Path, data: Any) -> None:
+    """Save ``data`` as JSON, atomically: a reader finds the old file or the new one."""
+    partial = path.with_name(f"{path.name}.part")
+    partial.write_text(json.dumps(data, ensure_ascii=False))
+    partial.replace(path)
 
 
 def extract(archive: Path, folder: Path) -> Path:

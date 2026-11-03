@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from types import TracebackType
 from typing import Any
@@ -29,7 +30,9 @@ from ispra_idrogeo.cache import (
     Validators,
     default_directory,
     extract,
+    read_json,
     read_validators,
+    write_json,
     write_validators,
 )
 from ispra_idrogeo.errors import IdrogeoError
@@ -149,6 +152,68 @@ class IdroGEO:
     async def summary(self, summary: api.Summary, level: api.Level, code: int | None = None) -> Any:
         """IFFI counts (``"iffi"``) or hazard indicators (``"pir"``), or a level's list."""
         return await self._get(api.summary_path(summary, level, code))
+
+    async def summaries(
+        self,
+        summary: api.Summary,
+        level: api.Level,
+        directory: Path | None = None,
+        *,
+        concurrency: int = 8,
+        max_age: timedelta | None = None,
+    ) -> list[dict[str, Any]]:
+        """The summary of every region, province or municipality, kept on disk.
+
+        One call lists the level, then one call per area (7,899 for
+        ``"comuni"``, ~17 MB) asks for its summary, ``concurrency`` at a
+        time. Each answer is saved in ``<directory>/<summary>_<level>/<code>.json``
+        and read back instead of asked again until it is older than
+        ``max_age`` (never, by default), so an interrupted run resumes where
+        it stopped. The result follows the order of the API's list.
+        """
+        if level not in api.CODE_FIELDS:
+            raise ValueError(f"{level!r} has no list: one of {tuple(api.CODE_FIELDS)}")
+        if concurrency < 1:
+            raise ValueError("concurrency must be ≥ 1")
+        folder = (directory or default_directory()) / f"{summary}_{level}"
+        folder.mkdir(parents=True, exist_ok=True)
+        codes = api.level_codes(level, await self._get(api.summary_path(summary, level)))
+        found: dict[int, dict[str, Any]] = {}
+        gate = asyncio.Semaphore(concurrency)
+
+        async def one(code: int) -> None:
+            path = folder / f"{code}.json"
+            saved = read_json(path, max_age)
+            if saved is None:
+                async with gate:
+                    saved = await self._get(api.summary_path(summary, level, code))
+                write_json(path, saved)
+            found[code] = saved
+
+        try:
+            async with asyncio.TaskGroup() as group:
+                for code in codes:
+                    group.create_task(one(code))
+        except BaseExceptionGroup as failed:
+            raise failed.exceptions[0] from None
+        return [found[code] for code in codes]
+
+    async def municipalities(
+        self,
+        summary: api.Summary = "pir",
+        directory: Path | None = None,
+        *,
+        concurrency: int = 8,
+        max_age: timedelta | None = None,
+    ) -> list[dict[str, Any]]:
+        """Hazard and risk indicators (or IFFI counts) of every municipality.
+
+        :meth:`summaries` for ``"comuni"``: see there for the folder and
+        ``max_age``.
+        """
+        return await self.summaries(
+            summary, "comuni", directory, concurrency=concurrency, max_age=max_age
+        )
 
     async def dictionaries(self) -> list[str]:
         """The names of the code lists."""
