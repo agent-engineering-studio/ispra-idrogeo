@@ -13,6 +13,7 @@ technical manual; an empty object matches everything, so always page with
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any, Literal
 
 from ispra_idrogeo.errors import IdrogeoError
@@ -51,6 +52,23 @@ def level_codes(level: Level, items: list[dict[str, Any]]) -> list[int]:
         return [int(item[field]) for item in items]
     except (KeyError, TypeError, ValueError):
         raise IdrogeoError(f"IdroGEO list of {level!r} without {field!r} codes") from None
+
+
+def since_filter(filters: dict[str, Any] | None, since: datetime | None) -> dict[str, Any]:
+    """``filters`` plus "modified at or after ``since``", for incremental updates.
+
+    ``since`` must carry a time zone (``datetime.now(UTC)``): IdroGEO stores
+    ``modified`` in UTC, and a naive time would be read in the server's.
+    """
+    out = dict(filters or {})
+    if since is None:
+        return out
+    if since.tzinfo is None:
+        raise ValueError("since needs a time zone, e.g. datetime(2026, 11, 1, tzinfo=UTC)")
+    if "modified" in out:
+        raise ValueError("give since or a 'modified' filter, not both")
+    out["modified"] = f"gte.{since.isoformat()}"
+    return out
 
 
 def search_params(

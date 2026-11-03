@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta, timezone
+
 import pytest
 
 from ispra_idrogeo import (
@@ -8,6 +10,7 @@ from ispra_idrogeo import (
     parse,
     parse_list,
     search_params,
+    since_filter,
     summary_path,
 )
 
@@ -31,6 +34,27 @@ def test_level_codes() -> None:
         level_codes("italia", [])
     with pytest.raises(IdrogeoError, match="pro_com"):
         level_codes("comuni", [{"nome": "Bari"}])
+
+
+def test_since_filter() -> None:
+    since = datetime(2026, 11, 1, tzinfo=UTC)
+    assert since_filter(None, None) == {}
+    assert since_filter({"regione": "eq.16"}, None) == {"regione": "eq.16"}
+    assert since_filter({"regione": "eq.16"}, since) == {
+        "regione": "eq.16",
+        "modified": "gte.2026-11-01T00:00:00+00:00",
+    }
+    rome = timezone(timedelta(hours=1))
+    assert since_filter(None, datetime(2026, 11, 1, 1, tzinfo=rome)) == {
+        "modified": "gte.2026-11-01T01:00:00+01:00"
+    }
+    filters = {"tipo_movimento": 6}
+    since_filter(filters, since)
+    assert filters == {"tipo_movimento": 6}  # not changed in place
+    with pytest.raises(ValueError, match="time zone"):
+        since_filter(None, datetime(2026, 11, 1))
+    with pytest.raises(ValueError, match="not both"):
+        since_filter({"modified": "gte.2026-01-01"}, since)
 
 
 def test_search_params() -> None:

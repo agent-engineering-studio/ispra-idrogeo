@@ -6,7 +6,7 @@ import json
 import os
 import zipfile
 from collections.abc import Callable
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -230,7 +230,7 @@ class _Paged:
     def __call__(self, request: httpx.Request) -> httpx.Response:
         self.calls.append(request)
         params = request.url.params
-        assert params["order"] in ("id_frana", "uid")
+        assert params["order"] in ("id_frana", "uid")  # stable pages
         start, size = int(params["offset"]), int(params["limit"])
         return httpx.Response(
             200, json=[{"n": n} for n in range(start, min(start + size, self.rows))]
@@ -250,6 +250,27 @@ async def test_iterators_walk_every_page() -> None:
         assert len(events) == 3
         with pytest.raises(ValueError):
             [r async for r in idrogeo.iter_events(page_size=0)]
+
+
+async def test_modified_since_reaches_every_search() -> None:
+    since = datetime(2026, 11, 1, tzinfo=UTC)
+    changed = {"modified": "gte.2026-11-01T00:00:00+00:00"}
+    server = _Paged(1)
+    async with _idrogeo(server) as idrogeo:
+        assert len([r async for r in idrogeo.iter_landslides(modified_since=since)]) == 1
+        assert (
+            len([r async for r in idrogeo.iter_events({"regione": "eq.16"}, modified_since=since)])
+            == 1
+        )
+        assert [r["n"] for r in await idrogeo.sites(modified_since=since)] == [0]
+    assert json.loads(server.calls[0].content) == changed
+    assert json.loads(server.calls[1].content) == {"regione": "eq.16", **changed}
+    assert json.loads(server.calls[2].content) == changed
+    assert [c.url.path for c in server.calls] == [
+        "/api/frana/searchfilter",
+        "/api/evento/main/filter",
+        "/api/sito/filter",
+    ]
 
 
 def _frana(request: httpx.Request) -> httpx.Response:

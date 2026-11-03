@@ -352,6 +352,38 @@ async with IdroGEO() as idrogeo:
 The first run downloads about 3 GB. Put it in a cron job: the following runs
 cost a few kilobytes, plus whatever ISPRA really changed.
 
+### Only what changed since last time
+
+The nightly download above re-reads a whole file when anything in it
+changed. To keep your own copy (a database, a GeoParquet file) up to date,
+ask the API for the records changed since your last run instead:
+
+```python
+from datetime import UTC, datetime
+
+from ispra_idrogeo import IdroGEO
+
+since = datetime(2026, 11, 1, tzinfo=UTC)  # saved from your last run
+async with IdroGEO() as idrogeo:
+    changed = [f async for f in idrogeo.iter_landslides(modified_since=since, select=["*"])]
+print(len(changed))  # 20 landslides changed in two days, with their geometry
+next_since = max(datetime.fromisoformat(f["modified"]) for f in changed)
+```
+
+- Save the largest `modified` you received and pass it next time. The
+  filter is "at or after", so the last record comes back once more: write
+  by `id_frana` (upsert) and it does no harm.
+- `select=["*"]` brings every field and the geometry: `geom` in EPSG:32632,
+  `geom_polygon` / `geom_linestring` when there is one, `point` in lon/lat.
+- `iter_events` and `sites` take `modified_since` too.
+- **A removed landslide does not show up as changed**: it just stops being
+  listed. Now and then, compare your ids with the full list, one call of
+  about 15 seconds for 721,377 ids:
+
+```python
+ids = {f["id_frana"] async for f in idrogeo.iter_landslides(select=["id_frana"], page_size=100_000)}
+```
+
 ### Landslides per region (the map above)
 
 ```python
@@ -538,9 +570,9 @@ All checked against the live service on 3 November 2026.
 | `.summary(summary, level, code=None)` | `"iffi"` counts or `"pir"` indicators; without `code`, the list of that level. |
 | `.dictionaries()` / `.dictionary(name)` | The names of the code lists / one list. |
 | `.landslide(id_frana)` | The full record of one validated landslide. |
-| `.iter_landslides(filters, page_size=1000, select=, order="id_frana")` | Every matching IFFI landslide, page after page. |
-| `.iter_events(filters, page_size=1000, select=, order="uid")` | Every matching landslide event, page after page. |
-| `.sites(filters, select=)` | The monitoring sites (1,063). |
+| `.iter_landslides(filters, modified_since=, page_size=1000, select=, order="id_frana")` | Every matching IFFI landslide, page after page; only the changed ones with `modified_since`. |
+| `.iter_events(filters, modified_since=, page_size=1000, select=, order="uid")` | Every matching landslide event, page after page. |
+| `.sites(filters, modified_since=, select=)` | The monitoring sites (1,063). |
 | `.site(uid)` / `.stations(uid)` | One site / its stations, instruments and sensors. |
 | `.webcams(filters)` | The webcams pointed at landslides. |
 | `.search_landslides(filters, limit=, offset=, select=, order=)` | One page of IFFI landslides. |
@@ -556,7 +588,7 @@ All checked against the live service on 3 November 2026.
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
-`level_codes`, `parse` / `parse_list`, `read_validators` / `write_validators`,
+`level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,
 `read_json` / `write_json`, `extract`.
 
 ---

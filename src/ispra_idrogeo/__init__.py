@@ -16,6 +16,7 @@ from ispra_idrogeo.api import (
     parse,
     parse_list,
     search_params,
+    since_filter,
     summary_path,
 )
 from ispra_idrogeo.cache import (
@@ -88,6 +89,7 @@ __all__ = [
     "region_area",
     "search_params",
     "sensor_data",
+    "since_filter",
     "summary_path",
     "write_json",
     "write_validators",

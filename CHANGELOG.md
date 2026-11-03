@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `modified_since` on `iter_landslides`, `iter_events` and `sites`: only the
+  records changed since a time-zone-aware datetime, for incremental updates
+  of a local copy (`select=["*"]` brings the geometry).
+- `since_filter(filters, since)`: the pure filter behind it.
+
 ## [0.3.0] - 2026-11-03
 
 ### Added

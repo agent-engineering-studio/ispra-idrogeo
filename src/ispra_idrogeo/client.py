@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from types import TracebackType
 from typing import Any
@@ -252,23 +252,31 @@ class IdroGEO:
         self,
         filters: dict[str, Any] | None = None,
         *,
+        modified_since: datetime | None = None,
         page_size: int = 1000,
         select: list[str] | None = None,
         order: str = "id_frana",
     ) -> AsyncIterator[dict[str, Any]]:
         """Every IFFI landslide matching ``filters``, page after page.
 
-        Filters take plain values (``{"tipo_movimento": 6}``). Pages are
-        ordered by ``order`` so that they do not overlap; IdroGEO changes
-        daily, so a record edited while you iterate may be seen twice or
-        missed.
+        Filters take plain values (``{"tipo_movimento": 6}``). With
+        ``modified_since`` only the landslides changed since then: the
+        incremental update of a local copy (``select=["*"]`` brings the
+        geometry too). A landslide that is removed does not show up as
+        changed, it just stops being listed.
+
+        Pages are ordered by ``order`` so that they do not overlap; IdroGEO
+        changes daily, so a record edited while you iterate may be seen
+        twice or missed.
         """
-        return self._pages("frana/searchfilter", filters, page_size, select, order)
+        found = api.since_filter(filters, modified_since)
+        return self._pages("frana/searchfilter", found, page_size, select, order)
 
     def iter_events(
         self,
         filters: dict[str, Any] | None = None,
         *,
+        modified_since: datetime | None = None,
         page_size: int = 1000,
         select: list[str] | None = None,
         order: str = "uid",
@@ -276,20 +284,27 @@ class IdroGEO:
         """Every validated landslide event matching ``filters``, page after page.
 
         Filters take operators (``{"regione": "eq.16"}``); see
-        :meth:`iter_landslides` for the order.
+        :meth:`iter_landslides` for ``modified_since`` and the order.
         """
-        return self._pages("evento/main/filter", filters, page_size, select, order)
+        found = api.since_filter(filters, modified_since)
+        return self._pages("evento/main/filter", found, page_size, select, order)
 
     async def sites(
-        self, filters: dict[str, Any] | None = None, *, select: list[str] | None = None
+        self,
+        filters: dict[str, Any] | None = None,
+        *,
+        modified_since: datetime | None = None,
+        select: list[str] | None = None,
     ) -> list[dict[str, Any]]:
         """The landslide monitoring sites matching ``filters`` (1,063 in all).
 
         Filters take operators (``{"stato_monitoraggio": "eq.1"}`` for the
-        active ones). ``point`` is longitude and latitude (WGS 84);
-        ``id_frane_correlati`` links a site to its IFFI landslides.
+        active ones); ``modified_since`` keeps the sites changed since then.
+        ``point`` is longitude and latitude (WGS 84); ``id_frane_correlati``
+        links a site to its IFFI landslides.
         """
-        return [s async for s in self._pages("sito/filter", filters, 1000, select, "uid")]
+        found = api.since_filter(filters, modified_since)
+        return [s async for s in self._pages("sito/filter", found, 1000, select, "uid")]
 
     async def site(self, uid: str) -> dict[str, Any]:
         """One monitoring site by its ``uid`` (``"SIPIE001"``), not by its ``id``."""
