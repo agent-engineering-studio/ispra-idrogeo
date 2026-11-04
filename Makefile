@@ -1,4 +1,4 @@
-.PHONY: check lint format typecheck test build
+.PHONY: check lint format typecheck test build live
 
 check: lint typecheck test
 
@@ -18,3 +18,7 @@ test:
 
 build:
 	uv build
+
+# The contract with the live IdroGEO service: needs the network (weekly in CI).
+live:
+	uv run pytest -m live

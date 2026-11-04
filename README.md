@@ -779,7 +779,9 @@ point to paths that no longer exist. This library handles these for you:
 | several landslides by id, `{"id_frana": "in.(…)"}` | an empty list, no error | `landslide(id)` for each one |
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
 
-All checked against the live service on 3 November 2026.
+All checked against the live service on 3–4 November 2026, and again every
+week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
+`live` workflow opens an issue.
 
 ---
 

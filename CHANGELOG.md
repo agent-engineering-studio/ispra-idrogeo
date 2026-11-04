@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `tests/live/`: 51 contract tests against the live IdroGEO service (every
+  layer and area published, the `304`, the fields the library reads, the
+  traps of the README still being traps), excluded from `make check`;
+  `make live` runs them. The `live` workflow runs them every Monday and opens
+  (or updates) an issue labelled `live-contract` when one fails.
+
 ## [0.6.0] - 2026-11-03
 
 ### Added

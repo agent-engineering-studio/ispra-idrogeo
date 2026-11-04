@@ -1,0 +1,1789 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Italy's landslides and flood hazard, from ISPRA IdroGEO, in a few lines of Python.">
+      
+      
+        <meta name="author" content="Giuseppe Zileni">
+      
+      
+        <link rel="canonical" href="https://agentengineering.it/ispra-idrogeo/recipes/">
+      
+      
+        <link rel="prev" href="../how-it-works/">
+      
+      
+        <link rel="next" href="../traps/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Recipes - ispra-idrogeo</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="brown" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#recipes" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ispra-idrogeo" class="md-header__button md-logo" aria-label="ispra-idrogeo" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14 6-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ispra-idrogeo
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Recipes
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="brown" data-md-color-accent="deep-orange"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="brown" data-md-color-accent="deep-orange"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/agent-engineering-studio/ispra-idrogeo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    agent-engineering-studio/ispra-idrogeo
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../getting-started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../ai-agents/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  AI agents
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../roadmap/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Roadmap & AI
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../contributing/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ispra-idrogeo" class="md-nav__button md-logo" aria-label="ispra-idrogeo" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14 6-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22z"/></svg>
+
+    </a>
+    ispra-idrogeo
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/agent-engineering-studio/ispra-idrogeo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    agent-engineering-studio/ispra-idrogeo
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-it-works/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How it works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recipes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recipes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#keep-a-national-copy-fresh-every-night" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep a national copy fresh, every night
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#only-what-changed-since-last-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Only what changed since last time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#watch-for-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Watch for changes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#landslides-per-region-the-map-above" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landslides per region (the map above)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#every-municipality-in-one-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every municipality, in one table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#translate-the-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Translate the codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#walk-through-every-landslide-or-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk through every landslide or event
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#one-landslide-in-full" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One landslide, in full
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-rows-on-a-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API rows on a map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#who-is-watching-a-landslide-monitoring-sites-and-webcams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who is watching a landslide: monitoring sites and webcams
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#is-this-place-at-risk-hazard-at-a-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Is this place at risk? Hazard at a point
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#landslides-near-a-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landslides near a point
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#geology-aerial-photos-bibliography" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geology, aerial photos, bibliography
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#for-ai-agents-the-mcp-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For AI agents: the MCP server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bring-your-own-http-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bring your own HTTP client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handle-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handle errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example notebooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../traps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Known traps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & AI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#keep-a-national-copy-fresh-every-night" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep a national copy fresh, every night
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#only-what-changed-since-last-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Only what changed since last time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#watch-for-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Watch for changes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#landslides-per-region-the-map-above" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landslides per region (the map above)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#every-municipality-in-one-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every municipality, in one table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#translate-the-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Translate the codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#walk-through-every-landslide-or-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk through every landslide or event
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#one-landslide-in-full" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One landslide, in full
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-rows-on-a-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API rows on a map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#who-is-watching-a-landslide-monitoring-sites-and-webcams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who is watching a landslide: monitoring sites and webcams
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#is-this-place-at-risk-hazard-at-a-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Is this place at risk? Hazard at a point
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#landslides-near-a-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landslides near a point
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#geology-aerial-photos-bibliography" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geology, aerial photos, bibliography
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#for-ai-agents-the-mcp-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For AI agents: the MCP server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bring-your-own-http-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bring your own HTTP client
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handle-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handle errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example notebooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/agent-engineering-studio/ispra-idrogeo/edit/main/docs/recipes.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="recipes">Recipes<a class="headerlink" href="#recipes" title="Permanent link">&para;</a></h1>
+<h3 id="keep-a-national-copy-fresh-every-night">Keep a national copy fresh, every night<a class="headerlink" href="#keep-a-national-copy-fresh-every-night" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ispra_idrogeo</span><span class="w"> </span><span class="kn">import</span> <span class="n">LANDSLIDE_LAYERS</span><span class="p">,</span> <span class="n">IdroGEO</span><span class="p">,</span> <span class="n">mosaic</span><span class="p">,</span> <span class="n">opendata</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">LANDSLIDE_LAYERS</span><span class="p">:</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">got</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">opendata</span><span class="p">(</span><span class="n">layer</span><span class="p">))</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="s2">"updated"</span> <span class="k">if</span> <span class="n">got</span><span class="o">.</span><span class="n">changed</span> <span class="k">else</span> <span class="s2">"unchanged"</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"pai_frane"</span><span class="p">,</span> <span class="s2">"idraulica"</span><span class="p">):</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">mosaic</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+</code></pre></div>
+<p>The first run downloads about 3 GB. Put it in a cron job: the following runs
+cost a few kilobytes, plus whatever ISPRA really changed.</p>
+<h3 id="only-what-changed-since-last-time">Only what changed since last time<a class="headerlink" href="#only-what-changed-since-last-time" title="Permanent link">&para;</a></h3>
+<p>The nightly download above re-reads a whole file when anything in it
+changed. To keep your own copy (a database, a GeoParquet file) up to date,
+ask the API for the records changed since your last run instead:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">UTC</span><span class="p">,</span> <span class="n">datetime</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ispra_idrogeo</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdroGEO</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">since</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>  <span class="c1"># saved from your last run</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">changed</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">async</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">iter_landslides</span><span class="p">(</span><span class="n">modified_since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span> <span class="n">select</span><span class="o">=</span><span class="p">[</span><span class="s2">"*"</span><span class="p">])]</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">changed</span><span class="p">))</span>  <span class="c1"># 20 landslides changed in two days, with their geometry</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">next_since</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">"modified"</span><span class="p">])</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">changed</span><span class="p">)</span>
+</code></pre></div>
+<ul>
+<li>Save the largest <code>modified</code> you received and pass it next time. The
+  filter is "at or after", so the last record comes back once more: write
+  by <code>id_frana</code> (upsert) and it does no harm.</li>
+<li><code>select=["*"]</code> brings every field and the geometry: <code>geom</code> in EPSG:32632,
+  <code>geom_polygon</code> / <code>geom_linestring</code> when there is one, <code>point</code> in lon/lat.</li>
+<li><code>iter_events</code> and <code>sites</code> take <code>modified_since</code> too.</li>
+<li><strong>A removed landslide does not show up as changed</strong>: it just stops being
+  listed. Now and then, compare your ids with the full list, one call of
+  about 15 seconds for 721,377 ids:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="p">[</span><span class="s2">"id_frana"</span><span class="p">]</span> <span class="k">async</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">iter_landslides</span><span class="p">(</span><span class="n">select</span><span class="o">=</span><span class="p">[</span><span class="s2">"id_frana"</span><span class="p">],</span> <span class="n">page_size</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)}</span>
+</code></pre></div>
+<h3 id="watch-for-changes">Watch for changes<a class="headerlink" href="#watch-for-changes" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>idrogeo<span class="w"> </span>watch<span class="w"> </span>--once<span class="w"> </span>&gt;&gt;<span class="w"> </span>changes.jsonl<span class="w">                 </span><span class="c1"># one round, e.g. every hour from cron</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>idrogeo<span class="w"> </span>watch<span class="w"> </span>--kind<span class="w"> </span>events<span class="w"> </span>--interval<span class="w"> </span><span class="m">900</span><span class="w">            </span><span class="c1"># or keep running, every 15 minutes</span>
+</code></pre></div>
+<p>Each line is a landslide, an event or a monitoring site that changed since
+the previous round, with <code>"kind"</code> saying which. The first run starts from
+now (or from <code>--since</code>); after that <code>&lt;dir&gt;/watch.json</code> remembers where each
+kind stands, so a stopped watch resumes without missing or repeating a
+change. In Python, <code>ispra_idrogeo.watch.changes(idrogeo, kind, mark)</code> does
+one round.</p>
+<h3 id="landslides-per-region-the-map-above">Landslides per region (the map above)<a class="headerlink" href="#landslides-per-region-the-map-above" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ispra_idrogeo</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdroGEO</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="s2">"iffi"</span><span class="p">,</span> <span class="s2">"regioni"</span><span class="p">):</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="n">counts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="s2">"iffi"</span><span class="p">,</span> <span class="s2">"regioni"</span><span class="p">,</span> <span class="n">region</span><span class="p">[</span><span class="s2">"cod_reg"</span><span class="p">])</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="n">hazard</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="s2">"pir"</span><span class="p">,</span> <span class="s2">"regioni"</span><span class="p">,</span> <span class="n">region</span><span class="p">[</span><span class="s2">"cod_reg"</span><span class="p">])</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="n">density</span> <span class="o">=</span> <span class="n">counts</span><span class="p">[</span><span class="s2">"frane_totali"</span><span class="p">]</span> <span class="o">/</span> <span class="n">hazard</span><span class="p">[</span><span class="s2">"ar_kmq"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">region</span><span class="p">[</span><span class="s1">'nome'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;22</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">counts</span><span class="p">[</span><span class="s1">'frane_totali'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;8,</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">density</span><span class="si">:</span><span class="s2">5.0f</span><span class="si">}</span><span class="s2"> per 100 km²"</span><span class="p">)</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># Piemonte                 37,786    149 per 100 km²</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Valle d'Aosta             5,812    178 per 100 km²</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Lombardia               141,970    595 per 100 km²</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># …</span>
+</code></pre></div>
+<p><code>summary("iffi", …)</code> gives landslide counts (also by type, in
+<code>frane_stats</code>); <code>summary("pir", …)</code> gives hazard and risk indicators: areas,
+residents, families, buildings, businesses and cultural heritage in each
+landslide (<code>*_fr_*</code>) and flood (<code>*_idr_*</code>) hazard class. Levels are
+<code>"italia"</code>, <code>"macroregioni"</code>, <code>"regioni"</code>, <code>"province"</code> and <code>"comuni"</code>, by
+ISTAT code.</p>
+<h3 id="every-municipality-in-one-table">Every municipality, in one table<a class="headerlink" href="#every-municipality-in-one-table" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">timedelta</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ispra_idrogeo</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdroGEO</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">municipalities</span><span class="p">(</span><span class="s2">"pir"</span><span class="p">,</span> <span class="n">max_age</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">))</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">))</span>  <span class="c1"># 7899</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">worst</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="s2">"pop_fr_p3"</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">[</span><span class="s2">"pop_fr_p4"</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)[:</span><span class="mi">3</span><span class="p">]</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">worst</span><span class="p">:</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">"nome"</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s2">"pop_fr_p3"</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="p">[</span><span class="s2">"pop_fr_p4"</span><span class="p">],</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'popfrp3p4p'</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> %"</span><span class="p">)</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># Napoli 42390 4.6 %     ← residents in landslide hazard P3 + P4, and their share</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># Genova 30148 5.4 %</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># Sanremo 14607 27.6 %</span>
+</code></pre></div>
+<p>One call lists the municipalities, then one call each asks for its
+indicators, 8 at a time: about a minute and 17 MB for all of Italy. Each
+answer is saved as <code>&lt;directory&gt;/pir_comuni/&lt;ISTAT code&gt;.json</code>, so the next
+run reads it back from disk (under two seconds), an interrupted run resumes
+where it stopped, and <code>max_age</code> decides when an answer is old enough to ask
+again. The indicators come from the 2020-2021 hazard mosaics and the 2021
+census, so a monthly refresh is plenty.</p>
+<p><code>municipalities("iffi")</code> does the same with landslide counts, and
+<code>summaries(summary, "regioni" | "province" | "comuni")</code> with any level.</p>
+<h3 id="translate-the-codes">Translate the codes<a class="headerlink" href="#translate-the-codes" title="Permanent link">&para;</a></h3>
+<p>The data stores codes (<code>tipo_movimento = 4</code>); the API has 73 code lists that
+say what they mean, in Italian, English, French and German. <code>decode</code> adds a
+<code>&lt;field&gt;_label</code> next to every coded field it knows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ispra_idrogeo</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdroGEO</span><span class="p">,</span> <span class="n">decode</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">labels</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">code_labels</span><span class="p">(</span><span class="n">lang</span><span class="o">=</span><span class="s2">"en"</span><span class="p">)</span>  <span class="c1"># one call per code list</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">record</span> <span class="o">=</span> <span class="n">decode</span><span class="p">(</span><span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">landslide</span><span class="p">(</span><span class="s2">"0017680500"</span><span class="p">),</span> <span class="n">labels</span><span class="p">)</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"tipo_movimento_label"</span><span class="p">],</span> <span class="s2">"·"</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="s2">"stato_attivita_1liv_label"</span><span class="p">])</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># rapid debris flow · active/reactivated/suspended</span>
+</code></pre></div>
+<p>It works on monitoring sites too (<code>strumentazione = [15, 22, 25]</code> becomes
+<code>['inclinometer', 'topographic monitoring', 'Satellite SAR interferometry']</code>)
+and on the rows of a shapefile, where the field is called <code>tipo_movim</code>.
+<code>CODE_DICTIONARIES</code> lists which code list decodes which field, and
+<code>labels("cause", "it")</code> gives one code list as <code>{code: label}</code>. A code that
+is not in its list becomes <code>None</code> rather than a guess.</p>
+<h3 id="walk-through-every-landslide-or-event">Walk through every landslide or event<a class="headerlink" href="#walk-through-every-landslide-or-event" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ispra_idrogeo</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdroGEO</span><span class="p">,</span> <span class="n">event_filter</span><span class="p">,</span> <span class="n">landslide_filter</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">active_sinkholes</span> <span class="o">=</span> <span class="n">landslide_filter</span><span class="p">(</span><span class="n">movement</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">activity</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">([</span><span class="n">f</span> <span class="k">async</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">iter_landslides</span><span class="p">(</span><span class="n">active_sinkholes</span><span class="p">)]))</span>  <span class="c1"># 217</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">tuscany_2023</span> <span class="o">=</span> <span class="n">event_filter</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2023</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">iter_events</span><span class="p">(</span><span class="n">tuscany_2023</span><span class="p">):</span>  <span class="c1"># 8 events</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s2">"computed_date"</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s2">"comune_nome"</span><span class="p">])</span>
+</code></pre></div>
+<p><code>iter_landslides</code> and <code>iter_events</code> ask for one page after another
+(<code>page_size</code>, 1,000 by default) and stop at the last one. They sort by a
+unique key (<code>id_frana</code>, <code>uid</code>) so pages do not overlap. An empty filter
+matches everything; <code>search_landslides</code> and <code>search_events</code> return a single
+page, if you prefer to page yourself.</p>
+<p>For the landslides of an area, <code>iter_landslides_in</code> checks each record's
+own region, province or municipality, because the search has no reliable
+area filter (see the traps). It reads the whole inventory with a few fields,
+about 20 seconds for Italy, and gives the exact counts (Campania 55,254,
+Sarno 53):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">sarno</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">async</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">iter_landslides_in</span><span class="p">(</span><span class="n">municipality</span><span class="o">=</span><span class="mi">65135</span><span class="p">)]</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">debris_flows</span> <span class="o">=</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">iter_landslides_in</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">landslide_filter</span><span class="p">(</span><span class="n">movement</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
+</code></pre></div>
+<p><code>landslide_filter</code>, <code>event_filter</code> and <code>site_filter</code> build the filters, because each
+search reads them its own way: landslides want <code>{"tipo_movimento": 6}</code> but
+<code>{"stato_attivita_1liv": "eq.100"}</code>, events and sites want operators
+everywhere, and a range of dates is an <code>"and"</code> of two conditions. Codes are
+ISTAT codes for areas and the code lists' codes for the rest; a list of
+codes means "any of these". You can still pass a plain <code>dict</code> if you know
+the syntax.</p>
+<h3 id="one-landslide-in-full">One landslide, in full<a class="headerlink" href="#one-landslide-in-full" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">record</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">landslide</span><span class="p">(</span><span class="s2">"0017680500"</span><span class="p">)</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="p">),</span> <span class="n">record</span><span class="p">[</span><span class="s2">"stato"</span><span class="p">])</span>  <span class="c1"># 142 validato_ispra</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># activations, causes, state and velocity, damage, interventions, precursors…</span>
+</code></pre></div>
+<p>The full record of a validated landslide. Many fields are often empty, so
+check before you rely on them. An unknown id raises <code>IdrogeoError</code> (IdroGEO
+answers 401 to it, not 404).</p>
+<h3 id="api-rows-on-a-map">API rows on a map<a class="headerlink" href="#api-rows-on-a-map" title="Permanent link">&para;</a></h3>
+<p><code>frame</code> turns API rows into a GeoDataFrame in the right coordinate system:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ispra_idrogeo.geo</span><span class="w"> </span><span class="kn">import</span> <span class="n">frame</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">sites</span> <span class="o">=</span> <span class="n">frame</span><span class="p">(</span><span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">sites</span><span class="p">())</span>  <span class="c1"># "point": lon/lat, EPSG:4326</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">cams</span> <span class="o">=</span> <span class="n">frame</span><span class="p">(</span><span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">webcams</span><span class="p">(),</span> <span class="n">geometry</span><span class="o">=</span><span class="s2">"geom"</span><span class="p">)</span>  <span class="c1"># EPSG:3857, as IdroGEO sends it</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">changed</span> <span class="o">=</span> <span class="n">frame</span><span class="p">(</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="p">[</span><span class="n">f</span> <span class="k">async</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">iter_landslides</span><span class="p">(</span><span class="n">modified_since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span> <span class="n">select</span><span class="o">=</span><span class="p">[</span><span class="s2">"*"</span><span class="p">])],</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        <span class="n">geometry</span><span class="o">=</span><span class="s2">"geom_polygon"</span><span class="p">,</span>  <span class="c1"># or "geom" (point, EPSG:32632), "geom_linestring"</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="p">)</span>
+</code></pre></div>
+<h3 id="who-is-watching-a-landslide-monitoring-sites-and-webcams">Who is watching a landslide: monitoring sites and webcams<a class="headerlink" href="#who-is-watching-a-landslide-monitoring-sites-and-webcams" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">active</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">sites</span><span class="p">({</span><span class="s2">"stato_monitoraggio"</span><span class="p">:</span> <span class="s2">"eq.1"</span><span class="p">})</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">active</span><span class="p">))</span>  <span class="c1"># 558 of 1,063 sites are active</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">site</span> <span class="o">=</span> <span class="n">active</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">site</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">],</span> <span class="n">site</span><span class="p">[</span><span class="s2">"point"</span><span class="p">],</span> <span class="n">site</span><span class="p">[</span><span class="s2">"id_frane_correlati"</span><span class="p">])</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="c1"># SIABR001 [14.03, 42.24] ['0680013800']   ← lon/lat, and its IFFI landslides</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">stations</span><span class="p">(</span><span class="n">site</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">]):</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">station</span><span class="p">[</span><span class="s2">"uid"</span><span class="p">],</span> <span class="n">station</span><span class="p">[</span><span class="s2">"strumentazione"</span><span class="p">])</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="n">cams</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">webcams</span><span class="p">()</span>  <span class="c1"># 14, all in Lombardy</span>
+</code></pre></div>
+<p>A <strong>site</strong> is a place where an agency (often an ARPA) monitors a landslide.
+It has <strong>stations</strong>, and each station has <strong>instruments</strong> (inclinometers,
+piezometers, rain gauges…, decoded by the <code>strumento_monitoraggio</code>
+dictionary). <code>id_frane_correlati</code> links 880 sites to their IFFI landslides,
+so you can tell which landslides someone is already watching. Look a site up
+by its <code>uid</code> (<code>"SIPIE001"</code>), not by its <code>id</code>.</p>
+<h3 id="is-this-place-at-risk-hazard-at-a-point">Is this place at risk? Hazard at a point<a class="headerlink" href="#is-this-place-at-risk-hazard-at-a-point" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="n">here</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">hazard_at</span><span class="p">(</span><span class="mf">40.829</span><span class="p">,</span> <span class="mf">14.617</span><span class="p">)</span>  <span class="c1"># the hills above Sarno</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">here</span><span class="o">.</span><span class="n">landslide</span><span class="p">,</span> <span class="n">here</span><span class="o">.</span><span class="n">flood</span><span class="p">,</span> <span class="n">here</span><span class="o">.</span><span class="n">municipality_name</span><span class="p">,</span> <span class="n">here</span><span class="o">.</span><span class="n">slope_deg</span><span class="p">)</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># P4 None Sarno 12.3</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">venice</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">hazard_at</span><span class="p">(</span><span class="mf">45.438</span><span class="p">,</span> <span class="mf">12.330</span><span class="p">)</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">venice</span><span class="o">.</span><span class="n">flood</span><span class="p">,</span> <span class="n">venice</span><span class="o">.</span><span class="n">flood_scenarios</span><span class="p">)</span>  <span class="c1"># P3 ('P3', 'P2', 'P1')</span>
+</code></pre></div>
+<p>One request, about a second, to IdroGEO's public map service: no 1.2 GB
+mosaic to download. You get the PAI <strong>landslide</strong> class (<code>P4</code> very high,
+<code>P3</code> high, <code>P2</code> medium, <code>P1</code> moderate, <code>AA</code> attention area), the <strong>flood</strong>
+scenarios that reach the point (<code>P3</code> frequent floods, <code>P2</code> every 100–200
+years, <code>P1</code> rare and extreme), the <strong>municipality</strong> (ISTAT code, ready for
+<code>summary("pir", "comuni", code)</code>) and the <strong>slope</strong> in degrees.
+<code>lithology=True</code> adds the rock type, but takes about 16 seconds more.</p>
+<h3 id="landslides-near-a-point">Landslides near a point<a class="headerlink" href="#landslides-near-a-point" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="n">near</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">landslides_near</span><span class="p">(</span><span class="mf">40.838</span><span class="p">,</span> <span class="mf">14.630</span><span class="p">,</span> <span class="n">radius_m</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">near</span><span class="p">[:</span><span class="mi">3</span><span class="p">]:</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">"id_frana"</span><span class="p">],</span> <span class="n">f</span><span class="p">[</span><span class="s2">"nome_tipo"</span><span class="p">],</span> <span class="n">f</span><span class="p">[</span><span class="s2">"nome_com"</span><span class="p">],</span> <span class="n">f</span><span class="p">[</span><span class="s2">"distance_m"</span><span class="p">],</span> <span class="n">f</span><span class="p">[</span><span class="s2">"shapes"</span><span class="p">])</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1"># 0640689600 Colamento rapido Quindici 397.7 ['polygon', 'point']   ← a rapid debris flow</span>
+</code></pre></div>
+<p>Every IFFI landslide within <code>radius_m</code> (up to 5 km), nearest first, with its
+type and area, <code>distance_m</code> (0 when the point is on it) and the shapes it is
+mapped as. The distance is computed from the real outline, not from a
+centre point. Also: <code>idrogeo hazard 40.829 14.617</code> and <code>idrogeo near 40.838 14.630</code>.</p>
+<h3 id="geology-aerial-photos-bibliography">Geology, aerial photos, bibliography<a class="headerlink" href="#geology-aerial-photos-bibliography" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">()</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="n">units</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="s2">"formazioni"</span><span class="p">,</span> <span class="s2">"argille"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="c1"># [{'sigla': 'AAC', 'nome_unita': 'ARGILLE E ARENARIE GLAUCONITICHE DI CATENANUOVA', …}, …]</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">flights</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="s2">"voli"</span><span class="p">,</span> <span class="s2">"1954"</span><span class="p">)</span>  <span class="c1"># [{'id': '0001', 'nome': 'Volo GAI', …}]</span>
+</code></pre></div>
+<p>The reference lists behind the landslide records, searched by text:
+geological units (<code>formazioni</code>), aerial survey flights (<code>voli</code>),
+bibliography (<code>bibliografie</code>), institutions (<code>istituzioni</code>), professional
+bodies (<code>ordini</code>) and funding sources (<code>finanziamenti</code>). Ten answers by
+default; <code>limit</code> asks for more. Also <code>idrogeo lookup formazioni argille</code>.</p>
+<h3 id="for-ai-agents-the-mcp-server">For AI agents: the MCP server<a class="headerlink" href="#for-ai-agents-the-mcp-server" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"ispra-idrogeo[mcp]"</span>
+</code></pre></div>
+<p><code>idrogeo-mcp</code> is an <a href="https://modelcontextprotocol.io">MCP</a> server, so Claude
+Desktop, an IDE or your own agent can answer questions like <em>"how many people
+live in high landslide hazard areas in Sarno, and is anyone monitoring the
+landslides there?"</em> or <em>"is this address in a flood zone?"</em>. For Claude Desktop, add it to
+<code>claude_desktop_config.json</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">"mcpServers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="nt">"idrogeo"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"idrogeo-mcp"</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>As an always-on service, for an agent that talks HTTP (for example
+<a href="https://github.com/agent-engineering-studio/mcp-geo-server">mcp-geo-server</a>'s
+chat and map), serve it over streamable HTTP at <code>/mcp</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>idrogeo-mcp<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8767</span>
+</code></pre></div>
+<p>Every option also reads an environment variable, so a compose file needs no
+command line, and <code>GET /health</code> answers <code>{"status": "ok"}</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nt">services</span><span class="p">:</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">idrogeo-mcp</span><span class="p">:</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/astral-sh/uv:python3.12-bookworm-slim</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uvx --from "ispra-idrogeo[mcp]&gt;=0.6" idrogeo-mcp</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">      </span><span class="nt">IDROGEO_MCP_TRANSPORT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">streamable-http</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">      </span><span class="nt">IDROGEO_MCP_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.0.0</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">      </span><span class="nt">IDROGEO_MCP_PORT</span><span class="p">:</span><span class="w"> </span><span class="s">"8767"</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">      </span><span class="nt">IDROGEO_DATA_DIR</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data/idrogeo</span><span class="w">  </span><span class="c1"># for download_dataset</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">idrogeo-data:/data/idrogeo</span>
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"CMD"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"python"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"-c"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"import</span><span class="nv"> </span><span class="s">urllib.request;</span><span class="nv"> </span><span class="s">urllib.request.urlopen('http://localhost:8767/health')"</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>On <code>127.0.0.1</code> the SDK refuses requests with a foreign <code>Host</code> header (DNS
+rebinding protection); on <code>0.0.0.0</code> it does not, unless you list the names
+clients use: <code>IDROGEO_MCP_ALLOWED_HOSTS=idrogeo-mcp:*,localhost:*</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>What the agent gets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hazard_at</code></td>
+<td>Landslide and flood hazard, municipality and slope of a point</td>
+</tr>
+<tr>
+<td><code>landslides_near</code></td>
+<td>The landslides around a point, nearest first</td>
+</tr>
+<tr>
+<td><code>find_area</code></td>
+<td>The ISTAT code of a region, province or municipality from its name</td>
+</tr>
+<tr>
+<td><code>area_risk</code></td>
+<td>Hazard and exposure: residents, buildings, heritage per hazard class</td>
+</tr>
+<tr>
+<td><code>area_landslides</code></td>
+<td>IFFI counts by type of movement, events, monitoring</td>
+</tr>
+<tr>
+<td><code>landslide</code></td>
+<td>One landslide in full, codes decoded</td>
+</tr>
+<tr>
+<td><code>search_landslides</code> / <code>search_events</code></td>
+<td>Landslides by type and activity; events by area and date</td>
+</tr>
+<tr>
+<td><code>monitoring_sites</code> / <code>webcams</code></td>
+<td>Who is watching, with which instruments</td>
+</tr>
+<tr>
+<td><code>code_list</code></td>
+<td>Any code list, in four languages</td>
+</tr>
+<tr>
+<td><code>download_dataset</code></td>
+<td>A layer downloaded (only if changed) to the local folder</td>
+</tr>
+</tbody>
+</table>
+<p>Every tool but <code>download_dataset</code> only reads. Searches stop at <code>limit</code> rows
+(100 by default, 1,000 at most), so an agent never receives 700,000
+landslides at once, and IdroGEO's refusals come back as readable errors.</p>
+<h3 id="bring-your-own-http-client">Bring your own HTTP client<a class="headerlink" href="#bring-your-own-http-client" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ispra_idrogeo</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdroGEO</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="n">http</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">httpx</span><span class="o">.</span><span class="n">Timeout</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="mi">600</span><span class="p">),</span> <span class="n">proxy</span><span class="o">=</span><span class="s2">"http://proxy:3128"</span><span class="p">)</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="k">async</span> <span class="k">with</span> <span class="n">IdroGEO</span><span class="p">(</span><span class="n">http</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">idrogeo</span><span class="p">:</span>  <span class="c1"># your client, your retry policy</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>    <span class="o">...</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="k">await</span> <span class="n">http</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>  <span class="c1"># the client is yours: IdroGEO does not close it</span>
+</code></pre></div>
+<h3 id="handle-errors">Handle errors<a class="headerlink" href="#handle-errors" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ispra_idrogeo</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdrogeoError</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>    <span class="n">folder</span> <span class="o">=</span> <span class="k">await</span> <span class="n">idrogeo</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">opendata</span><span class="p">(</span><span class="s2">"frane_piff"</span><span class="p">,</span> <span class="s2">"puglia"</span><span class="p">))</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="k">except</span> <span class="n">IdrogeoError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>    <span class="c1"># IdroGEO answered, but not with what was asked: 404, API refusal, not JSON.</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"IdroGEO said no:"</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>    <span class="c1"># Network problems still failing after the retries.</span>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"network:"</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+</code></pre></div>
+<p>An unknown layer, area or mosaic name raises <code>ValueError</code> before any request.</p>
+<h2 id="example-notebooks">Example notebooks<a class="headerlink" href="#example-notebooks" title="Permanent link">&para;</a></h2>
+<p><a href="https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/examples"><code>examples/</code></a> has three notebooks run on the live service, with
+their outputs: <strong>a town and its landslides</strong> (Sarno, from exposure figures
+to a map of its debris flows), <strong>Italy in numbers</strong> (who lives in hazard
+areas, municipality by municipality) and <strong>what changed</strong> (following the
+inventory day by day).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../how-it-works/" class="md-footer__link md-footer__link--prev" aria-label="Previous: How it works">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                How it works
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../traps/" class="md-footer__link md-footer__link--next" aria-label="Next: Known traps">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Known traps
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Code Apache-2.0 · Data © ISPRA — IdroGEO, CC BY 4.0
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/agent-engineering-studio/ispra-idrogeo" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/ispra-idrogeo/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>
