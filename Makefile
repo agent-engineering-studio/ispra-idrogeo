@@ -1,4 +1,4 @@
-.PHONY: check lint format typecheck test build docs docs-serve
+.PHONY: check lint format typecheck test build docs docs-serve live
 
 check: lint typecheck test
 
@@ -24,3 +24,7 @@ docs:
 
 docs-serve:
 	uv run --group docs mkdocs serve
+
+# The contract with the live IdroGEO service: needs the network (weekly in CI).
+live:
+	uv run pytest -m live

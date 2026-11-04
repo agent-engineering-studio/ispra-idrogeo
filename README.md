@@ -900,7 +900,9 @@ point to paths that no longer exist. This library handles these for you:
 | the mosaics under CC BY 4.0, like the rest | the licence PDF in each ZIP says **CC BY-SA 4.0**, with a citation of its own | `warehouse.SOURCES` holds each citation, and the warehouse's hazard answers their licence |
 | the API's landslide hazard areas to add up like the mosaic you download | the mosaic (v4.0, 2020-2021) adds up to ~60,500 km² (P4 9,506 · P3 16,894 · P2 14,553 · P1 12,558 · AA 6,988); the API's `ar_fr_*` give 69,529 km², 10–20% more per class: probably another edition. The flood areas do match | says which is which: the warehouse uses the mosaic, `area_risk` and `summary("pir", …)` the API |
 
-All checked against the live service on 3–4 November 2026.
+All checked against the live service on 3–4 November 2026, and again every
+week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
+`live` workflow opens an issue.
 
 <!-- --8<-- [end:traps] -->
 

@@ -34,6 +34,11 @@ All notable changes to this project are documented here. The format follows
   `make docs-serve`. Pages reuse the README sections, so there is one source.
 - A Roadmap & AI page: improvements and AI features, prioritised.
 - `llms.txt` on the site, for AI coding assistants.
+- `tests/live/`: 51 contract tests against the live IdroGEO service (every
+  layer and area published, the `304`, the fields the library reads, the
+  traps of the README still being traps), excluded from `make check`;
+  `make live` runs them. The `live` workflow runs them every Monday and opens
+  (or updates) an issue labelled `live-contract` when one fails.
 
 ### Changed
 

@@ -1,0 +1,67 @@
+name: live
+
+# The contract with the live IdroGEO service (tests/live), once a week.
+# When IdroGEO changes a path or a field, this opens an issue (or comments
+# on the one already open) instead of letting users find out.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"  # Mondays, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      # One network blip should not open an issue: the failed tests run once
+      # more, and only a failure that repeats counts.
+      - run: |
+          uv run pytest -m live -v --tb=short | tee live.log \
+            || uv run pytest -m live --last-failed -v --tb=short | tee -a live.log
+        shell: bash -o pipefail {0}
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: live-log
+          path: live.log
+
+  report:
+    needs: contract
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create live-contract --color B60205 \
+            --description "IdroGEO changed: the weekly live tests failed" 2>/dev/null || true
+          open=$(gh issue list --label live-contract --state open --json number --jq '.[0].number')
+          body="The weekly contract tests against the live IdroGEO service failed: $RUN
+
+          Something IdroGEO serves has changed (a path, a field, a status). Read the log, fix the library or the README's traps table, then the test in \`tests/live/\`. \`uv run pytest -m live\` runs them locally."
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "Still failing: $RUN"
+          else
+            gh issue create --label live-contract \
+              --title "IdroGEO changed: the live contract tests fail" --body "$body"
+          fi
