@@ -8,11 +8,26 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- MCP tools `rank_areas` (top or bottom areas by any indicator, inside a
+  region or province, summaries kept on disk 30 days) and `compare_areas`
+  (up to 20 areas side by side); both carry the source and licence.
+- MCP resources `idrogeo://indicators` (what the indicator keys mean),
+  `idrogeo://datasets` and `idrogeo://codes/{name}`; prompts `area_profile`
+  and `recent_events`.
+- `summaries()` and `municipalities()` take `region` and `province`, and
+  `idrogeo municipalities` `--region` and `--province`, to ask only for the
+  areas inside them; `within(items, region=, province=)` filters a list.
 - `tests/live/`: 51 contract tests against the live IdroGEO service (every
   layer and area published, the `304`, the fields the library reads, the
   traps of the README still being traps), excluded from `make check`;
   `make live` runs them. The `live` workflow runs them every Monday and opens
   (or updates) an issue labelled `live-contract` when one fails.
+
+### Changed
+
+- `find_area` matches names without accents and apostrophes (`forli` finds
+  Forlì) and answers an unknown name with "did you mean" suggestions instead
+  of an empty list.
 
 ## [0.6.0] - 2026-11-03
 

@@ -205,6 +205,8 @@ class IdroGEO:
         *,
         concurrency: int = 8,
         max_age: timedelta | None = None,
+        region: int | None = None,
+        province: int | None = None,
     ) -> list[dict[str, Any]]:
         """The summary of every region, province or municipality, kept on disk.
 
@@ -214,6 +216,9 @@ class IdroGEO:
         and read back instead of asked again until it is older than
         ``max_age`` (never, by default), so an interrupted run resumes where
         it stopped. The result follows the order of the API's list.
+
+        ``region`` and ``province`` (ISTAT codes) keep only the areas inside
+        them, so the 550 municipalities of Campania cost 550 calls, not 7,899.
         """
         if level not in api.CODE_FIELDS:
             raise ValueError(f"{level!r} has no list: one of {tuple(api.CODE_FIELDS)}")
@@ -221,7 +226,8 @@ class IdroGEO:
             raise ValueError("concurrency must be ≥ 1")
         folder = (directory or default_directory()) / f"{summary}_{level}"
         folder.mkdir(parents=True, exist_ok=True)
-        codes = api.level_codes(level, await self._get(api.summary_path(summary, level)))
+        items = await self._get(api.summary_path(summary, level))
+        codes = api.level_codes(level, api.within(items, region=region, province=province))
         found: dict[int, dict[str, Any]] = {}
         gate = asyncio.Semaphore(concurrency)
 
@@ -249,14 +255,22 @@ class IdroGEO:
         *,
         concurrency: int = 8,
         max_age: timedelta | None = None,
+        region: int | None = None,
+        province: int | None = None,
     ) -> list[dict[str, Any]]:
         """Hazard and risk indicators (or IFFI counts) of every municipality.
 
-        :meth:`summaries` for ``"comuni"``: see there for the folder and
-        ``max_age``.
+        :meth:`summaries` for ``"comuni"``: see there for the folder,
+        ``max_age``, ``region`` and ``province``.
         """
         return await self.summaries(
-            summary, "comuni", directory, concurrency=concurrency, max_age=max_age
+            summary,
+            "comuni",
+            directory,
+            concurrency=concurrency,
+            max_age=max_age,
+            region=region,
+            province=province,
         )
 
     async def dictionaries(self) -> list[str]:

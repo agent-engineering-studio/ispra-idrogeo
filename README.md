@@ -177,6 +177,7 @@ basin district it falls in.
 idrogeo fetch frane_piff --area molise              # prints the unpacked folder
 idrogeo summary pir comuni 72006 | jq .popidp2_p    # 1.278
 idrogeo municipalities --max-age-days 30 > comuni.jsonl
+idrogeo municipalities --region 16 > puglia.jsonl     # only Puglia's 257
 idrogeo landslides --since 2026-11-01T00:00:00Z --select '*' > changed.jsonl
 idrogeo landslides --municipality 65135             # Sarno's 53 landslides
 idrogeo sites --filter stato_monitoraggio=eq.1 --select uid,point
@@ -702,12 +703,30 @@ clients use: `IDROGEO_MCP_ALLOWED_HOSTS=idrogeo-mcp:*,localhost:*`.
 | `landslide` | One landslide in full, codes decoded |
 | `search_landslides` / `search_events` | Landslides by type and activity; events by area and date |
 | `monitoring_sites` / `webcams` | Who is watching, with which instruments |
+| `rank_areas` | The top (or bottom) regions, provinces or municipalities by any indicator, optionally inside a region or province |
+| `compare_areas` | Up to 20 areas side by side, so the agent does not do arithmetic in its head |
 | `code_list` | Any code list, in four languages |
 | `download_dataset` | A layer downloaded (only if changed) to the local folder |
+
+Names are matched without accents or apostrophes (`forli` finds *Forlì*),
+and a name that matches nothing comes back with "did you mean" suggestions.
+
+| Resource | What it holds |
+|---|---|
+| `idrogeo://indicators` | What `popfrp3p4p`, `pop_idr_p2` and the other indicator keys mean |
+| `idrogeo://datasets` | The layers, mosaics and area names `download_dataset` accepts |
+| `idrogeo://codes/{name}` | One code list, in English |
+
+Two prompts, `area_profile` and `recent_events`, give a client ready-made
+questions ("a risk profile of Sarno", "landslide events in Liguria since
+October") that use the tools the right way and credit the source.
 
 Every tool but `download_dataset` only reads. Searches stop at `limit` rows
 (100 by default, 1,000 at most), so an agent never receives 700,000
 landslides at once, and IdroGEO's refusals come back as readable errors.
+`rank_areas` keeps the summaries it reads on disk for 30 days: the first
+national ranking of municipalities asks IdroGEO 7,899 times (a few minutes),
+a region's ranking a few hundred.
 
 ### Bring your own HTTP client
 
@@ -803,7 +822,7 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `.iter_landslides_in(region=, province=, municipality=, filters=, select=)` | Every landslide of an area, checked on the record's own area fields. |
 | `.search_landslides(filters, limit=, offset=, select=, order=)` | One page of IFFI landslides. |
 | `.search_events(filters, limit=, offset=, select=, order=)` | One page of validated landslide events. |
-| `.municipalities(summary="pir", directory=None, *, concurrency=8, max_age=None)` | The summary of all 7,899 municipalities, saved one JSON per municipality. |
+| `.municipalities(summary="pir", directory=None, *, concurrency=8, max_age=None, region=None, province=None)` | The summary of all 7,899 municipalities (or those of a region or province), saved one JSON per municipality. |
 | `.summaries(summary, level, directory=None, *, concurrency=8, max_age=None)` | The same for every region, province or municipality. |
 | `opendata(layer, area="ispra", fmt="shapefile")` | An open-data `Dataset` (URL + file name). |
 | `mosaic("pai_frane" \| "idraulica")` | A national hazard mosaic. |
@@ -821,7 +840,7 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `ispra_idrogeo.geo.add_labels(frame, labels)` | `<column>_label` columns for coded columns. |
 | `.download` / `.fetch(..., progress=callback)` | `callback(done, total)` after each chunk, for your own progress bar. |
 | `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` | One round of `idrogeo watch`: what changed since a `Mark`. |
-| `idrogeo-mcp` | An MCP server with the same data as 12 tools (extra `[mcp]`). |
+| `idrogeo-mcp` | An MCP server with the same data as 14 tools, 3 resources and 2 prompts (extra `[mcp]`). |
 | `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
