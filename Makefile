@@ -1,4 +1,4 @@
-.PHONY: check lint format typecheck test build docs docs-serve live
+.PHONY: check lint format typecheck test build docs docs-serve live eval
 
 check: lint typecheck test
 
@@ -28,3 +28,7 @@ docs-serve:
 # The contract with the live IdroGEO service: needs the network (weekly in CI).
 live:
 	uv run pytest -m live
+
+# The agent eval: Claude on idrogeo-mcp (costs API calls). ARGS="--limit 5" for a pilot.
+eval:
+	uv run --group evals python -m evals.run $(ARGS)
