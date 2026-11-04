@@ -21,6 +21,7 @@ from ispra_idrogeo.api import (
     search_params,
     since_filter,
     summary_path,
+    within,
 )
 from ispra_idrogeo.cache import (
     ENV_DATA_DIR,
@@ -110,6 +111,7 @@ __all__ = [
     "since_filter",
     "site_filter",
     "summary_path",
+    "within",
     "write_json",
     "write_validators",
 ]
