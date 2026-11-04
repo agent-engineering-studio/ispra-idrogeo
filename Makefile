@@ -1,4 +1,4 @@
-.PHONY: check lint format typecheck test build docs docs-serve
+.PHONY: check lint format typecheck test build docs docs-serve eval
 
 check: lint typecheck test
 
@@ -24,3 +24,7 @@ docs:
 
 docs-serve:
 	uv run --group docs mkdocs serve
+
+# The agent eval: Claude on idrogeo-mcp (costs API calls). ARGS="--limit 5" for a pilot.
+eval:
+	uv run --group evals python -m evals.run $(ARGS)
