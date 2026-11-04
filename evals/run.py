@@ -315,12 +315,8 @@ async def run(
                 row = await asyncio.wait_for(
                     run_case(client, connect, case, truth, options), options.timeout_s
                 )
-            except TimeoutError:
-                failure = AttemptError("timeout", f"over {options.timeout_s:g} s")
-            except AttemptError as exc:
-                failure = exc
             except Exception as exc:
-                failure = AttemptError("harness_or_serving", f"{type(exc).__name__}: {exc}")
+                failure = _failure(_cause(exc), options)
             else:
                 trace = row["meta"].pop("trace")
                 row["rep"] = rep
@@ -347,6 +343,25 @@ async def run(
 
     await asyncio.gather(*(one(c, k) for c, k in todo))
     return folder
+
+
+def _cause(exc: BaseException) -> BaseException:
+    """The error inside the ExceptionGroups that anyio (the MCP client) wraps it in."""
+    while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
+        exc = exc.exceptions[0]
+    return exc
+
+
+def _failure(exc: BaseException, options: Options) -> AttemptError:
+    """What an exception means for the eval: the failure class of errors.jsonl."""
+    if isinstance(exc, AttemptError):
+        return exc
+    if isinstance(exc, TimeoutError):
+        return AttemptError("timeout", f"over {options.timeout_s:g} s")
+    name = type(exc).__name__
+    if name in ("AuthenticationError", "PermissionDeniedError"):
+        return AttemptError("credentials", f"{name}: check --api-key or ANTHROPIC_API_KEY")
+    return AttemptError("harness_or_serving", f"{name}: {exc}")
 
 
 def _rows(path: Path) -> list[dict[str, Any]]:

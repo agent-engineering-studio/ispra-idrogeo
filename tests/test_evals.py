@@ -319,6 +319,20 @@ async def test_what_the_model_does_wrong_is_graded(tmp_path: Path) -> None:
     assert "not scored: 1 (truncated or refused)" in text and "$" in text
 
 
+def test_wrapped_errors_are_unwrapped() -> None:
+    class AuthenticationError(Exception):  # the SDK's, by name
+        pass
+
+    options = run.Options()
+    wrapped = ExceptionGroup("task group", [ExceptionGroup("inner", [AuthenticationError("401")])])
+    assert run._failure(run._cause(wrapped), options).kind == "credentials"
+    mismatch = ExceptionGroup("task group", [run.AttemptError("model_mismatch", "haiku")])
+    assert run._failure(run._cause(mismatch), options).kind == "model_mismatch"
+    assert run._failure(run._cause(TimeoutError()), options).kind == "timeout"
+    other = run._failure(ValueError("bad"), options)
+    assert (other.kind, str(other)) == ("harness_or_serving", "ValueError: bad")
+
+
 def test_report_numbers() -> None:
     usage = {
         "input_tokens": 1_000_000,
