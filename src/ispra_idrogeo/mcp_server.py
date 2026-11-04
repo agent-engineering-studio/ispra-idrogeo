@@ -29,6 +29,7 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict
 from datetime import date, datetime, timedelta
 from functools import wraps
+from pathlib import Path
 from typing import Any, Literal, cast
 
 from ispra_idrogeo import __version__
@@ -65,7 +66,9 @@ Italian landslide and flood data from ISPRA IdroGEO (CC BY 4.0: credit
 hazard_at and landslides_near. Areas use ISTAT codes: call find_area first
 to turn a name into a code. area_risk gives hazard and exposure (residents, buildings,
 cultural heritage in each landslide class P1-P4/AA and flood class P1-P3);
-area_landslides the IFFI inventory counts. To rank or compare areas use
+area_landslides the IFFI inventory counts. For questions over many points
+or areas, or your own SQL, use warehouse_schema and warehouse_sql (a local
+copy made by `idrogeo sync`). To rank or compare areas use
 rank_areas and compare_areas instead of doing arithmetic yourself; the
 resource idrogeo://indicators explains every indicator key. Search tools
 return at most `limit` rows; the totals are in area_landslides. These are
@@ -117,6 +120,8 @@ _FRESH = timedelta(days=30)
 #: The heavy geometry fields a landslide record carries; the point stays.
 _GEOMETRY = ("geom", "geom_polygon", "geom_linestring", "extent")
 _READ = ToolAnnotations(read_only_hint=True, open_world_hint=True)
+#: Tools that read the local warehouse, not the network.
+_LOCAL = ToolAnnotations(read_only_hint=True, open_world_hint=False)
 
 
 @asynccontextmanager
@@ -136,15 +141,31 @@ def _tool_errors[**P, T](call: Callable[P, Awaitable[T]]) -> Callable[P, Awaitab
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
             return await call(*args, **kwargs)
-        except (IdrogeoError, ValueError) as exc:
+        except (IdrogeoError, ValueError, ImportError) as exc:
             raise ToolError(str(exc)) from exc
 
     return wrapper
 
 
-def server(idrogeo: IdroGEO | None = None) -> MCPServer[Any]:
-    """The MCP server; ``idrogeo`` defaults to a client it opens and closes itself."""
+def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> MCPServer[Any]:
+    """The MCP server; ``idrogeo`` defaults to a client it opens and closes itself.
+
+    ``warehouse`` is the DuckDB file of ``idrogeo sync`` (default: in the
+    download folder) that ``warehouse_schema`` and ``warehouse_sql`` read.
+    """
     client = idrogeo or IdroGEO()
+
+    async def local[T](call: Callable[[Any], T]) -> T:
+        """``call(warehouse)`` on a read-only warehouse, off the event loop."""
+
+        def run() -> T:
+            from ispra_idrogeo.warehouse import Warehouse
+
+            with Warehouse(warehouse, read_only=True) as opened:
+                return call(opened)
+
+        return await asyncio.to_thread(run)
+
     areas: dict[str, list[dict[str, Any]]] = {}
 
     mcp: MCPServer[Any] = MCPServer(
@@ -377,6 +398,29 @@ def server(idrogeo: IdroGEO | None = None) -> MCPServer[Any]:
             ],
             "source": SOURCE,
         }
+
+    @mcp.tool(annotations=_LOCAL)
+    @_tool_errors
+    async def warehouse_schema() -> dict[str, Any]:
+        """The tables of the local warehouse (`idrogeo sync`) and their columns.
+
+        Read it before warehouse_sql. If there is no warehouse, tell the user
+        to run `idrogeo sync frane_piff pai_frane idraulica` once.
+        """
+        return await local(lambda w: {"layers": w.layers(), "tables": w.schema()})
+
+    @mcp.tool(annotations=_LOCAL)
+    @_tool_errors
+    async def warehouse_sql(sql: str, limit: int = 200) -> list[dict[str, Any]]:
+        """One read-only DuckDB SELECT on the local warehouse, at most limit rows.
+
+        For what the other tools cannot ask: many points or areas at once,
+        joins, spatial predicates. Tables are in EPSG:32632 metres (geom
+        column, returned as WKT); DuckDB spatial functions work (ST_Intersects,
+        ST_DWithin, ST_Area). pai_frane and idraulica carry `class` (P4…P1/AA,
+        P3…P1) and are CC BY-SA 4.0. Show the user the SQL you ran.
+        """
+        return await local(lambda w: w.query(sql, limit=limit))
 
     @mcp.resource(
         "idrogeo://indicators",

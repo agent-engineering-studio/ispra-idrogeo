@@ -11,6 +11,8 @@ a database loader.
     idrogeo landslides --since 2026-11-01T00:00:00Z --select '*'
     idrogeo sites --filter stato_monitoraggio=eq.1
     idrogeo lookup formazioni argille
+    idrogeo sync frane_piff pai_frane idraulica    # a local DuckDB copy, extra [warehouse]
+    idrogeo sql "SELECT nome_reg, count(*) AS n FROM frane_piff GROUP BY 1"
     idrogeo hazard 40.829 14.617
     idrogeo near 40.838 14.630 --radius 500
     idrogeo watch --once >> changes.jsonl      # from cron
@@ -131,6 +133,14 @@ def parser() -> argparse.ArgumentParser:
     lookup.add_argument("kind", choices=LOOKUPS)
     lookup.add_argument("text")
     lookup.add_argument("--limit", type=int, default=10)
+
+    sync = commands.add_parser("sync", help="load layers into the local warehouse (DuckDB)")
+    sync.add_argument("layers", nargs="+", choices=(*LANDSLIDE_LAYERS, *EVENT_LAYERS, *MOSAICS))
+    sync.add_argument("--area", default="ispra", help="region or province (default: Italy)")
+
+    sql = commands.add_parser("sql", help="one read-only SELECT on the local warehouse")
+    sql.add_argument("query", nargs="?", help="SELECT …; without it, the tables and columns")
+    sql.add_argument("--limit", type=int, default=1000)
     return top
 
 
@@ -185,7 +195,7 @@ async def run(
 ) -> None:
     """Carry out one parsed command, writing its result to ``out``."""
     write: Callable[[Any], None] = lambda value: print(  # noqa: E731
-        json.dumps(value, ensure_ascii=False), file=out
+        json.dumps(value, ensure_ascii=False, default=str), file=out
     )
     command = args.command
     if command == "fetch":
@@ -248,6 +258,8 @@ async def run(
     elif command == "lookup":
         for row in await idrogeo.lookup(args.kind, args.text, limit=args.limit):
             write(row)
+    elif command in ("sync", "sql"):
+        await _warehouse(args, idrogeo, write)
     else:  # dictionaries
         write(await idrogeo.dictionaries())
 
@@ -291,6 +303,23 @@ async def _watch(
         await sleep(args.interval)
 
 
+async def _warehouse(
+    args: argparse.Namespace, idrogeo: IdroGEO, write: Callable[[Any], None]
+) -> None:
+    from ispra_idrogeo.cache import default_directory
+    from ispra_idrogeo.warehouse import FILENAME, Warehouse
+
+    path = (args.dir or default_directory()) / FILENAME
+    with Warehouse(path, read_only=args.command == "sql") as warehouse:
+        if args.command == "sync":
+            write(await warehouse.sync(idrogeo, args.layers, args.area, args.dir))
+        elif not args.query:
+            write(warehouse.schema())
+        else:
+            for row in warehouse.query(args.query, limit=args.limit):
+                write(row)
+
+
 def _select(args: argparse.Namespace) -> list[str] | None:
     return [f.strip() for f in args.select.split(",")] if args.select else None
 
@@ -310,7 +339,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
         asyncio.run(_main(args, sys.stdout))
-    except (IdrogeoError, ValueError) as exc:
+    except (IdrogeoError, ValueError, ImportError) as exc:
         print(f"idrogeo: {exc}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
