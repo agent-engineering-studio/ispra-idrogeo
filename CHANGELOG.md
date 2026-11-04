@@ -29,6 +29,11 @@ All notable changes to this project are documented here. The format follows
 - `summaries()` and `municipalities()` take `region` and `province`, and
   `idrogeo municipalities` `--region` and `--province`, to ask only for the
   areas inside them; `within(items, region=, province=)` filters a list.
+- Documentation site on GitHub Pages (MkDocs Material, API reference from the
+  docstrings), built and deployed by the `docs` workflow; `make docs` and
+  `make docs-serve`. Pages reuse the README sections, so there is one source.
+- A Roadmap & AI page: improvements and AI features, prioritised.
+- `llms.txt` on the site, for AI coding assistants.
 
 ### Changed
 
