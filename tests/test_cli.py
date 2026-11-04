@@ -38,7 +38,7 @@ def _server(request: httpx.Request) -> httpx.Response:
     if path == "pir/comuni/72006":
         return httpx.Response(200, json={"nome": "Bari"})
     if path == "pir/comuni":
-        return httpx.Response(200, json=[{"pro_com": 72006}])
+        return httpx.Response(200, json=[{"pro_com": 72006, "cod_reg": 16, "cod_prov": 72}])
     watching = "point" in request.url.params.get("select", "")  # watch asks for the point
     if watching and path == "frana/searchfilter":
         row = {"id_frana": "A", "modified": "2026-11-03T16:30:00+00:00"}
@@ -141,6 +141,8 @@ async def test_fetch_and_municipalities(tmp_path: Path) -> None:
     rows = await _run("--dir", str(tmp_path), "municipalities", "--max-age-days", "30")
     assert rows == [{"nome": "Bari"}]
     assert await _run("--dir", str(tmp_path), "municipalities") == rows
+    assert await _run("--dir", str(tmp_path), "municipalities", "--province", "72") == rows
+    assert await _run("--dir", str(tmp_path), "municipalities", "--region", "1") == []
 
 
 async def test_watch(tmp_path: Path) -> None:

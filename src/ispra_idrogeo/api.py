@@ -68,6 +68,19 @@ def level_codes(level: Level, items: list[dict[str, Any]]) -> list[int]:
         raise IdrogeoError(f"IdroGEO list of {level!r} without {field!r} codes") from None
 
 
+def within(
+    items: list[dict[str, Any]], *, region: int | None = None, province: int | None = None
+) -> list[dict[str, Any]]:
+    """The items of a level's list inside a region and/or province (ISTAT codes).
+
+    Each item of ``regioni``, ``province`` and ``comuni`` carries ``cod_reg``
+    and ``cod_prov``; ``None`` keeps everything.
+    """
+    wanted = {"cod_reg": region, "cod_prov": province}
+    keep = {field: code for field, code in wanted.items() if code is not None}
+    return [i for i in items if all(i.get(f) == c for f, c in keep.items())]
+
+
 def since_filter(filters: dict[str, Any] | None, since: datetime | None) -> dict[str, Any]:
     """``filters`` plus "modified at or after ``since``", for incremental updates.
 

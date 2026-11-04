@@ -37,6 +37,15 @@ def _labels(name: str) -> list[dict[str, str]]:
     return [{"codice": code, "descrizione_en": label}]
 
 
+_COMUNI = (
+    (72006, "Bari", 16),
+    (72004, "Altamura", 16),
+    (1001, "Sbari", 1),
+    (40012, "Forlì", 8),
+    (62070, "Sant'Agata de' Goti", 15),
+)
+
+
 def _api(request: httpx.Request) -> httpx.Response:
     path = request.url.path
     if path == "/geoserver/wms":
@@ -57,12 +66,17 @@ def _api(request: httpx.Request) -> httpx.Response:
     path = path.removeprefix("/api/")
     body = json.loads(request.content) if request.content else None
     rows: Any
-    if path == "iffi/comuni":
+    if path in ("iffi/comuni", "pir/comuni"):
         rows = [
-            {"uid": 72006, "nome": "Bari"},
-            {"uid": 72004, "nome": "Altamura"},
-            {"uid": 1, "nome": "Sbari"},
+            {"uid": c, "pro_com": c, "nome": n, "cod_reg": r, "cod_prov": c // 1000}
+            for c, n, r in _COMUNI
         ]
+    elif path.startswith("pir/comuni/"):
+        code = int(path.removeprefix("pir/comuni/"))
+        name = next(n for c, n, _ in _COMUNI if c == code)
+        rows = {"uid": code, "nome": name, "popfrp3p4p": code / 1000, "pop_res021": 10}
+        if code == 1001:
+            rows["popfrp3p4p"] = None  # not every area has every value
     elif path == "iffi/comuni/72006":
         rows = {"nome": "Bari", "frane_stats": [{"cod": 5, "nr_frane": 3}], "frane_totali": 3}
     elif path == "pir/italia":
@@ -113,6 +127,8 @@ async def test_tools_are_listed_and_read_only() -> None:
         "monitoring_sites",
         "webcams",
         "code_list",
+        "rank_areas",
+        "compare_areas",
         "download_dataset",
         "hazard_at",
         "landslides_near",
@@ -155,6 +171,69 @@ async def test_landslides_events_sites() -> None:
     assert hazard["landslide"] == "P3" and hazard["flood"] is None
     near = await _call(mcp, "landslides_near", lat=40.838, lon=14.63, radius_m=100, limit=1)
     assert [r["id_frana"] for r in near] == ["0"]
+
+
+async def test_names_are_matched_without_accents() -> None:
+    mcp = _server()
+    assert (await _call(mcp, "find_area", name="forli"))[0]["name"] == "Forlì"
+    found = await _call(mcp, "find_area", name="sant agata de\u2019 goti")
+    assert found[0]["code"] == 62070
+    with pytest.raises(ToolError, match="did you mean Bari"):
+        await mcp.call_tool("find_area", {"name": "Barii"})
+    with pytest.raises(ToolError, match=r"no comuni named like 'Roma'$"):
+        await mcp.call_tool("find_area", {"name": "Roma"})
+
+
+async def test_rank_and_compare(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("IDROGEO_DATA_DIR", str(tmp_path))
+    mcp = _server()
+    ranked = await _call(mcp, "rank_areas", indicator="popfrp3p4p", top=2)
+    assert ranked["areas_compared"] == 4  # Sbari has no value
+    assert [(r["rank"], r["name"]) for r in ranked["ranking"]] == [
+        (1, "Bari"),
+        (2, "Altamura"),
+    ]
+    assert "CC BY 4.0" in ranked["source"]
+    lowest = await _call(mcp, "rank_areas", indicator="popfrp3p4p", region=16, lowest=True)
+    assert [r["code"] for r in lowest["ranking"]] == [72004, 72006]
+    assert lowest["order"] == "lowest first"
+    assert (tmp_path / "pir_comuni" / "72006.json").exists()  # kept for next time
+    compared = await _call(mcp, "compare_areas", level="comuni", codes=[72006, 40012])
+    assert compared["indicators"][0] == "pop_res021"
+    forli = compared["areas"][1]
+    assert (forli["name"], forli["pop_res021"], forli["popfr_p3p4"]) == ("Forlì", 10, None)
+    picked = await _call(
+        mcp, "compare_areas", level="comuni", codes=[72006], indicators=["pop_res021"]
+    )
+    assert picked["areas"] == [{"code": 72006, "name": "Bari", "pop_res021": 10}]
+    for tool, arguments, message in (
+        ("rank_areas", {"indicator": "popfr_p34"}, "close: popfrp3p4p"),
+        ("rank_areas", {"indicator": "zzz"}, "unknown indicator 'zzz' "),
+        ("rank_areas", {"indicator": "popfrp3p4p", "top": 0}, "top must"),
+        ("rank_areas", {"indicator": "popfrp3p4p", "region": 99}, "no area found"),
+        ("compare_areas", {"level": "comuni", "codes": []}, "between 1 and 20"),
+    ):
+        with pytest.raises(ToolError, match=message):
+            await mcp.call_tool(tool, arguments)
+
+
+async def test_resources_and_prompts() -> None:
+    mcp = _server()
+    assert {str(r.uri) for r in await mcp.list_resources()} == {
+        "idrogeo://indicators",
+        "idrogeo://datasets",
+    }
+    glossary = (await mcp.read_resource("idrogeo://indicators"))[0].content
+    assert "popfrp3p4p" in glossary
+    catalogue = json.loads((await mcp.read_resource("idrogeo://datasets"))[0].content)
+    assert "frane_piff" in catalogue["landslide_layers"] and "bolzano" in catalogue["areas"]
+    codes = json.loads((await mcp.read_resource("idrogeo://codes/tipo_movimento"))[0].content)
+    assert codes == {"5": "rapid debris flow"}
+    assert {p.name for p in await mcp.list_prompts()} == {"area_profile", "recent_events"}
+    profile = await mcp.get_prompt("area_profile", {"place": "Sarno"})
+    assert "Sarno" in profile.messages[0].content.text
+    events = await mcp.get_prompt("recent_events", {"place": "Liguria", "since": "2026-10-01"})
+    assert "2026-10-01" in events.messages[0].content.text
 
 
 async def test_download(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
