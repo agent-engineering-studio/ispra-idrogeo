@@ -1,0 +1,109 @@
+site_name: ispra-idrogeo
+site_description: Italy's landslides and flood hazard, from ISPRA IdroGEO, in a few lines of Python.
+site_url: https://agent-engineering-studio.github.io/ispra-idrogeo/
+site_author: Giuseppe Zileni
+repo_url: https://github.com/agent-engineering-studio/ispra-idrogeo
+repo_name: agent-engineering-studio/ispra-idrogeo
+edit_uri: edit/main/docs/
+copyright: Code Apache-2.0 · Data © ISPRA — IdroGEO, CC BY 4.0
+
+docs_dir: docs
+exclude_docs: |
+  make_figures.py
+
+theme:
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/terrain
+  favicon: images/favicon.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: brown
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: brown
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - Guide:
+      - Getting started: getting-started.md
+      - Datasets: datasets.md
+      - How it works: how-it-works.md
+      - Recipes: recipes.md
+      - Known traps: traps.md
+  - AI agents: ai-agents.md
+  - Roadmap & AI: roadmap.md
+  - API reference: reference.md
+  - Project:
+      - Contributing: contributing.md
+      - Changelog: changelog.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            separate_signature: true
+            members_order: source
+            docstring_style: sphinx
+            filters: ["!^_"]
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/agent-engineering-studio/ispra-idrogeo
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/ispra-idrogeo/

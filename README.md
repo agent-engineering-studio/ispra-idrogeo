@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/typing-mypy%20strict-informational" alt="mypy strict">
   <img src="https://img.shields.io/badge/coverage-100%25-brightgreen" alt="coverage 100%">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="Apache-2.0"></a>
+  <a href="https://agent-engineering-studio.github.io/ispra-idrogeo/"><img src="https://img.shields.io/badge/docs-github%20pages-blue" alt="Documentation"></a>
 </p>
 
 **ispra-idrogeo** is a small, typed, async Python library for
@@ -44,6 +45,8 @@ async with IdroGEO() as idrogeo:
 ---
 
 ## What is IdroGEO, in 30 seconds
+
+<!-- --8<-- [start:intro] -->
 
 Italy is one of the European countries most exposed to landslides and floods.
 For decades, ISPRA and the regions have mapped every landslide they found into
@@ -81,7 +84,11 @@ Some of what is in there, straight from the API:
   <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/types.svg" alt="IFFI landslides by type of movement: slides 237,419, slow earth flows 142,352, rapid debris flows 89,317, then areas of shallow landslides, areas of rockfalls, complex, falls" width="100%">
 </p>
 
+<!-- --8<-- [end:intro] -->
+
 ## What this library does
+
+<!-- --8<-- [start:features] -->
 
 | | Feature | In plain words |
 |---|---|---|
@@ -96,7 +103,11 @@ Some of what is in there, straight from the API:
 
 One dependency: [`httpx`](https://www.python-httpx.org/).
 
+<!-- --8<-- [end:features] -->
+
 ## Who is it for
+
+<!-- --8<-- [start:audience] -->
 
 - **Researchers and students** in geology, hydrology, civil engineering and
   remote sensing who want IFFI or PAI in a notebook.
@@ -112,9 +123,13 @@ a multi-hazard risk monitor for Italy, where IFFI landslides and PAI hazard
 are inputs of a landslide-risk model, and was extracted so that anyone can use
 it.
 
+<!-- --8<-- [end:audience] -->
+
 ---
 
 ## Quick start
+
+<!-- --8<-- [start:quickstart] -->
 
 ### 1. Install
 
@@ -195,9 +210,13 @@ async with IdroGEO() as idrogeo:
     # Bari 315948 1.278  → 1.3 % of residents in flood hazard P2
 ```
 
+<!-- --8<-- [end:quickstart] -->
+
 ---
 
 ## What you can download
+
+<!-- --8<-- [start:download] -->
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/sizes.svg" alt="Download sizes for the whole of Italy, from 1.2 GB for the landslide hazard mosaic to 1 MB for events; every later run of an unchanged file costs one 304 answer" width="100%">
@@ -232,9 +251,13 @@ opendata("eventi")  # all of Italy
 
 Coordinates are in **EPSG:32632** (WGS 84 / UTM 32N), for every area.
 
+<!-- --8<-- [end:download] -->
+
 ---
 
 ## Where downloads are saved
+
+<!-- --8<-- [start:saved] -->
 
 In a folder that should survive restarts, because the national files weigh
 hundreds of MB:
@@ -265,9 +288,13 @@ volumes:
   idrogeo-data:
 ```
 
+<!-- --8<-- [end:saved] -->
+
 ---
 
 ## How it works
+
+<!-- --8<-- [start:how] -->
 
 ### Download once, then only what changed
 
@@ -351,9 +378,13 @@ flowchart LR
 - **`cache.py`**: the folder, the `.meta.json` validators and the safe unpacking.
 - **`client.py`**: `IdroGEO` wires them to **your** `httpx.AsyncClient`.
 
+<!-- --8<-- [end:how] -->
+
 ---
 
 ## Recipes
+
+<!-- --8<-- [start:recipes] -->
 
 ### Keep a national copy fresh, every night
 
@@ -577,6 +608,8 @@ default; `limit` asks for more. Also `idrogeo lookup formazioni argille`.
 
 ### For AI agents: the MCP server
 
+<!-- --8<-- [start:mcp] -->
+
 ```bash
 pip install "ispra-idrogeo[mcp]"
 ```
@@ -610,6 +643,8 @@ Every tool but `download_dataset` only reads. Searches stop at `limit` rows
 (100 by default, 1,000 at most), so an agent never receives 700,000
 landslides at once, and IdroGEO's refusals come back as readable errors.
 
+<!-- --8<-- [end:mcp] -->
+
 ### Bring your own HTTP client
 
 ```python
@@ -642,9 +677,13 @@ except httpx.HTTPError as exc:
 
 An unknown layer, area or mosaic name raises `ValueError` before any request.
 
+<!-- --8<-- [end:recipes] -->
+
 ---
 
 ## The traps we already fell into
+
+<!-- --8<-- [start:traps] -->
 
 IdroGEO works well, but its older documentation and many scripts on the web
 point to paths that no longer exist. This library handles these for you:
@@ -668,9 +707,13 @@ point to paths that no longer exist. This library handles these for you:
 
 All checked against the live service on 3 November 2026.
 
+<!-- --8<-- [end:traps] -->
+
 ---
 
 ## API at a glance
+
+<!-- --8<-- [start:api] -->
 
 | Name | What it does |
 |---|---|
@@ -707,6 +750,8 @@ All checked against the live service on 3 November 2026.
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,
 `read_json` / `write_json`, `extract`.
+
+<!-- --8<-- [end:api] -->
 
 ---
 
@@ -757,8 +802,12 @@ above 90%, and contributions are accepted under Apache-2.0.
 
 ### Ideas to work on
 
+<!-- --8<-- [start:ideas] -->
+
 Not promises, just directions where help would make a difference. Open an
-issue to discuss one before starting.
+issue to discuss one before starting. The
+[Roadmap & AI](https://agent-engineering-studio.github.io/ispra-idrogeo/roadmap/)
+page has the longer analysis, AI features included.
 
 | Idea | Why it matters | Good for |
 |---|---|---|
@@ -768,14 +817,18 @@ issue to discuss one before starting.
 | 🔔 **A changes feed**: `idrogeo watch` printing new and changed landslides and events | Alerts and dashboards without polling by hand | intermediate |
 | 🧠 **More MCP tools** (hazard at a point, nearest landslides) | Agents that answer "is my house at risk?" | intermediate, AI users |
 | 🧩 **A GeoServer bootstrap** that publishes the downloads, for [mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server) | From open data to a live map server in one command | advanced |
-| 📚 **Documentation site** | Search, API reference, tutorials | anyone |
+| 📚 **Tutorials on the [documentation site](https://agent-engineering-studio.github.io/ispra-idrogeo/)** | Search and API reference are there; step-by-step guides are not yet | anyone |
 
 Found something odd in IdroGEO? That is a contribution too: open an issue
 with what you sent and what came back.
 
+<!-- --8<-- [end:ideas] -->
+
 ---
 
 ## Data licence and credits
+
+<!-- --8<-- [start:licence] -->
 
 Unless stated otherwise, ISPRA publishes its data under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/legalcode)
@@ -789,7 +842,9 @@ from IdroGEO API answers of 3 November 2026 (redraw them with
 `uv run python docs/make_figures.py`); the region map is a schematic tile
 map, not a geographic one.
 
-Code: [Apache-2.0](./LICENSE). Extracted from
+Code: [Apache-2.0](https://github.com/agent-engineering-studio/ispra-idrogeo/blob/main/LICENSE). Extracted from
 [Limen](https://github.com/agent-engineering-studio/limen).
 
 If this project is useful to you, a ⭐ on GitHub helps others find it.
+
+<!-- --8<-- [end:licence] -->

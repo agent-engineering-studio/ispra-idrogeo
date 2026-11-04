@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Documentation site on GitHub Pages (MkDocs Material, API reference from the
+  docstrings), built and deployed by the `docs` workflow; `make docs` and
+  `make docs-serve`. Pages reuse the README sections, so there is one source.
+- A Roadmap & AI page: improvements and AI features, prioritised.
+- `llms.txt` on the site, for AI coding assistants.
+
 ## [0.5.0] - 2026-11-03
 
 ### Added
