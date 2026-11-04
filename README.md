@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/typing-mypy%20strict-informational" alt="mypy strict">
   <img src="https://img.shields.io/badge/coverage-100%25-brightgreen" alt="coverage 100%">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="Apache-2.0"></a>
-  <a href="https://agent-engineering-studio.github.io/ispra-idrogeo/"><img src="https://img.shields.io/badge/docs-github%20pages-blue" alt="Documentation"></a>
+  <a href="https://agentengineering.it/ispra-idrogeo/"><img src="https://img.shields.io/badge/docs-github%20pages-blue" alt="Documentation"></a>
 </p>
 
 **ispra-idrogeo** is a small, typed, async Python library for
@@ -806,7 +806,7 @@ above 90%, and contributions are accepted under Apache-2.0.
 
 Not promises, just directions where help would make a difference. Open an
 issue to discuss one before starting. The
-[Roadmap & AI](https://agent-engineering-studio.github.io/ispra-idrogeo/roadmap/)
+[Roadmap & AI](https://agentengineering.it/ispra-idrogeo/roadmap/)
 page has the longer analysis, AI features included.
 
 | Idea | Why it matters | Good for |
@@ -817,7 +817,7 @@ page has the longer analysis, AI features included.
 | 🔔 **A changes feed**: `idrogeo watch` printing new and changed landslides and events | Alerts and dashboards without polling by hand | intermediate |
 | 🧠 **More MCP tools** (hazard at a point, nearest landslides) | Agents that answer "is my house at risk?" | intermediate, AI users |
 | 🧩 **A GeoServer bootstrap** that publishes the downloads, for [mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server) | From open data to a live map server in one command | advanced |
-| 📚 **Tutorials on the [documentation site](https://agent-engineering-studio.github.io/ispra-idrogeo/)** | Search and API reference are there; step-by-step guides are not yet | anyone |
+| 📚 **Tutorials on the [documentation site](https://agentengineering.it/ispra-idrogeo/)** | Search and API reference are there; step-by-step guides are not yet | anyone |
 
 Found something odd in IdroGEO? That is a contribution too: open an issue
 with what you sent and what came back.

@@ -16,10 +16,10 @@ Essentials:
 - CLI: `idrogeo fetch|summary|municipalities|landslides|events|sites|webcams|landslide|labels|dictionaries|lookup`; JSON Lines output.
 
 Docs:
-- [Getting started](https://agent-engineering-studio.github.io/ispra-idrogeo/getting-started/)
-- [Datasets](https://agent-engineering-studio.github.io/ispra-idrogeo/datasets/)
-- [Recipes](https://agent-engineering-studio.github.io/ispra-idrogeo/recipes/)
-- [Known traps](https://agent-engineering-studio.github.io/ispra-idrogeo/traps/)
-- [AI agents / MCP server](https://agent-engineering-studio.github.io/ispra-idrogeo/ai-agents/)
-- [API reference](https://agent-engineering-studio.github.io/ispra-idrogeo/reference/)
+- [Getting started](https://agentengineering.it/ispra-idrogeo/getting-started/)
+- [Datasets](https://agentengineering.it/ispra-idrogeo/datasets/)
+- [Recipes](https://agentengineering.it/ispra-idrogeo/recipes/)
+- [Known traps](https://agentengineering.it/ispra-idrogeo/traps/)
+- [AI agents / MCP server](https://agentengineering.it/ispra-idrogeo/ai-agents/)
+- [API reference](https://agentengineering.it/ispra-idrogeo/reference/)
 - [Source](https://github.com/agent-engineering-studio/ispra-idrogeo)

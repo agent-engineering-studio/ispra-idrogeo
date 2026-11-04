@@ -1,6 +1,6 @@
 site_name: ispra-idrogeo
 site_description: Italy's landslides and flood hazard, from ISPRA IdroGEO, in a few lines of Python.
-site_url: https://agent-engineering-studio.github.io/ispra-idrogeo/
+site_url: https://agentengineering.it/ispra-idrogeo/
 site_author: Giuseppe Zileni
 repo_url: https://github.com/agent-engineering-studio/ispra-idrogeo
 repo_name: agent-engineering-studio/ispra-idrogeo

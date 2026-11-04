@@ -86,4 +86,4 @@ The server speaks MCP over stdio, so any MCP client can start it.
 This site publishes [`llms.txt`](llms.txt), a short plain-text guide to the
 library for AI coding assistants: what to call, in which order, and the traps
 to avoid. Point your assistant at
-`https://agent-engineering-studio.github.io/ispra-idrogeo/llms.txt`.
+`https://agentengineering.it/ispra-idrogeo/llms.txt`.
