@@ -24,7 +24,7 @@ def _server(request: httpx.Request) -> httpx.Response:
     if path == "pir/comuni/72006":
         return httpx.Response(200, json={"nome": "Bari"})
     if path == "pir/comuni":
-        return httpx.Response(200, json=[{"pro_com": 72006}])
+        return httpx.Response(200, json=[{"pro_com": 72006, "cod_reg": 16, "cod_prov": 72}])
     if path in ("frana/searchfilter", "evento/main/filter", "sito/filter", "webcam/filter"):
         return httpx.Response(200, json=[{"path": path, "body": body, **request.url.params}])
     if path == "frana/0017680500":
@@ -112,6 +112,8 @@ async def test_fetch_and_municipalities(tmp_path: Path) -> None:
     rows = await _run("--dir", str(tmp_path), "municipalities", "--max-age-days", "30")
     assert rows == [{"nome": "Bari"}]
     assert await _run("--dir", str(tmp_path), "municipalities") == rows
+    assert await _run("--dir", str(tmp_path), "municipalities", "--province", "72") == rows
+    assert await _run("--dir", str(tmp_path), "municipalities", "--region", "1") == []
 
 
 def test_since_needs_a_time_zone(capsys: pytest.CaptureFixture[str]) -> None:

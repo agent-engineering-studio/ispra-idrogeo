@@ -13,6 +13,7 @@ from ispra_idrogeo import (
     search_params,
     since_filter,
     summary_path,
+    within,
 )
 
 
@@ -25,6 +26,18 @@ def test_summary_paths() -> None:
         summary_path("iffi", "italia", 1)
     with pytest.raises(ValueError, match="no list"):
         summary_path("pir", "macroregioni")
+
+
+def test_within() -> None:
+    items = [
+        {"pro_com": 72006, "cod_reg": 16, "cod_prov": 72},
+        {"pro_com": 71024, "cod_reg": 16, "cod_prov": 71},
+        {"pro_com": 1001, "cod_reg": 1, "cod_prov": 1},
+    ]
+    assert within(items) == items
+    assert [i["pro_com"] for i in within(items, region=16)] == [72006, 71024]
+    assert [i["pro_com"] for i in within(items, region=16, province=71)] == [71024]
+    assert within(items, region=1, province=72) == []
 
 
 def test_level_codes() -> None:

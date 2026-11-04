@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- MCP tools `rank_areas` (top or bottom areas by any indicator, inside a
+  region or province, summaries kept on disk 30 days) and `compare_areas`
+  (up to 20 areas side by side); both carry the source and licence.
+- MCP resources `idrogeo://indicators` (what the indicator keys mean),
+  `idrogeo://datasets` and `idrogeo://codes/{name}`; prompts `area_profile`
+  and `recent_events`.
+- `idrogeo-mcp --transport streamable-http --host --port`, to serve agents
+  over HTTP.
+- `summaries()` and `municipalities()` take `region` and `province`, and
+  `idrogeo municipalities` `--region` and `--province`, to ask only for the
+  areas inside them; `within(items, region=, province=)` filters a list.
+
+### Changed
+
+- `find_area` matches names without accents and apostrophes (`forli` finds
+  Forlì) and answers an unknown name with "did you mean" suggestions instead
+  of an empty list.
+
 ## [0.5.0] - 2026-11-03
 
 ### Added

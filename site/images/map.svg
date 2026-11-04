@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 806" role="img" aria-label="Tile map of Italy's 20 regions coloured by IFFI landslides per 100 square km: Lombardia, Molise and Toscana are highest, Puglia and Sardegna lowest">
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .bg{fill:#fcfcfb} .h{fill:#0b0b0b} .t2{fill:#52514e} .ax{fill:#7a7974} .grid{stroke:#e6e5e0;stroke-width:1}
+  .chip{fill:#f0efec} .val{fill:#0b0b0b} .edge{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#1a1a19} .h{fill:#f0efec} .t2{fill:#c3c2b7} .ax{fill:#8f8e88} .grid{stroke:#2e2e2b}
+    .chip{fill:#2a2a28} .val{fill:#f0efec} .edge{stroke:#1a1a19}
+  }
+</style>
+<rect class="bg" width="980" height="806" rx="14"/>
+<text class="h" x="40" y="44" font-size="20" font-weight="700">The IFFI inventory, region by region</text>
+<text class="t2" x="40" y="68" font-size="14">One square per region (not to scale). The number is how many landslides are mapped there.</text>
+<rect x="192.0" y="92.0" width="70" height="70" rx="8.4" fill="#ec8665"><title>Trentino-Alto Adige: 25,209 landslides, 185 per 100 km²</title></rect>
+<circle cx="251.0" cy="103.0" r="4.5" fill="#3b1408" opacity=".85"/>
+<text x="227.0" y="124.0" text-anchor="middle" font-size="15" font-weight="700" fill="#3b1408">TAA</text>
+<text x="227.0" y="143.0" text-anchor="middle" font-size="12" fill="#3b1408">25,209</text>
+<rect x="268.0" y="92.0" width="70" height="70" rx="8.4" fill="#f5b69a"><title>Friuli Venezia Giulia: 5,822 landslides, 73 per 100 km²</title></rect>
+<text x="303.0" y="124.0" text-anchor="middle" font-size="15" font-weight="700" fill="#5a2a1a">FVG</text>
+<text x="303.0" y="143.0" text-anchor="middle" font-size="12" fill="#5a2a1a">5,822</text>
+<rect x="40.0" y="168.0" width="70" height="70" rx="8.4" fill="#ec8665"><title>Valle d'Aosta: 5,812 landslides, 178 per 100 km²</title></rect>
+<text x="75.0" y="200.0" text-anchor="middle" font-size="15" font-weight="700" fill="#3b1408">VDA</text>
+<text x="75.0" y="219.0" text-anchor="middle" font-size="12" fill="#3b1408">5,812</text>
+<rect x="116.0" y="168.0" width="70" height="70" rx="8.4" fill="#a8321f"><title>Lombardia: 141,970 landslides, 595 per 100 km²</title></rect>
+<text x="151.0" y="200.0" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">LOM</text>
+<text x="151.0" y="219.0" text-anchor="middle" font-size="12" fill="#ffffff">141,970</text>
+<rect x="192.0" y="168.0" width="70" height="70" rx="8.4" fill="#f5b69a"><title>Veneto: 10,126 landslides, 55 per 100 km²</title></rect>
+<text x="227.0" y="200.0" text-anchor="middle" font-size="15" font-weight="700" fill="#5a2a1a">VEN</text>
+<text x="227.0" y="219.0" text-anchor="middle" font-size="12" fill="#5a2a1a">10,126</text>
+<rect x="40.0" y="244.0" width="70" height="70" rx="8.4" fill="#f5b69a"><title>Piemonte: 37,786 landslides, 149 per 100 km²</title></rect>
+<text x="75.0" y="276.0" text-anchor="middle" font-size="15" font-weight="700" fill="#5a2a1a">PIE</text>
+<text x="75.0" y="295.0" text-anchor="middle" font-size="12" fill="#5a2a1a">37,786</text>
+<rect x="116.0" y="244.0" width="70" height="70" rx="8.4" fill="#d9553b"><title>Emilia-Romagna: 80,337 landslides, 357 per 100 km²</title></rect>
+<text x="151.0" y="276.0" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">EMR</text>
+<text x="151.0" y="295.0" text-anchor="middle" font-size="12" fill="#ffffff">80,337</text>
+<rect x="40.0" y="320.0" width="70" height="70" rx="8.4" fill="#ec8665"><title>Liguria: 13,514 landslides, 249 per 100 km²</title></rect>
+<text x="75.0" y="352.0" text-anchor="middle" font-size="15" font-weight="700" fill="#3b1408">LIG</text>
+<text x="75.0" y="371.0" text-anchor="middle" font-size="12" fill="#3b1408">13,514</text>
+<rect x="116.0" y="320.0" width="70" height="70" rx="8.4" fill="#a8321f"><title>Toscana: 114,061 landslides, 496 per 100 km²</title></rect>
+<text x="151.0" y="352.0" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">TOS</text>
+<text x="151.0" y="371.0" text-anchor="middle" font-size="12" fill="#ffffff">114,061</text>
+<rect x="192.0" y="320.0" width="70" height="70" rx="8.4" fill="#d9553b"><title>Umbria: 34,566 landslides, 408 per 100 km²</title></rect>
+<text x="227.0" y="352.0" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">UMB</text>
+<text x="227.0" y="371.0" text-anchor="middle" font-size="12" fill="#ffffff">34,566</text>
+<rect x="268.0" y="320.0" width="70" height="70" rx="8.4" fill="#d9553b"><title>Marche: 39,390 landslides, 421 per 100 km²</title></rect>
+<text x="303.0" y="352.0" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">MAR</text>
+<text x="303.0" y="371.0" text-anchor="middle" font-size="12" fill="#ffffff">39,390</text>
+<rect x="192.0" y="396.0" width="70" height="70" rx="8.4" fill="#f5b69a"><title>Lazio: 10,550 landslides, 61 per 100 km²</title></rect>
+<text x="227.0" y="428.0" text-anchor="middle" font-size="15" font-weight="700" fill="#5a2a1a">LAZ</text>
+<text x="227.0" y="447.0" text-anchor="middle" font-size="12" fill="#5a2a1a">10,550</text>
+<rect x="268.0" y="396.0" width="70" height="70" rx="8.4" fill="#f5b69a"><title>Abruzzo: 8,494 landslides, 78 per 100 km²</title></rect>
+<text x="303.0" y="428.0" text-anchor="middle" font-size="15" font-weight="700" fill="#5a2a1a">ABR</text>
+<text x="303.0" y="447.0" text-anchor="middle" font-size="12" fill="#5a2a1a">8,494</text>
+<rect x="344.0" y="396.0" width="70" height="70" rx="8.4" fill="#a8321f"><title>Molise: 23,949 landslides, 537 per 100 km²</title></rect>
+<text x="379.0" y="428.0" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">MOL</text>
+<text x="379.0" y="447.0" text-anchor="middle" font-size="12" fill="#ffffff">23,949</text>
+<rect x="40.0" y="472.0" width="70" height="70" rx="8.4" fill="#fbe3d6"><title>Sardegna: 2,051 landslides, 9 per 100 km²</title></rect>
+<text x="75.0" y="504.0" text-anchor="middle" font-size="15" font-weight="700" fill="#5a2a1a">SAR</text>
+<text x="75.0" y="523.0" text-anchor="middle" font-size="12" fill="#5a2a1a">2,051</text>
+<rect x="268.0" y="472.0" width="70" height="70" rx="8.4" fill="#d9553b"><title>Campania: 55,254 landslides, 404 per 100 km²</title></rect>
+<text x="303.0" y="504.0" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">CAM</text>
+<text x="303.0" y="523.0" text-anchor="middle" font-size="12" fill="#ffffff">55,254</text>
+<rect x="344.0" y="472.0" width="70" height="70" rx="8.4" fill="#fbe3d6"><title>Puglia: 839 landslides, 4 per 100 km²</title></rect>
+<text x="379.0" y="504.0" text-anchor="middle" font-size="15" font-weight="700" fill="#5a2a1a">PUG</text>
+<text x="379.0" y="523.0" text-anchor="middle" font-size="12" fill="#5a2a1a">839</text>
+<rect x="344.0" y="548.0" width="70" height="70" rx="8.4" fill="#ec8665"><title>Basilicata: 17,671 landslides, 175 per 100 km²</title></rect>
+<text x="379.0" y="580.0" text-anchor="middle" font-size="15" font-weight="700" fill="#3b1408">BAS</text>
+<text x="379.0" y="599.0" text-anchor="middle" font-size="12" fill="#3b1408">17,671</text>
+<rect x="344.0" y="624.0" width="70" height="70" rx="8.4" fill="#f5b69a"><title>Calabria: 10,100 landslides, 66 per 100 km²</title></rect>
+<text x="379.0" y="656.0" text-anchor="middle" font-size="15" font-weight="700" fill="#5a2a1a">CAL</text>
+<text x="379.0" y="675.0" text-anchor="middle" font-size="12" fill="#5a2a1a">10,100</text>
+<rect x="268.0" y="700.0" width="70" height="70" rx="8.4" fill="#d9553b"><title>Sicilia: 83,864 landslides, 325 per 100 km²</title></rect>
+<circle cx="327.0" cy="711.0" r="4.5" fill="#ffffff" opacity=".85"/>
+<text x="303.0" y="732.0" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">SIC</text>
+<text x="303.0" y="751.0" text-anchor="middle" font-size="12" fill="#ffffff">83,864</text>
+<text class="h" x="470" y="150" font-size="15" font-weight="700">Landslides per 100 km²</text>
+<rect x="470" y="170" width="26" height="26" rx="4" fill="#fbe3d6"/>
+<text class="t2" x="508" y="188" font-size="14">under 50</text>
+<rect x="470" y="204" width="26" height="26" rx="4" fill="#f5b69a"/>
+<text class="t2" x="508" y="222" font-size="14">50 to 150</text>
+<rect x="470" y="238" width="26" height="26" rx="4" fill="#ec8665"/>
+<text class="t2" x="508" y="256" font-size="14">150 to 300</text>
+<rect x="470" y="272" width="26" height="26" rx="4" fill="#d9553b"/>
+<text class="t2" x="508" y="290" font-size="14">300 to 450</text>
+<rect x="470" y="306" width="26" height="26" rx="4" fill="#a8321f"/>
+<text class="t2" x="508" y="324" font-size="14">over 450</text>
+<circle cx="483" cy="352" r="4.5" class="h"/>
+<text class="t2" x="508" y="357" font-size="14">also published per province</text>
+<text class="t2" x="508" y="377" font-size="14">(opendata(layer, "trento"), …)</text>
+<text class="h" x="470" y="450" font-size="15" font-weight="700">Most landslides mapped</text>
+<text class="t2" x="600" y="487" font-size="14" text-anchor="end">Lombardia</text>
+<rect x="612" y="472" width="250.0" height="22" rx="3" fill="#d9553b"/>
+<text class="val" x="870.0" y="488" font-size="13" font-weight="600">141,970</text>
+<text class="t2" x="600" y="521" font-size="14" text-anchor="end">Toscana</text>
+<rect x="612" y="506" width="200.9" height="22" rx="3" fill="#d9553b"/>
+<text class="val" x="820.9" y="522" font-size="13" font-weight="600">114,061</text>
+<text class="t2" x="600" y="555" font-size="14" text-anchor="end">Sicilia</text>
+<rect x="612" y="540" width="147.7" height="22" rx="3" fill="#d9553b"/>
+<text class="val" x="767.7" y="556" font-size="13" font-weight="600">83,864</text>
+<text class="t2" x="600" y="589" font-size="14" text-anchor="end">Emilia-Romagna</text>
+<rect x="612" y="574" width="141.5" height="22" rx="3" fill="#d9553b"/>
+<text class="val" x="761.5" y="590" font-size="13" font-weight="600">80,337</text>
+<text class="t2" x="600" y="623" font-size="14" text-anchor="end">Campania</text>
+<rect x="612" y="608" width="97.3" height="22" rx="3" fill="#d9553b"/>
+<text class="val" x="717.3" y="624" font-size="13" font-weight="600">55,254</text>
+<text class="ax" x="470" y="672" font-size="12">Density shows mapping effort as well as terrain:</text>
+<text class="ax" x="470" y="690" font-size="12">regions surveyed in more detail list more landslides.</text>
+<text class="ax" x="470" y="776" font-size="12">Source: ISPRA IdroGEO API, iffi/regioni, 3 November 2026.</text>
+</svg>
