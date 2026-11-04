@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/typing-mypy%20strict-informational" alt="mypy strict">
   <img src="https://img.shields.io/badge/coverage-100%25-brightgreen" alt="coverage 100%">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="Apache-2.0"></a>
+  <a href="https://agentengineering.it/ispra-idrogeo/"><img src="https://img.shields.io/badge/docs-github%20pages-blue" alt="Documentation"></a>
 </p>
 
 **ispra-idrogeo** is a small, typed, async Python library for
@@ -46,6 +47,8 @@ async with IdroGEO() as idrogeo:
 
 ## What is IdroGEO, in 30 seconds
 
+<!-- --8<-- [start:intro] -->
+
 Italy is one of the European countries most exposed to landslides and floods.
 For decades, ISPRA and the regions have mapped every landslide they found into
 one national database, **IFFI** (*Inventario dei Fenomeni Franosi in Italia*),
@@ -82,7 +85,11 @@ Some of what is in there, straight from the API:
   <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/types.svg" alt="IFFI landslides by type of movement: slides 237,419, slow earth flows 142,352, rapid debris flows 89,317, then areas of shallow landslides, areas of rockfalls, complex, falls" width="100%">
 </p>
 
+<!-- --8<-- [end:intro] -->
+
 ## What this library does
+
+<!-- --8<-- [start:features] -->
 
 | | Feature | In plain words |
 |---|---|---|
@@ -97,7 +104,11 @@ Some of what is in there, straight from the API:
 
 One dependency: [`httpx`](https://www.python-httpx.org/).
 
+<!-- --8<-- [end:features] -->
+
 ## Who is it for
+
+<!-- --8<-- [start:audience] -->
 
 - **Researchers and students** in geology, hydrology, civil engineering and
   remote sensing who want IFFI or PAI in a notebook.
@@ -113,15 +124,20 @@ a multi-hazard risk monitor for Italy, where IFFI landslides and PAI hazard
 are inputs of a landslide-risk model, and was extracted so that anyone can use
 it.
 
+<!-- --8<-- [end:audience] -->
+
 ---
 
 ## Quick start
+
+<!-- --8<-- [start:quickstart] -->
 
 ### 1. Install
 
 ```bash
 pip install ispra-idrogeo            # downloads, API, the idrogeo command
 pip install "ispra-idrogeo[geo]"     # + GeoDataFrames and GeoParquet (geopandas, pyarrow)
+pip install "ispra-idrogeo[warehouse]"  # + a local DuckDB copy, offline and in SQL
 ```
 
 Python 3.12 or newer. No account and no API key: IdroGEO open data is public.
@@ -200,9 +216,13 @@ async with IdroGEO() as idrogeo:
     # Bari 315948 1.278  → 1.3 % of residents in flood hazard P2
 ```
 
+<!-- --8<-- [end:quickstart] -->
+
 ---
 
 ## What you can download
+
+<!-- --8<-- [start:download] -->
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/sizes.svg" alt="Download sizes for the whole of Italy, from 1.2 GB for the landslide hazard mosaic to 1 MB for events; every later run of an unchanged file costs one 304 answer" width="100%">
@@ -235,11 +255,16 @@ opendata("frane_piff", "trento", "geojson")  # one autonomous province, GeoJSON
 opendata("eventi")  # all of Italy
 ```
 
-Coordinates are in **EPSG:32632** (WGS 84 / UTM 32N), for every area.
+Coordinates are in **EPSG:32632** (WGS 84 / UTM 32N), for every area. The
+flood mosaic is the exception: **EPSG:3035** (ETRS89 / LAEA Europe).
+
+<!-- --8<-- [end:download] -->
 
 ---
 
 ## Where downloads are saved
+
+<!-- --8<-- [start:saved] -->
 
 In a folder that should survive restarts, because the national files weigh
 hundreds of MB:
@@ -270,9 +295,13 @@ volumes:
   idrogeo-data:
 ```
 
+<!-- --8<-- [end:saved] -->
+
 ---
 
 ## How it works
+
+<!-- --8<-- [start:how] -->
 
 ### Download once, then only what changed
 
@@ -356,9 +385,13 @@ flowchart LR
 - **`cache.py`**: the folder, the `.meta.json` validators and the safe unpacking.
 - **`client.py`**: `IdroGEO` wires them to **your** `httpx.AsyncClient`.
 
+<!-- --8<-- [end:how] -->
+
 ---
 
 ## Recipes
+
+<!-- --8<-- [start:recipes] -->
 
 ### Keep a national copy fresh, every night
 
@@ -627,6 +660,58 @@ type and area, `distance_m` (0 when the point is on it) and the shapes it is
 mapped as. The distance is computed from the real outline, not from a
 centre point. Also: `idrogeo hazard 40.829 14.617` and `idrogeo near 40.838 14.630`.
 
+### Offline, many places at once, your own SQL: a local warehouse
+
+`hazard_at` asks the map service one point at a time. For thousands of
+points, for work offline, or for questions of your own,
+`pip install "ispra-idrogeo[warehouse]"` keeps the layers in one DuckDB file:
+
+```bash
+idrogeo sync frane_piff pai_frane idraulica   # once; then only what changed
+idrogeo sql "SELECT nome_reg, count(*) AS n FROM frane_piff GROUP BY 1 ORDER BY n DESC"
+idrogeo sql                                    # the tables and their columns
+```
+
+```python
+from ispra_idrogeo.warehouse import Warehouse
+
+async with IdroGEO() as idrogeo:
+    with Warehouse() as warehouse:  # ~/.cache/ispra-idrogeo/idrogeo.duckdb
+        await warehouse.sync(idrogeo, ["frane_piff", "pai_frane", "idraulica"])
+        warehouse.hazard_at(40.8205, 14.6297)  # Sarno: {'landslide': 'P4', 'flood': None, …}
+        warehouse.landslides_in(municipality=65135)  # Sarno: 53 landslides, by type
+        warehouse.query(
+            "SELECT p.class, count(*) AS landslides FROM frane_piff f "
+            "JOIN pai_frane p ON ST_Intersects(p.geom, f.geom) "
+            "WHERE f.regione = ? GROUP BY 1 ORDER BY 1",
+            [14],
+        )  # Molise, in 9 s: P4 2,904 · P3 8,242 · P2 569 · P1 2,377 · AA 659
+        # (IFFI points by the class of the PAI polygons they fall in; a point in
+        # two overlapping polygons counts twice)
+```
+
+`sync` downloads each layer only if it changed (as `fetch` does) and loads it
+with an R-tree index, in one transaction: a failed load leaves the old table
+in place. Every table is in EPSG:32632 metres, the flood mosaic reprojected
+from EPSG:3035; `pai_frane` and `idraulica` carry a `class` column (`P4` …
+`P1`, `AA`; `P3` … `P1`). Points go in as latitude and longitude, as in
+`hazard_at`; geometries come out of `query` as WKT.
+
+With the three national layers the file weighs 2.6 GB. Loading took 9 s for
+the 721,377 landslide points, 55 s for the 928,542 landslide hazard polygons
+and 9 minutes for the 85,460 flood polygons, whose reprojection is the slow
+part; a point query then takes 10–40 ms. Checked on 4 November 2026: the
+landslides counted per municipality match the API (Sarno 53, Casamicciola
+Terme 213, Trivento 921), the points agree with `hazard_at` (Sarno P4, Venice
+flood P3), and the flood areas add up to 16,283, 30,271 and 42,460 km² for P3,
+P2 and P1, against the API's 16,224, 30,196 and 42,376 km².
+
+`Warehouse(read_only=True)` opens the file for readers (the MCP server, a
+notebook, `idrogeo sql`) and switches off DuckDB's access to files, URLs and
+other databases, so SQL written by someone else, or by an agent, reads the
+tables and nothing more. DuckDB downloads its `spatial` extension the first
+time.
+
 ### Geology, aerial photos, bibliography
 
 ```python
@@ -643,6 +728,8 @@ bodies (`ordini`) and funding sources (`finanziamenti`). Ten answers by
 default; `limit` asks for more. Also `idrogeo lookup formazioni argille`.
 
 ### For AI agents: the MCP server
+
+<!-- --8<-- [start:mcp] -->
 
 ```bash
 pip install "ispra-idrogeo[mcp]"
@@ -707,6 +794,7 @@ clients use: `IDROGEO_MCP_ALLOWED_HOSTS=idrogeo-mcp:*,localhost:*`.
 | `compare_areas` | Up to 20 areas side by side, so the agent does not do arithmetic in its head |
 | `code_list` | Any code list, in four languages |
 | `download_dataset` | A layer downloaded (only if changed) to the local folder |
+| `warehouse_schema` / `warehouse_sql` | The tables of the [local warehouse](#offline-many-places-at-once-your-own-sql-a-local-warehouse), and one read-only SQL query on them |
 
 Names are matched without accents or apostrophes (`forli` finds *Forlì*),
 and a name that matches nothing comes back with "did you mean" suggestions.
@@ -727,6 +815,8 @@ landslides at once, and IdroGEO's refusals come back as readable errors.
 `rank_areas` keeps the summaries it reads on disk for 30 days: the first
 national ranking of municipalities asks IdroGEO 7,899 times (a few minutes),
 a region's ranking a few hundred.
+
+<!-- --8<-- [end:mcp] -->
 
 ### Bring your own HTTP client
 
@@ -760,19 +850,27 @@ except httpx.HTTPError as exc:
 
 An unknown layer, area or mosaic name raises `ValueError` before any request.
 
+<!-- --8<-- [end:recipes] -->
+
 ---
 
 ## Example notebooks
 
-[`examples/`](examples/) has three notebooks run on the live service, with
+<!-- --8<-- [start:notebooks] -->
+
+[`examples/`](https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/examples) has three notebooks run on the live service, with
 their outputs: **a town and its landslides** (Sarno, from exposure figures
 to a map of its debris flows), **Italy in numbers** (who lives in hazard
 areas, municipality by municipality) and **what changed** (following the
 inventory day by day).
 
+<!-- --8<-- [end:notebooks] -->
+
 ---
 
 ## The traps we already fell into
+
+<!-- --8<-- [start:traps] -->
 
 IdroGEO works well, but its older documentation and many scripts on the web
 point to paths that no longer exist. This library handles these for you:
@@ -797,14 +895,22 @@ point to paths that no longer exist. This library handles these for you:
 | paging the whole inventory 100,000 at a time | each page slower than the last (2.5 s at offset 0, 6.7 s at 600,000), and `id_frana` takes no `gt.` for keyset paging | one page of a million rows for area scans: ~20 s for Italy |
 | several landslides by id, `{"id_frana": "in.(…)"}` | an empty list, no error | `landslide(id)` for each one |
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
+| the flood mosaic in UTM 32N, like everything else | it is in **EPSG:3035** (ETRS89 LAEA), in three files, one per scenario (`HPH_`, `MPH_`, `LPH_`) | the warehouse reprojects it and names the scenarios P3, P2, P1 |
+| reading the IFFI shapefiles as UTF-8 | `Invalid unicode`: the text is **ISO-8859-1**, said in a `.cst` file that GDAL ignores (it reads `.cpg`) | the warehouse reads the `.cst` and passes the encoding |
+| the mosaics under CC BY 4.0, like the rest | the licence PDF in each ZIP says **CC BY-SA 4.0**, with a citation of its own | `warehouse.SOURCES` holds each citation, and the warehouse's hazard answers their licence |
+| the API's landslide hazard areas to add up like the mosaic you download | the mosaic (v4.0, 2020-2021) adds up to ~60,500 km² (P4 9,506 · P3 16,894 · P2 14,553 · P1 12,558 · AA 6,988); the API's `ar_fr_*` give 69,529 km², 10–20% more per class: probably another edition. The flood areas do match | says which is which: the warehouse uses the mosaic, `area_risk` and `summary("pir", …)` the API |
 
 All checked against the live service on 3–4 November 2026, and again every
 week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 `live` workflow opens an issue.
 
+<!-- --8<-- [end:traps] -->
+
 ---
 
 ## API at a glance
+
+<!-- --8<-- [start:api] -->
 
 | Name | What it does |
 |---|---|
@@ -838,14 +944,20 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `ispra_idrogeo.geo.read(path)` | A downloaded file or folder as a GeoDataFrame (extra `[geo]`). |
 | `ispra_idrogeo.geo.frame(rows, geometry="point")` | API rows as a GeoDataFrame, in their own CRS. |
 | `ispra_idrogeo.geo.add_labels(frame, labels)` | `<column>_label` columns for coded columns. |
+| `ispra_idrogeo.warehouse.Warehouse(path=None, *, read_only=False)` | A local DuckDB copy of the layers (extra `[warehouse]`). |
+| `.sync(idrogeo, layers, area="ispra")` | Download (if changed) and load the layers that changed. |
+| `.query(sql, params, limit=1000)` / `.schema()` | One read-only SELECT / the tables and columns. |
+| `.hazard_at(lat, lon)` / `.landslides_near(lat, lon, radius_m)` / `.landslides_in(...)` | The same questions as the client's, answered offline. |
 | `.download` / `.fetch(..., progress=callback)` | `callback(done, total)` after each chunk, for your own progress bar. |
 | `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` | One round of `idrogeo watch`: what changed since a `Mark`. |
-| `idrogeo-mcp` | An MCP server with the same data as 14 tools, 3 resources and 2 prompts (extra `[mcp]`). |
+| `idrogeo-mcp` | An MCP server with the same data as 16 tools, 3 resources and 2 prompts (extra `[mcp]`). |
 | `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,
 `read_json` / `write_json`, `extract`.
+
+<!-- --8<-- [end:api] -->
 
 ---
 
@@ -896,21 +1008,30 @@ above 90%, and contributions are accepted under Apache-2.0.
 
 ### Ideas to work on
 
+<!-- --8<-- [start:ideas] -->
+
 Not promises, just directions where help would make a difference. Open an
-issue to discuss one before starting.
+issue to discuss one before starting. The
+[Roadmap & AI](https://agentengineering.it/ispra-idrogeo/roadmap/)
+page has the longer analysis, AI features included.
 
 | Idea | Why it matters | Good for |
 |---|---|---|
-| 🧠 **More MCP tools** (hazard at a point, nearest landslides) | Agents that answer "is my house at risk?" | intermediate, AI users |
+| 🧪 **Live contract tests**: a weekly workflow that checks every path and field against IdroGEO | ISPRA moves things without notice; the library should notice first | intermediate |
+| 🧠 **An agent evaluation suite**: questions with checked answers, run against `idrogeo-mcp` | Tool descriptions are prompts: test them like code | intermediate, AI users |
 | 🧩 **A GeoServer bootstrap** that publishes the downloads, for [mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server) | From open data to a live map server in one command | advanced |
-| 📚 **Documentation site** | Search, API reference, tutorials | anyone |
+| 📚 **Tutorials on the [documentation site](https://agentengineering.it/ispra-idrogeo/)** | Search and API reference are there; step-by-step guides are not yet | anyone |
 
 Found something odd in IdroGEO? That is a contribution too: open an issue
 with what you sent and what came back.
 
+<!-- --8<-- [end:ideas] -->
+
 ---
 
 ## Data licence and credits
+
+<!-- --8<-- [start:licence] -->
 
 Unless stated otherwise, ISPRA publishes its data under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/legalcode)
@@ -919,12 +1040,27 @@ publish from it **must credit the source**, for example:
 
 > Source: ISPRA — IdroGEO, Italian landslide inventory (IFFI) and national hazard mosaics.
 
+The two **hazard mosaics** you download state otherwise: the licence PDF in
+each ZIP says [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode),
+so data you derive from them must be shared under the same licence, with
+these citations (`ispra_idrogeo.warehouse.SOURCES`):
+
+> ISPRA - Mosaicatura nazionale delle aree a pericolosità da frana PAI (v. 4.0 – 2020-2021), https://idrogeo.isprambiente.it
+>
+> ISPRA - Mosaicatura delle aree a pericolosità idraulica (v. 5.0 – 2020), https://idrogeo.isprambiente.it
+
+ISPRA adds that the mosaics are technical and scientific works updated every
+few years: the maps with legal value are those of the basin district
+authorities and of the provinces of Trento and Bolzano.
+
 This library only downloads the data. The figures in this README are drawn
 from IdroGEO API answers of 3 November 2026 (redraw them with
 `uv run python docs/make_figures.py`); the region map is a schematic tile
 map, not a geographic one.
 
-Code: [Apache-2.0](./LICENSE). Extracted from
+Code: [Apache-2.0](https://github.com/agent-engineering-studio/ispra-idrogeo/blob/main/LICENSE). Extracted from
 [Limen](https://github.com/agent-engineering-studio/limen).
 
 If this project is useful to you, a ⭐ on GitHub helps others find it.
+
+<!-- --8<-- [end:licence] -->

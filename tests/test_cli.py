@@ -197,6 +197,21 @@ async def test_fetch_progress(tmp_path: Path, capsys: pytest.CaptureFixture[str]
     assert out.getvalue().endswith("x.zip  1.5 MB")
 
 
+async def test_warehouse_commands(tmp_path: Path, idrogeo: IdroGEO) -> None:
+    async def run(*argv: str) -> list[Any]:
+        out = io.StringIO()
+        await cli.run(cli.parser().parse_args(["--dir", str(tmp_path), *argv]), idrogeo, out)
+        return [json.loads(line) for line in out.getvalue().splitlines()]
+
+    synced = await run("sync", "frane_piff", "pai_frane", "idraulica", "--area", "molise")
+    assert synced == [{"frane_piff": True, "pai_frane": True, "idraulica": True}]
+    assert (tmp_path / "idrogeo.duckdb").exists()
+    rows = await run("sql", "SELECT id_frana, geom FROM frane_piff ORDER BY 1 LIMIT 1")
+    assert rows[0]["id_frana"] == "0000000000" and rows[0]["geom"].startswith("POINT (")
+    [schema] = await run("sql")
+    assert set(schema) == {"frane_piff", "pai_frane", "idraulica"}
+
+
 def test_since_needs_a_time_zone(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit):
         cli.parser().parse_args(["landslides", "--since", "2026-11-01"])

@@ -28,7 +28,11 @@ jobs:
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --locked
-      - run: uv run pytest -m live -v --tb=short -p no:cacheprovider | tee live.log
+      # One network blip should not open an issue: the failed tests run once
+      # more, and only a failure that repeats counts.
+      - run: |
+          uv run pytest -m live -v --tb=short | tee live.log \
+            || uv run pytest -m live --last-failed -v --tb=short | tee -a live.log
         shell: bash -o pipefail {0}
       - uses: actions/upload-artifact@v7
         if: failure()

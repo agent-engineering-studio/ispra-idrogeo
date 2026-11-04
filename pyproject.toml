@@ -35,6 +35,10 @@ geo = [
     "geopandas>=1.0",
     "pyarrow>=15",
 ]
+# A local DuckDB copy, offline and in SQL: ispra_idrogeo.warehouse.
+warehouse = [
+    "duckdb>=2.0",  # geometry_always_xy, CRS-typed geometries
+]
 # The idrogeo-mcp server for AI agents: ispra_idrogeo.mcp_server.
 mcp = [
     "mcp>=2.0",  # MCPServer; FastMCP before 2.0
@@ -51,12 +55,17 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "ispra-idrogeo[geo,mcp]",
+    "ispra-idrogeo[geo,mcp,warehouse]",
     "mypy>=1.13",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "pytest-cov>=6.0",
     "ruff>=0.8",
+]
+# The documentation site (GitHub Pages): uv run --group docs mkdocs serve
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
 ]
 
 [tool.ruff]
@@ -86,6 +95,7 @@ testpaths = ["tests"]
 addopts = "--strict-markers -m 'not live'"
 markers = ["live: talks to the live IdroGEO service (pytest -m live; weekly in CI)"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
 source = ["ispra_idrogeo"]

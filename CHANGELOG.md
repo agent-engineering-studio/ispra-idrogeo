@@ -8,6 +8,18 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Extra `[warehouse]` (DuckDB) and `ispra_idrogeo.warehouse.Warehouse`: the
+  layers in one local DuckDB file, R-tree indexed, all in EPSG:32632, for
+  work offline, many places at once and SQL of your own. `sync()` loads only
+  the layers whose download changed, in one transaction; `query()` runs one
+  read-only SELECT (geometries as WKT), with file and network access shut
+  off when the warehouse is opened read-only; `hazard_at()`,
+  `landslides_near()` and `landslides_in()` answer the client's questions
+  offline. The flood mosaic is reprojected from EPSG:3035; IFFI text is read
+  as the ISO-8859-1 its `.cst` file says.
+- `idrogeo sync` and `idrogeo sql`; MCP tools `warehouse_schema` and
+  `warehouse_sql`.
+
 - MCP tools `rank_areas` (top or bottom areas by any indicator, inside a
   region or province, summaries kept on disk 30 days) and `compare_areas`
   (up to 20 areas side by side); both carry the source and licence.
@@ -17,6 +29,11 @@ All notable changes to this project are documented here. The format follows
 - `summaries()` and `municipalities()` take `region` and `province`, and
   `idrogeo municipalities` `--region` and `--province`, to ask only for the
   areas inside them; `within(items, region=, province=)` filters a list.
+- Documentation site on GitHub Pages (MkDocs Material, API reference from the
+  docstrings), built and deployed by the `docs` workflow; `make docs` and
+  `make docs-serve`. Pages reuse the README sections, so there is one source.
+- A Roadmap & AI page: improvements and AI features, prioritised.
+- `llms.txt` on the site, for AI coding assistants.
 - `tests/live/`: 51 contract tests against the live IdroGEO service (every
   layer and area published, the `304`, the fields the library reads, the
   traps of the README still being traps), excluded from `make check`;
@@ -24,6 +41,10 @@ All notable changes to this project are documented here. The format follows
   (or updates) an issue labelled `live-contract` when one fails.
 
 ### Changed
+
+- README: the two hazard mosaics are CC BY-SA 4.0 (their licence PDF), not
+  CC BY 4.0; the flood mosaic is in EPSG:3035; the API's landslide hazard
+  areas do not add up like the downloadable mosaic.
 
 - `find_area` matches names without accents and apostrophes (`forli` finds
   Forlì) and answers an unknown name with "did you mean" suggestions instead

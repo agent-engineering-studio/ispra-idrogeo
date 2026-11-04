@@ -132,8 +132,11 @@ async def test_tools_are_listed_and_read_only() -> None:
         "download_dataset",
         "hazard_at",
         "landslides_near",
+        "warehouse_schema",
+        "warehouse_sql",
     }
     assert tools["area_risk"].annotations.read_only_hint
+    assert not tools["warehouse_sql"].annotations.open_world_hint  # local, no network
     assert not tools["download_dataset"].annotations.read_only_hint
 
 
@@ -234,6 +237,26 @@ async def test_resources_and_prompts() -> None:
     assert "Sarno" in profile.messages[0].content.text
     events = await mcp.get_prompt("recent_events", {"place": "Liguria", "since": "2026-10-01"})
     assert "2026-10-01" in events.messages[0].content.text
+
+
+async def test_warehouse_tools(tmp_path: Path, idrogeo: IdroGEO) -> None:
+    from ispra_idrogeo.warehouse import Warehouse
+
+    path = tmp_path / "w.duckdb"
+    mcp = server(idrogeo, warehouse=path)
+    with pytest.raises(ToolError, match="idrogeo sync"):
+        await mcp.call_tool("warehouse_schema", {})
+    with Warehouse(path) as warehouse:
+        await warehouse.sync(idrogeo, ["frane_piff", "pai_frane"], "molise", tmp_path)
+    schema = await _call(mcp, "warehouse_schema")
+    assert {layer["name"] for layer in schema["layers"]} == {"frane_piff", "pai_frane"}
+    assert "class" in {c["column"] for c in schema["tables"]["pai_frane"]}
+    rows = await _call(mcp, "warehouse_sql", sql="SELECT class FROM pai_frane ORDER BY 1")
+    assert rows == [{"class": "AA"}, {"class": "P3"}, {"class": "P4"}]
+    with pytest.raises(ToolError, match="one SELECT"):
+        await mcp.call_tool("warehouse_sql", {"sql": "DELETE FROM pai_frane"})
+    with pytest.raises(ToolError):  # the read-only warehouse reads no files
+        await mcp.call_tool("warehouse_sql", {"sql": "SELECT * FROM read_text('/etc/hosts')"})
 
 
 async def test_download(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

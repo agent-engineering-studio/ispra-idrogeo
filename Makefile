@@ -1,4 +1,4 @@
-.PHONY: check lint format typecheck test build live
+.PHONY: check lint format typecheck test build docs docs-serve live
 
 check: lint typecheck test
 
@@ -18,6 +18,12 @@ test:
 
 build:
 	uv build
+
+docs:
+	uv run --group docs mkdocs build --strict
+
+docs-serve:
+	uv run --group docs mkdocs serve
 
 # The contract with the live IdroGEO service: needs the network (weekly in CI).
 live:
