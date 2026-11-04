@@ -116,6 +116,28 @@ async def test_fetch_and_municipalities(tmp_path: Path) -> None:
     assert await _run("--dir", str(tmp_path), "municipalities", "--region", "1") == []
 
 
+async def test_warehouse_commands(tmp_path: Path, idrogeo: IdroGEO) -> None:
+    from conftest import LAT, LON
+
+    async def run(*argv: str) -> list[Any]:
+        out = io.StringIO()
+        await cli.run(cli.parser().parse_args(["--dir", str(tmp_path), *argv]), idrogeo, out)
+        return [json.loads(line) for line in out.getvalue().splitlines()]
+
+    synced = await run("sync", "frane_piff", "pai_frane", "idraulica", "--area", "molise")
+    assert synced == [{"frane_piff": True, "pai_frane": True, "idraulica": True}]
+    assert (tmp_path / "idrogeo.duckdb").exists()
+    [here] = await run("hazard", str(LON), str(LAT))
+    assert (here["landslide"], here["flood"]) == ("P4", "P2")
+    near = await run("near", str(LON), str(LAT), "--radius", "150", "--limit", "1")
+    assert [r["id_frana"] for r in near] == ["0000000001"]
+    rows = await run("sql", "SELECT id_frana, geom FROM frane_piff ORDER BY 1 LIMIT 1")
+    assert rows[0]["id_frana"] == "0000000000" and isinstance(rows[0]["geom"], str)
+    [schema] = await run("sql", "--schema")
+    assert set(schema) == {"frane_piff", "pai_frane", "idraulica"}
+    assert await run("sql") == [schema]
+
+
 def test_since_needs_a_time_zone(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit):
         cli.parser().parse_args(["landslides", "--since", "2026-11-01"])

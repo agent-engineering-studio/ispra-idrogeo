@@ -11,6 +11,10 @@ a database loader.
     idrogeo landslides --since 2026-11-01T00:00:00Z --select '*'
     idrogeo sites --filter stato_monitoraggio=eq.1
     idrogeo lookup formazioni argille
+    idrogeo sync frane_piff pai_frane idraulica      # the local warehouse, extra [warehouse]
+    idrogeo hazard 14.62 40.81
+    idrogeo near 14.62 40.81 --radius 500
+    idrogeo sql "SELECT nome_tipo, count(*) FROM frane_piff GROUP BY 1"
 """
 
 from __future__ import annotations
@@ -92,7 +96,30 @@ def parser() -> argparse.ArgumentParser:
     lookup.add_argument("kind", choices=LOOKUPS)
     lookup.add_argument("text")
     lookup.add_argument("--limit", type=int, default=10)
+
+    sync = commands.add_parser("sync", help="load layers into the local warehouse (DuckDB)")
+    sync.add_argument("layers", nargs="+", choices=(*LANDSLIDE_LAYERS, *EVENT_LAYERS, *MOSAICS))
+    sync.add_argument("--area", default="ispra", help="region or province (default: Italy)")
+
+    hazard = commands.add_parser("hazard", help="landslide and flood hazard of a point")
+    _point(hazard)
+
+    near = commands.add_parser("near", help="the landslides around a point, nearest first")
+    _point(near)
+    near.add_argument("--radius", type=float, default=500, help="metres (default 500)")
+    near.add_argument("--layer", default="frane_piff")
+    near.add_argument("--limit", type=int, default=100)
+
+    sql = commands.add_parser("sql", help="one read-only SELECT on the local warehouse")
+    sql.add_argument("query", nargs="?", help="SELECT …; the tables: idrogeo sql --schema")
+    sql.add_argument("--limit", type=int, default=1000)
+    sql.add_argument("--schema", action="store_true", help="print the tables and columns")
     return top
+
+
+def _point(command: argparse.ArgumentParser) -> None:
+    command.add_argument("lon", type=float, help="longitude, degrees")
+    command.add_argument("lat", type=float, help="latitude, degrees")
 
 
 def _search_options(search: argparse.ArgumentParser) -> None:
@@ -141,7 +168,7 @@ def _dataset(name: str, area: str, geojson: bool) -> Dataset:
 async def run(args: argparse.Namespace, idrogeo: IdroGEO, out: TextIO) -> None:
     """Carry out one parsed command, writing its result to ``out``."""
     write: Callable[[Any], None] = lambda value: print(  # noqa: E731
-        json.dumps(value, ensure_ascii=False), file=out
+        json.dumps(value, ensure_ascii=False, default=str), file=out
     )
     command = args.command
     if command == "fetch":
@@ -180,8 +207,35 @@ async def run(args: argparse.Namespace, idrogeo: IdroGEO, out: TextIO) -> None:
     elif command == "lookup":
         for row in await idrogeo.lookup(args.kind, args.text, limit=args.limit):
             write(row)
+    elif command in ("sync", "hazard", "near", "sql"):
+        await _warehouse(args, idrogeo, write)
     else:  # dictionaries
         write(await idrogeo.dictionaries())
+
+
+async def _warehouse(
+    args: argparse.Namespace, idrogeo: IdroGEO, write: Callable[[Any], None]
+) -> None:
+    from ispra_idrogeo.cache import default_directory
+    from ispra_idrogeo.warehouse import FILENAME, Warehouse
+
+    path = (args.dir or default_directory()) / FILENAME
+    with Warehouse(path, read_only=args.command != "sync") as warehouse:
+        if args.command == "sync":
+            write(await warehouse.sync(idrogeo, args.layers, args.area, args.dir))
+        elif args.command == "hazard":
+            write(warehouse.hazard_at(args.lon, args.lat))
+        elif args.command == "near":
+            rows = warehouse.landslides_near(
+                args.lon, args.lat, args.radius, layer=args.layer, limit=args.limit
+            )
+            for row in rows:
+                write(row)
+        elif args.schema or not args.query:
+            write(warehouse.schema())
+        else:
+            for row in warehouse.query(args.query, limit=args.limit):
+                write(row)
 
 
 def _select(args: argparse.Namespace) -> list[str] | None:
@@ -203,7 +257,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
         asyncio.run(_main(args, sys.stdout))
-    except (IdrogeoError, ValueError) as exc:
+    except (IdrogeoError, ValueError, ImportError) as exc:
         print(f"idrogeo: {exc}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:

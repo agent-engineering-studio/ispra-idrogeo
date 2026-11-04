@@ -121,6 +121,7 @@ it.
 ```bash
 pip install ispra-idrogeo            # downloads, API, the idrogeo command
 pip install "ispra-idrogeo[geo]"     # + GeoDataFrames and GeoParquet (geopandas, pyarrow)
+pip install "ispra-idrogeo[warehouse]"  # + a local DuckDB copy for spatial questions
 ```
 
 Python 3.12 or newer. No account and no API key: IdroGEO open data is public.
@@ -231,7 +232,8 @@ opendata("frane_piff", "trento", "geojson")  # one autonomous province, GeoJSON
 opendata("eventi")  # all of Italy
 ```
 
-Coordinates are in **EPSG:32632** (WGS 84 / UTM 32N), for every area.
+Coordinates are in **EPSG:32632** (WGS 84 / UTM 32N), for every area. The
+flood mosaic is the exception: **EPSG:3035** (ETRS89 / LAEA Europe).
 
 ---
 
@@ -576,6 +578,51 @@ bibliography (`bibliografie`), institutions (`istituzioni`), professional
 bodies (`ordini`) and funding sources (`finanziamenti`). Ten answers by
 default; `limit` asks for more. Also `idrogeo lookup formazioni argille`.
 
+### Spatial questions: a local warehouse
+
+*Is this place in a hazard zone? Which landslides are mapped around it? How
+many in this municipality?* The API cannot answer by place, so
+`pip install "ispra-idrogeo[warehouse]"` keeps a local copy to ask:
+
+```bash
+idrogeo sync frane_piff pai_frane idraulica   # once; then only what changed
+idrogeo hazard 12.3397 45.4341                # Venezia, piazza San Marco
+idrogeo near 14.55 41.78 --radius 300         # the landslides around a point
+idrogeo sql "SELECT nome_reg, count(*) AS n FROM frane_piff GROUP BY 1 ORDER BY n DESC"
+```
+
+```python
+from ispra_idrogeo.warehouse import Warehouse
+
+async with IdroGEO() as idrogeo:
+    with Warehouse() as warehouse:  # ~/.cache/ispra-idrogeo/idrogeo.duckdb
+        await warehouse.sync(idrogeo, ["frane_piff", "pai_frane", "idraulica"])
+        warehouse.hazard_at(12.3397, 45.4341)
+        # {'landslide': None, 'flood': 'P3', 'flood_classes': ['P3', 'P2', 'P1'],
+        #  'sources': ['ISPRA - Mosaicatura …', …], 'note': "ISPRA's national mosaics are …"}
+        warehouse.landslides_in(municipality=70081)  # Trivento: 921, by type
+```
+
+`sync` downloads each layer only if it changed (as `fetch` does) and loads it
+into one DuckDB file with an R-tree index, in one transaction: a failed load
+leaves the old table in place. Every table is in EPSG:32632 metres, the flood
+mosaic reprojected from EPSG:3035; points go in and come out as longitude and
+latitude. The landslide fields include the region, province and municipality
+codes, so `landslides_in` counts an area's landslides even where the API's
+`regione_2019` is empty.
+
+The national layers are big: loading the flood mosaic (85,460 polygons) takes
+about ten minutes, LANDSLIDE_LOAD; a point query takes up to a second or two.
+Checked against ISPRA's 2021 report, the loaded flood areas add up to 16,283,
+30,271 and 42,460 km² for P3, P2 and P1 (the report: 16,224, 30,196 and
+42,376 km², the gap being the projection).
+
+`Warehouse(read_only=True)` opens the file for readers (the MCP server, a
+notebook, `idrogeo sql`) and switches off DuckDB's access to files, URLs and
+other databases, so SQL written by someone else, or by an agent, reads the
+tables and nothing more. DuckDB downloads its `spatial` extension the first
+time.
+
 ### For AI agents: the MCP server
 
 ```bash
@@ -606,6 +653,10 @@ landslides there?"*. For Claude Desktop, add it to
 | `monitoring_sites` / `webcams` | Who is watching, with which instruments |
 | `rank_areas` | The top (or bottom) regions, provinces or municipalities by any indicator, optionally inside a region or province |
 | `compare_areas` | Up to 20 areas side by side, so the agent does not do arithmetic in its head |
+| `hazard_at_point` | Landslide and flood hazard class of a point (from the [warehouse](#spatial-questions-a-local-warehouse)) |
+| `nearest_landslides` | The IFFI landslides around a point, nearest first (warehouse) |
+| `area_landslide_types` | An area's landslides by type, where the API has no area filter (warehouse) |
+| `warehouse_schema` / `warehouse_sql` | The local tables, and one read-only SQL query on them (warehouse) |
 | `code_list` | Any code list, in four languages |
 | `download_dataset` | A layer downloaded (only if changed) to the local folder |
 
@@ -628,7 +679,10 @@ To share one server across a team or a web app, run it over HTTP:
 idrogeo-mcp --transport streamable-http --host 0.0.0.0 --port 8000   # endpoint /mcp
 ```
 
-Every tool but `download_dataset` only reads. `rank_areas` keeps the summaries
+Every tool but `download_dataset` only reads. The warehouse tools read the
+DuckDB file of `idrogeo sync` (see below) and nothing else: it is opened
+read-only with file and network access switched off, so `warehouse_sql`
+cannot reach anything outside the tables. `rank_areas` keeps the summaries
 it reads on disk for 30 days: the first national ranking of municipalities asks
 IdroGEO 7,899 times (a few minutes), a region's ranking a few hundred. Searches stop at `limit` rows
 (100 by default, 1,000 at most), so an agent never receives 700,000
@@ -689,8 +743,11 @@ point to paths that no longer exist. This library handles these for you:
 | landslides of a region, `{"regione": "eq.16"}` | `not an embedded resource`; and `regione_2019`, which does filter, is **empty for 18%** of the landslides (35,543 in Campania) | no area filter for landslides: download `opendata(layer, area)` |
 | several landslides by id, `{"id_frana": "in.(…)"}` | an empty list, no error | `landslide(id)` for each one |
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
+| the flood mosaic in UTM 32N, like everything else | it is in **EPSG:3035** (ETRS89 LAEA), three files, one per scenario (`HPH_`, `MPH_`, `LPH_`) | the warehouse reprojects it and names the scenarios P3, P2, P1 |
+| reading the IFFI shapefiles as UTF-8 | `Invalid unicode`: the text is **ISO-8859-1**, said in a `.cst` file that GDAL ignores (it reads `.cpg`) | the warehouse reads the `.cst` and passes the encoding |
+| the mosaics under CC BY 4.0, like the rest | their licence PDF says **CC BY-SA 4.0**, with a citation of its own | `warehouse.SOURCES` carries each citation, and every hazard answer its licence |
 
-All checked against the live service on 3 November 2026.
+All checked against the live service on 3–4 November 2026.
 
 ---
 
@@ -725,7 +782,12 @@ All checked against the live service on 3 November 2026.
 | `ispra_idrogeo.geo.read(path)` | A downloaded file or folder as a GeoDataFrame (extra `[geo]`). |
 | `ispra_idrogeo.geo.frame(rows, geometry="point")` | API rows as a GeoDataFrame, in their own CRS. |
 | `ispra_idrogeo.geo.add_labels(frame, labels)` | `<column>_label` columns for coded columns. |
-| `idrogeo-mcp` | An MCP server with the same data as 12 tools, 3 resources and 2 prompts (extra `[mcp]`). |
+| `Warehouse(path=None, *, read_only=False)` | A local DuckDB copy of the layers (extra `[warehouse]`). |
+| `.sync(idrogeo, layers, area="ispra")` | Download (if changed) and load the layers that changed. |
+| `.hazard_at(lon, lat)` | Landslide (P4…P1, AA) and flood (P3…P1) hazard of a point. |
+| `.landslides_near(lon, lat, radius_m=500)` / `.landslides_in(region=, province=, municipality=)` | The landslides around a point / of an area, by type. |
+| `.query(sql, params, limit=1000)` / `.schema()` | One read-only SELECT / the tables and columns. |
+| `idrogeo-mcp` | An MCP server with the same data as 17 tools, 3 resources and 2 prompts (extra `[mcp]`). |
 | `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
@@ -807,6 +869,19 @@ Unless stated otherwise, ISPRA publishes its data under
 publish from it **must credit the source**, for example:
 
 > Source: ISPRA — IdroGEO, Italian landslide inventory (IFFI) and national hazard mosaics.
+
+The two **hazard mosaics** state otherwise: the licence PDF inside each ZIP
+says [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode),
+so data you derive from them must be shared under the same licence, with
+these citations (`ispra_idrogeo.warehouse.SOURCES`):
+
+> ISPRA - Mosaicatura nazionale delle aree a pericolosità da frana PAI (v. 4.0 – 2020-2021), https://idrogeo.isprambiente.it
+>
+> ISPRA - Mosaicatura delle aree a pericolosità idraulica (v. 5.0 – 2020), https://idrogeo.isprambiente.it
+
+ISPRA also notes that the mosaics are technical and scientific works updated
+every few years: the maps with legal value are those of the basin district
+authorities and of the provinces of Trento and Bolzano.
 
 This library only downloads the data. The figures in this README are drawn
 from IdroGEO API answers of 3 November 2026 (redraw them with

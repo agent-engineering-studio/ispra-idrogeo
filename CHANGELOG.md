@@ -8,6 +8,18 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Extra `[warehouse]` (DuckDB) and `ispra_idrogeo.warehouse.Warehouse`: a
+  local copy of the layers in one DuckDB file, R-tree indexed, all in
+  EPSG:32632. `sync()` loads only the layers whose download changed, in one
+  transaction; `hazard_at(lon, lat)` gives the landslide (P4…P1, AA) and flood
+  (P3…P1) hazard of a point, with the mosaics' citations and licence;
+  `landslides_near()` and `landslides_in()` answer by point and by area;
+  `query()` runs one read-only SELECT, with file and network access shut off
+  when the warehouse is opened read-only.
+- `idrogeo sync`, `idrogeo hazard`, `idrogeo near`, `idrogeo sql`.
+- MCP tools `hazard_at_point`, `nearest_landslides`, `area_landslide_types`,
+  `warehouse_schema`, `warehouse_sql`, on the read-only warehouse.
+
 - MCP tools `rank_areas` (top or bottom areas by any indicator, inside a
   region or province, summaries kept on disk 30 days) and `compare_areas`
   (up to 20 areas side by side); both carry the source and licence.
@@ -21,6 +33,9 @@ All notable changes to this project are documented here. The format follows
   areas inside them; `within(items, region=, province=)` filters a list.
 
 ### Changed
+
+- The README states that the two hazard mosaics are CC BY-SA 4.0 (their
+  licence PDF), not CC BY 4.0, and that the flood mosaic is in EPSG:3035.
 
 - `find_area` matches names without accents and apostrophes (`forli` finds
   Forlì) and answers an unknown name with "did you mean" suggestions instead

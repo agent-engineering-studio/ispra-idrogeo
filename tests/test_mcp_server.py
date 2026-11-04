@@ -114,8 +114,14 @@ async def test_tools_are_listed_and_read_only() -> None:
         "code_list",
         "rank_areas",
         "compare_areas",
+        "hazard_at_point",
+        "nearest_landslides",
+        "area_landslide_types",
+        "warehouse_schema",
+        "warehouse_sql",
         "download_dataset",
     }
+    assert not tools["hazard_at_point"].annotations.open_world_hint  # local, no network
     assert tools["area_risk"].annotations.read_only_hint
     assert not tools["download_dataset"].annotations.read_only_hint
 
@@ -211,6 +217,31 @@ async def test_resources_and_prompts() -> None:
     assert "Sarno" in profile.messages[0].content.text
     events = await mcp.get_prompt("recent_events", {"place": "Liguria", "since": "2026-10-01"})
     assert "2026-10-01" in events.messages[0].content.text
+
+
+async def test_spatial_tools_read_the_warehouse(tmp_path: Path, idrogeo: IdroGEO) -> None:
+    from conftest import LAT, LON, TRIVENTO
+
+    from ispra_idrogeo.warehouse import Warehouse
+
+    path = tmp_path / "w.duckdb"
+    mcp = server(idrogeo, warehouse=path)
+    with pytest.raises(ToolError, match="idrogeo sync"):
+        await mcp.call_tool("hazard_at_point", {"lon": LON, "lat": LAT})
+    with Warehouse(path) as warehouse:
+        await warehouse.sync(idrogeo, ["frane_piff", "pai_frane"], "molise", tmp_path)
+    here = await _call(mcp, "hazard_at_point", lon=LON, lat=LAT)
+    assert (here["landslide"], here["missing"]) == ("P4", ["idraulica"])
+    near = await _call(mcp, "nearest_landslides", lon=LON, lat=LAT, radius_m=200)
+    assert [r["distance_m"] for r in near] == [40.0, 100.0]
+    counts = await _call(mcp, "area_landslide_types", municipality=TRIVENTO)
+    assert counts["landslides"] == 3
+    schema = await _call(mcp, "warehouse_schema")
+    assert {layer["name"] for layer in schema["layers"]} == {"frane_piff", "pai_frane"}
+    rows = await _call(mcp, "warehouse_sql", sql="SELECT count(*) AS n FROM pai_frane")
+    assert rows == [{"n": 3}]
+    with pytest.raises(ToolError, match="one SELECT"):
+        await mcp.call_tool("warehouse_sql", {"sql": "DELETE FROM pai_frane"})
 
 
 def test_command_line_arguments() -> None:
