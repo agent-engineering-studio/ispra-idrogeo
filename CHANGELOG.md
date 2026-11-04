@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-04
+
 ### Added
 
 - Extra `[warehouse]` (DuckDB) and `ispra_idrogeo.warehouse.Warehouse`: the
@@ -19,7 +21,6 @@ All notable changes to this project are documented here. The format follows
   as the ISO-8859-1 its `.cst` file says.
 - `idrogeo sync` and `idrogeo sql`; MCP tools `warehouse_schema` and
   `warehouse_sql`.
-
 - MCP tools `rank_areas` (top or bottom areas by any indicator, inside a
   region or province, summaries kept on disk 30 days) and `compare_areas`
   (up to 20 areas side by side); both carry the source and licence.
@@ -45,7 +46,6 @@ All notable changes to this project are documented here. The format follows
 - README: the two hazard mosaics are CC BY-SA 4.0 (their licence PDF), not
   CC BY 4.0; the flood mosaic is in EPSG:3035; the API's landslide hazard
   areas do not add up like the downloadable mosaic.
-
 - `find_area` matches names without accents and apostrophes (`forli` finds
   Forlì) and answers an unknown name with "did you mean" suggestions instead
   of an empty list.
