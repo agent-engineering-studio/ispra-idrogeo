@@ -39,6 +39,19 @@ def _labels(name: str) -> list[dict[str, str]]:
 
 def _api(request: httpx.Request) -> httpx.Response:
     path = request.url.path
+    if path == "/geoserver/wms":
+        if "buffer" in request.url.params:
+            points = [[14.63, 40.838], [14.6301, 40.838]]
+            features = [
+                {
+                    "id": f"frane_piff_opendata.{n}",
+                    "geometry": {"type": "Point", "coordinates": p},
+                    "properties": {"id_frana": str(n)},
+                }
+                for n, p in enumerate(points)
+            ]
+            return httpx.Response(200, json={"features": features})
+        return httpx.Response(200, json={"features": [{"properties": {"cod_per_it": 3}}]})
     if path.startswith("/opendata/"):
         return httpx.Response(200, content=_ZIP)
     path = path.removeprefix("/api/")
@@ -62,7 +75,9 @@ def _api(request: httpx.Request) -> httpx.Response:
         return httpx.Response(401, json={"message": "Missing authorization header"})
     elif path in ("frana/searchfilter", "evento/main/filter"):
         limit = int(request.url.params["limit"])
-        rows = [{"n": n, "body": body} for n in range(min(limit, 250))]
+        rows = [
+            {"n": n, "body": body, "regione": 15 if n % 2 else 14} for n in range(min(limit, 250))
+        ]
     elif path == "sito/filter":
         rows = [{"uid": f"SI{n}", "strumentazione": [15], "body": body} for n in range(3)]
     elif path == "webcam/filter":
@@ -99,6 +114,8 @@ async def test_tools_are_listed_and_read_only() -> None:
         "webcams",
         "code_list",
         "download_dataset",
+        "hazard_at",
+        "landslides_near",
     }
     assert tools["area_risk"].annotations.read_only_hint
     assert not tools["download_dataset"].annotations.read_only_hint
@@ -124,6 +141,8 @@ async def test_landslides_events_sites() -> None:
         "tipo_movimento": 6,
         "stato_attivita_1liv": "eq.100",
     }
+    campania = await _call(mcp, "search_landslides", region=15, movement=5, limit=3)
+    assert [r["n"] for r in campania] == [1, 3, 5] and campania[0]["body"] == {"tipo_movimento": 5}
     events = await _call(mcp, "search_events", region=16, start="2023-01-01", end="2024-01-01")
     assert len(events) == 100  # the default limit
     assert events[0]["body"]["regione"] == "eq.16" and "and" in events[0]["body"]
@@ -132,6 +151,10 @@ async def test_landslides_events_sites() -> None:
     assert sites[0]["body"] == {"regione": "eq.1", "stato_monitoraggio": "eq.1"}
     assert (await _call(mcp, "webcams", region=3))[0]["body"] == {"regione": "eq.3"}
     assert (await _call(mcp, "code_list", name="cause")) == {"1": "cause 1"}
+    hazard = await _call(mcp, "hazard_at", lat=40.829, lon=14.617)
+    assert hazard["landslide"] == "P3" and hazard["flood"] is None
+    near = await _call(mcp, "landslides_near", lat=40.838, lon=14.63, radius_m=100, limit=1)
+    assert [r["id_frana"] for r in near] == ["0"]
 
 
 async def test_download(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -163,3 +186,47 @@ async def test_the_client_is_closed_only_if_ours() -> None:
     assert ours._client.is_closed and not theirs._client.is_closed
     await theirs.aclose()
     assert mcp_server.server() is not None  # builds with its own client
+
+
+def test_options_from_the_command_line_and_the_environment() -> None:
+    default = mcp_server.options([], environ={})
+    assert (default.transport, default.host, default.port, default.allowed_host) == (
+        "stdio",
+        "127.0.0.1",
+        8767,
+        [],
+    )
+    env = {
+        "IDROGEO_MCP_TRANSPORT": "streamable-http",
+        "IDROGEO_MCP_HOST": "0.0.0.0",
+        "IDROGEO_MCP_PORT": "9000",
+        "IDROGEO_MCP_ALLOWED_HOSTS": "idrogeo-mcp:*, ",
+    }
+    from_env = mcp_server.options([], environ=env)
+    assert (from_env.transport, from_env.host, from_env.port) == (
+        "streamable-http",
+        "0.0.0.0",
+        9000,
+    )
+    assert mcp_server.http_options(from_env)["transport_security"].allowed_hosts == [
+        "idrogeo-mcp:*"
+    ]
+    flags = mcp_server.options(["--port", "8000", "--transport", "stdio"], environ=env)
+    assert (flags.port, flags.transport) == (8000, "stdio")  # flags win over the environment
+    assert mcp_server.http_options(mcp_server.options([], environ={})) == {
+        "host": "127.0.0.1",
+        "port": 8767,
+        "streamable_http_path": "/mcp",
+    }
+    with pytest.raises(SystemExit):
+        mcp_server.options([], environ={"IDROGEO_MCP_TRANSPORT": "sse"})
+
+
+def test_health_and_mcp_over_http() -> None:
+    from starlette.testclient import TestClient
+
+    app = _server().streamable_http_app()
+    with TestClient(app) as http:
+        health = http.get("/health")
+        assert health.status_code == 200 and health.json()["status"] == "ok"
+        assert 400 <= http.get("/mcp").status_code < 500  # no session: refused, but alive

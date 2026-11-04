@@ -11,9 +11,14 @@ Essentials:
 - Figures: `await idrogeo.summary("pir" | "iffi", "italia" | "regioni" | "province" | "comuni", istat_code)`. "pir" = hazard and exposure indicators, "iffi" = landslide counts. All municipalities: `await idrogeo.municipalities(max_age=...)`.
 - Searches: `iter_landslides(landslide_filter(movement=6, activity=[100]))`, `iter_events(event_filter(region=..., start=date(...)))`, `sites(site_filter(...))`. Use the filter builders, not raw dicts: `tipo_movimento` wants a plain integer, not `eq.6`.
 - Do NOT filter landslides by region through the API: `regione` errors and `regione_2019` is empty for ~18% of landslides. Download `opendata(layer, area)` instead.
+- A point (latitude, longitude order!): `await idrogeo.hazard_at(lat, lon)` returns PAI landslide class (P4..P1, AA), flood scenarios (P3..P1), municipality ISTAT code, slope; `await idrogeo.landslides_near(lat, lon, radius_m=500)` lists IFFI landslides nearest first. One WMS request each, no download.
+- Landslides of an area: `idrogeo.iter_landslides_in(region=..., province=..., municipality=...)` (exact counts; checks each record's own area fields).
+- Changes: `idrogeo watch --once` (CLI, resumable) or `ispra_idrogeo.watch.changes(idrogeo, kind, mark)`.
+- MCP server: `idrogeo-mcp` (stdio) or `idrogeo-mcp --transport streamable-http` (endpoint /mcp, GET /health).
 - Codes to words: `labels = await idrogeo.code_labels(["tipo_movim"], lang="en")`, then `decode(record, labels)` or `ispra_idrogeo.geo.add_labels(frame, labels)`.
 - Errors: `IdrogeoError` when IdroGEO answers but not with what was asked (unknown id, moved path); `ValueError` for unknown layer/area names before any request; `httpx.HTTPError` for the network after retries.
-- CLI: `idrogeo fetch|summary|municipalities|landslides|events|sites|webcams|landslide|labels|dictionaries|lookup`; JSON Lines output.
+- CLI: `idrogeo fetch|summary|municipalities|landslides|events|sites|webcams|landslide|labels|dictionaries|lookup|hazard|near|watch`; JSON Lines output.
+- Licences: IdroGEO data is CC BY 4.0, but the two downloadable hazard mosaics (pai_frane, idraulica) are CC BY-SA 4.0. The flood mosaic is in EPSG:3035; IFFI shapefile text is ISO-8859-1 (declared in a .cst file).
 
 Docs:
 - [Getting started](https://agentengineering.it/ispra-idrogeo/getting-started/)

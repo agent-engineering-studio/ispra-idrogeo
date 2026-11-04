@@ -37,6 +37,7 @@ async with IdroGEO() as idrogeo:
 - [Where downloads are saved](#where-downloads-are-saved)
 - [How it works](#how-it-works)
 - [Recipes](#recipes)
+- [Example notebooks](#example-notebooks)
 - [The traps we already fell into](#the-traps-we-already-fell-into)
 - [API at a glance](#api-at-a-glance)
 - [Contributing](#contributing) · [Ideas to work on](#ideas-to-work-on)
@@ -192,11 +193,14 @@ idrogeo fetch frane_piff --area molise              # prints the unpacked folder
 idrogeo summary pir comuni 72006 | jq .popidp2_p    # 1.278
 idrogeo municipalities --max-age-days 30 > comuni.jsonl
 idrogeo landslides --since 2026-11-01T00:00:00Z --select '*' > changed.jsonl
+idrogeo landslides --municipality 65135             # Sarno's 53 landslides
 idrogeo sites --filter stato_monitoraggio=eq.1 --select uid,point
 idrogeo labels tipo_movimento --lang it
+idrogeo hazard 40.829 14.617                        # P4, Sarno, 12.3°
 ```
 
-Downloads print the path they wrote; everything else prints JSON, one object
+Downloads print the path they wrote, with a progress bar on stderr when it is
+a terminal (`--progress` / `--no-progress` to choose); everything else prints JSON, one object
 per line for lists (JSON Lines), ready for `jq`, a file or a database loader.
 `idrogeo --help` and `idrogeo <command> --help` list every option. An error
 prints one line on stderr and exits with status 1.
@@ -434,6 +438,20 @@ next_since = max(datetime.fromisoformat(f["modified"]) for f in changed)
 ids = {f["id_frana"] async for f in idrogeo.iter_landslides(select=["id_frana"], page_size=100_000)}
 ```
 
+### Watch for changes
+
+```bash
+idrogeo watch --once >> changes.jsonl                 # one round, e.g. every hour from cron
+idrogeo watch --kind events --interval 900            # or keep running, every 15 minutes
+```
+
+Each line is a landslide, an event or a monitoring site that changed since
+the previous round, with `"kind"` saying which. The first run starts from
+now (or from `--since`); after that `<dir>/watch.json` remembers where each
+kind stands, so a stopped watch resumes without missing or repeating a
+change. In Python, `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` does
+one round.
+
 ### Landslides per region (the map above)
 
 ```python
@@ -532,6 +550,18 @@ unique key (`id_frana`, `uid`) so pages do not overlap. An empty filter
 matches everything; `search_landslides` and `search_events` return a single
 page, if you prefer to page yourself.
 
+For the landslides of an area, `iter_landslides_in` checks each record's
+own region, province or municipality, because the search has no reliable
+area filter (see the traps). It reads the whole inventory with a few fields,
+about 20 seconds for Italy, and gives the exact counts (Campania 55,254,
+Sarno 53):
+
+```python
+async with IdroGEO() as idrogeo:
+    sarno = [f async for f in idrogeo.iter_landslides_in(municipality=65135)]
+    debris_flows = idrogeo.iter_landslides_in(region=15, filters=landslide_filter(movement=5))
+```
+
 `landslide_filter`, `event_filter` and `site_filter` build the filters, because each
 search reads them its own way: landslides want `{"tipo_movimento": 6}` but
 `{"stato_attivita_1liv": "eq.100"}`, events and sites want operators
@@ -591,6 +621,42 @@ dictionary). `id_frane_correlati` links 880 sites to their IFFI landslides,
 so you can tell which landslides someone is already watching. Look a site up
 by its `uid` (`"SIPIE001"`), not by its `id`.
 
+### Is this place at risk? Hazard at a point
+
+```python
+async with IdroGEO() as idrogeo:
+    here = await idrogeo.hazard_at(40.829, 14.617)  # the hills above Sarno
+print(here.landslide, here.flood, here.municipality_name, here.slope_deg)
+# P4 None Sarno 12.3
+
+async with IdroGEO() as idrogeo:
+    venice = await idrogeo.hazard_at(45.438, 12.330)
+print(venice.flood, venice.flood_scenarios)  # P3 ('P3', 'P2', 'P1')
+```
+
+One request, about a second, to IdroGEO's public map service: no 1.2 GB
+mosaic to download. You get the PAI **landslide** class (`P4` very high,
+`P3` high, `P2` medium, `P1` moderate, `AA` attention area), the **flood**
+scenarios that reach the point (`P3` frequent floods, `P2` every 100–200
+years, `P1` rare and extreme), the **municipality** (ISTAT code, ready for
+`summary("pir", "comuni", code)`) and the **slope** in degrees.
+`lithology=True` adds the rock type, but takes about 16 seconds more.
+
+### Landslides near a point
+
+```python
+async with IdroGEO() as idrogeo:
+    near = await idrogeo.landslides_near(40.838, 14.630, radius_m=500)
+for f in near[:3]:
+    print(f["id_frana"], f["nome_tipo"], f["nome_com"], f["distance_m"], f["shapes"])
+# 0640689600 Colamento rapido Quindici 397.7 ['polygon', 'point']   ← a rapid debris flow
+```
+
+Every IFFI landslide within `radius_m` (up to 5 km), nearest first, with its
+type and area, `distance_m` (0 when the point is on it) and the shapes it is
+mapped as. The distance is computed from the real outline, not from a
+centre point. Also: `idrogeo hazard 40.829 14.617` and `idrogeo near 40.838 14.630`.
+
 ### Geology, aerial photos, bibliography
 
 ```python
@@ -617,7 +683,7 @@ pip install "ispra-idrogeo[mcp]"
 `idrogeo-mcp` is an [MCP](https://modelcontextprotocol.io) server, so Claude
 Desktop, an IDE or your own agent can answer questions like *"how many people
 live in high landslide hazard areas in Sarno, and is anyone monitoring the
-landslides there?"*. For Claude Desktop, add it to
+landslides there?"* or *"is this address in a flood zone?"*. For Claude Desktop, add it to
 `claude_desktop_config.json`:
 
 ```json
@@ -628,8 +694,41 @@ landslides there?"*. For Claude Desktop, add it to
 }
 ```
 
+As an always-on service, for an agent that talks HTTP (for example
+[mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server)'s
+chat and map), serve it over streamable HTTP at `/mcp`:
+
+```bash
+idrogeo-mcp --transport streamable-http --host 0.0.0.0 --port 8767
+```
+
+Every option also reads an environment variable, so a compose file needs no
+command line, and `GET /health` answers `{"status": "ok"}`:
+
+```yaml
+services:
+  idrogeo-mcp:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    command: uvx --from "ispra-idrogeo[mcp]>=0.6" idrogeo-mcp
+    environment:
+      IDROGEO_MCP_TRANSPORT: streamable-http
+      IDROGEO_MCP_HOST: 0.0.0.0
+      IDROGEO_MCP_PORT: "8767"
+      IDROGEO_DATA_DIR: /data/idrogeo  # for download_dataset
+    volumes:
+      - idrogeo-data:/data/idrogeo
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8767/health')"]
+```
+
+On `127.0.0.1` the SDK refuses requests with a foreign `Host` header (DNS
+rebinding protection); on `0.0.0.0` it does not, unless you list the names
+clients use: `IDROGEO_MCP_ALLOWED_HOSTS=idrogeo-mcp:*,localhost:*`.
+
 | Tool | What the agent gets |
 |---|---|
+| `hazard_at` | Landslide and flood hazard, municipality and slope of a point |
+| `landslides_near` | The landslides around a point, nearest first |
 | `find_area` | The ISTAT code of a region, province or municipality from its name |
 | `area_risk` | Hazard and exposure: residents, buildings, heritage per hazard class |
 | `area_landslides` | IFFI counts by type of movement, events, monitoring |
@@ -681,6 +780,20 @@ An unknown layer, area or mosaic name raises `ValueError` before any request.
 
 ---
 
+## Example notebooks
+
+<!-- --8<-- [start:notebooks] -->
+
+[`examples/`](https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/examples) has three notebooks run on the live service, with
+their outputs: **a town and its landslides** (Sarno, from exposure figures
+to a map of its debris flows), **Italy in numbers** (who lives in hazard
+areas, municipality by municipality) and **what changed** (following the
+inventory day by day).
+
+<!-- --8<-- [end:notebooks] -->
+
+---
+
 ## The traps we already fell into
 
 <!-- --8<-- [start:traps] -->
@@ -692,7 +805,10 @@ point to paths that no longer exist. This library handles these for you:
 |---|---|---|
 | `/opendata/iffi/<region>/iffi_<region>_<layer>.zip`, as in older guides | HTTP **404** in 2026: the files moved | uses `/opendata/frane/<layer>_<area>_opendata.zip` |
 | the dictionaries in `/opendata/iffi/dizionari/*.json` | HTTP **404**: they moved to the API | reads `/api/dizionari` |
-| the WFS at `geoserver/idrogeo/frane/ows` | HTTP **401**, and the GeoServer lists no layer anonymously | uses the open downloads and the API |
+| the WFS at `geoserver/idrogeo/frane/ows` | HTTP **401**: the WFS needs a login | reads features through the **WMS**, which is public: `GetFeatureInfo` on 101 queryable layers |
+| asking the WMS about a point with a 1×1 image or the point as the box | nothing, or the wrong pixel | a ~2 m box around the point and its middle pixel (`i=50`, `j=50`), lat,lon order as WMS 1.3.0 wants |
+| the lithology layer next to the hazard layers | ~16 s for the whole answer, against under one second without it | `hazard_at(..., lithology=False)` by default |
+| the slope at sea | `-9999.0` | `slope_deg = None` |
 | a file for `trentino-alto-adige` | there is none: it publishes per province | offers `bolzano` and `trento` in `PROVINCES` |
 | downloading the inventory again every day "to be safe" | ~870 MB a day, whether anything changed or not | conditional GET: one `304` when nothing changed |
 | `/api/evento/{id}`, which the OpenAPI lists with no login | HTTP **401** without a login (`/api/frana/{id}` does answer 200) | reads events through `search_events`, which is public |
@@ -701,7 +817,8 @@ point to paths that no longer exist. This library handles these for you:
 | webcam `geom` as longitude and latitude | it is **EPSG:3857** metres, while sites use lon/lat | says so in `webcams()` |
 | a webcam's `timelapse_url` | HTTP **404** or a redirect to the web app: the videos are not published | leaves the field as IdroGEO sends it |
 | `{"tipo_movimento": "eq.6"}` on landslides, like every other field | `invalid input syntax for type integer`: this one field wants a plain `6`, and no list | `landslide_filter(movement=6)` |
-| landslides of a region, `{"regione": "eq.16"}` | `not an embedded resource`; and `regione_2019`, which does filter, is **empty for 18%** of the landslides (35,543 in Campania) | no area filter for landslides: download `opendata(layer, area)` |
+| landslides of a region, `{"regione": "eq.16"}` | `not an embedded resource`; `regione_2019`, which does filter, is **empty for 18%** of the landslides, and `regione_orig` is worse (Campania: 19,710 and 6,224 of 55,254) | `iter_landslides_in(region=15)` checks the record's own `regione`, which is always set: 55,254 |
+| paging the whole inventory 100,000 at a time | each page slower than the last (2.5 s at offset 0, 6.7 s at 600,000), and `id_frana` takes no `gt.` for keyset paging | one page of a million rows for area scans: ~20 s for Italy |
 | several landslides by id, `{"id_frana": "in.(…)"}` | an empty list, no error | `landslide(id)` for each one |
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
 
@@ -728,6 +845,7 @@ All checked against the live service on 3 November 2026.
 | `.sites(filters, modified_since=, select=)` | The monitoring sites (1,063). |
 | `.site(uid)` / `.stations(uid)` | One site / its stations, instruments and sensors. |
 | `.webcams(filters)` | The webcams pointed at landslides. |
+| `.iter_landslides_in(region=, province=, municipality=, filters=, select=)` | Every landslide of an area, checked on the record's own area fields. |
 | `.search_landslides(filters, limit=, offset=, select=, order=)` | One page of IFFI landslides. |
 | `.search_events(filters, limit=, offset=, select=, order=)` | One page of validated landslide events. |
 | `.municipalities(summary="pir", directory=None, *, concurrency=8, max_age=None)` | The summary of all 7,899 municipalities, saved one JSON per municipality. |
@@ -738,14 +856,18 @@ All checked against the live service on 3 November 2026.
 | `REGIONS` / `PROVINCES` / `region_area(cod_reg)` | Area file names by ISTAT code. |
 | `LANDSLIDE_LAYERS` / `EVENT_LAYERS` / `MOSAICS` | What there is. |
 | `default_directory()` | Where downloads go when no directory is given. |
+| `.hazard_at(lat, lon, lithology=False)` | `PointHazard`: landslide class, flood scenarios, municipality, slope. |
+| `.landslides_near(lat, lon, radius_m=500, limit=200)` | IFFI landslides around a point, with `distance_m`. |
 | `.lookup(kind, text, limit=10)` | Search geological units, flights, bibliography, institutions, funding. |
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
 | `.labels(name, lang)` / `.code_labels(fields, lang)` / `decode(record, labels)` | Code lists, and records with `<field>_label` added. |
 | `ispra_idrogeo.geo.read(path)` | A downloaded file or folder as a GeoDataFrame (extra `[geo]`). |
 | `ispra_idrogeo.geo.frame(rows, geometry="point")` | API rows as a GeoDataFrame, in their own CRS. |
 | `ispra_idrogeo.geo.add_labels(frame, labels)` | `<column>_label` columns for coded columns. |
-| `idrogeo-mcp` | An MCP server with the same data as 10 tools (extra `[mcp]`). |
-| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`. |
+| `.download` / `.fetch(..., progress=callback)` | `callback(done, total)` after each chunk, for your own progress bar. |
+| `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` | One round of `idrogeo watch`: what changed since a `Mark`. |
+| `idrogeo-mcp` | An MCP server with the same data as 12 tools (extra `[mcp]`). |
+| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,
@@ -811,11 +933,8 @@ page has the longer analysis, AI features included.
 
 | Idea | Why it matters | Good for |
 |---|---|---|
-| 📓 **Example notebooks** (a town, a valley, a flood plain) | Show what the data can do, from download to map | first contribution, GIS users |
-| 📊 **Progress bar** for the big downloads (`idrogeo fetch`) | 1.2 GB feels less like a black box | first contribution |
-| 🗺️ **Landslides of an area through the API** | The search has no reliable area filter today (see the traps); a spatial filter would fill the gap | intermediate |
-| 🔔 **A changes feed**: `idrogeo watch` printing new and changed landslides and events | Alerts and dashboards without polling by hand | intermediate |
-| 🧠 **More MCP tools** (hazard at a point, nearest landslides) | Agents that answer "is my house at risk?" | intermediate, AI users |
+| 🧪 **Live contract tests**: a weekly workflow that checks every path and field against IdroGEO | ISPRA moves things without notice; the library should notice first | intermediate |
+| 🧠 **An agent evaluation suite**: questions with checked answers, run against `idrogeo-mcp` | Tool descriptions are prompts: test them like code | intermediate, AI users |
 | 🧩 **A GeoServer bootstrap** that publishes the downloads, for [mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server) | From open data to a live map server in one command | advanced |
 | 📚 **Tutorials on the [documentation site](https://agentengineering.it/ispra-idrogeo/)** | Search and API reference are there; step-by-step guides are not yet | anyone |
 

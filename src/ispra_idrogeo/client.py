@@ -38,9 +38,23 @@ from ispra_idrogeo.cache import (
 from ispra_idrogeo.codes import CODE_DICTIONARIES, Language, parse_labels
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.sources import Dataset
+from ispra_idrogeo.wms import WMS_URL, PointHazard, area_params, nearby, parse_hazard, point_params
 
 _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
+
+#: ``progress(done, total)``: bytes written so far, and the size if known.
+type Progress = Callable[[int, int | None], None]
 _CHUNK = 1 << 20
+
+
+def _area_code(value: Any) -> int | None:
+    """An area field as an ISTAT code: a number, or the object the default fields embed."""
+    if isinstance(value, dict):
+        value = value.get("cod_reg", value.get("cod_prov", value.get("pro_com")))
+    try:
+        return None if value is None else int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _code(uid: str) -> str:
@@ -66,6 +80,7 @@ class IdroGEO:
         client: httpx.AsyncClient | None = None,
         *,
         api_url: str = api.API_URL,
+        wms_url: str = WMS_URL,
         retries: int = 3,
         backoff_s: float = 2.0,
         sleep: Callable[[float], Awaitable[Any]] = asyncio.sleep,
@@ -75,6 +90,7 @@ class IdroGEO:
             timeout=httpx.Timeout(60, read=300), follow_redirects=True
         )
         self._api = api_url.rstrip("/")
+        self._wms = wms_url
         self._retries = retries
         self._backoff_s = backoff_s
         self._sleep = sleep
@@ -95,11 +111,19 @@ class IdroGEO:
         if self._own:
             await self._client.aclose()
 
-    async def download(self, dataset: Dataset, directory: Path | None = None) -> Download:
+    async def download(
+        self,
+        dataset: Dataset,
+        directory: Path | None = None,
+        *,
+        progress: Progress | None = None,
+    ) -> Download:
         """The file in ``directory``, downloaded only if missing or changed upstream.
 
         ``directory`` defaults to :func:`~ispra_idrogeo.cache.default_directory`.
         A 404 raises :class:`IdrogeoError`: the layer or area does not exist.
+        ``progress(done, total)`` is called after each chunk of a download,
+        ``total`` being ``None`` when the server does not say the size.
         """
         directory = directory or default_directory()
         directory.mkdir(parents=True, exist_ok=True)
@@ -114,9 +138,15 @@ class IdroGEO:
                     if status == 304 and known is not None:
                         return Download(path, changed=False)
                     if status == 200:
+                        size = response.headers.get("content-length")
+                        total = int(size) if size and size.isdigit() else None
+                        done = 0
                         with partial.open("wb") as out:
                             async for chunk in response.aiter_bytes(_CHUNK):
                                 out.write(chunk)
+                                done += len(chunk)
+                                if progress is not None:
+                                    progress(done, total)
                         partial.replace(path)
                         write_validators(
                             path,
@@ -141,15 +171,21 @@ class IdroGEO:
         raise AssertionError("unreachable")  # pragma: no cover
 
     async def fetch(
-        self, dataset: Dataset, directory: Path | None = None, *, unpack: bool = True
+        self,
+        dataset: Dataset,
+        directory: Path | None = None,
+        *,
+        unpack: bool = True,
+        progress: Progress | None = None,
     ) -> Path:
         """The dataset ready to read: the folder its ZIP unpacks to, or the file.
 
         The folder is ``<directory>/<dataset.stem>`` and is unpacked again
         only when the download changed (or the folder is missing).
+        ``progress`` is passed to :meth:`download`.
         """
         directory = directory or default_directory()
-        got = await self.download(dataset, directory)
+        got = await self.download(dataset, directory, progress=progress)
         if not unpack or not dataset.filename.endswith(".zip"):
             return got.path
         folder = directory / dataset.stem
@@ -253,6 +289,37 @@ class IdroGEO:
         found = dict(zip(names, words, strict=True))
         return {f: found[CODE_DICTIONARIES[f]] for f in wanted}
 
+    async def hazard_at(self, lat: float, lon: float, *, lithology: bool = False) -> PointHazard:
+        """PAI landslide hazard, flood scenarios, municipality and slope of a point.
+
+        One request to IdroGEO's public map service, about a second;
+        latitude and longitude in degrees (WGS 84). ``lithology=True`` adds
+        the rock type, but the map service takes ~16 s more to answer it. A
+        point outside Italy, or at sea, answers ``None`` everywhere.
+        """
+        params = point_params(lat, lon, lithology=lithology)
+        return parse_hazard(lat, lon, await self._features(params))
+
+    async def landslides_near(
+        self, lat: float, lon: float, radius_m: float = 500, *, limit: int = 200
+    ) -> list[dict[str, Any]]:
+        """The IFFI landslides within ``radius_m`` of a point, nearest first.
+
+        Each row has the landslide's fields, ``distance_m`` (0 when the point
+        is inside it) and ``shapes`` (polygon, line, point…). One request;
+        ``limit`` caps the features the map service returns (1,000 at most),
+        so a dense area may need a smaller radius.
+        """
+        params = area_params(lat, lon, radius_m, limit)
+        return nearby(lat, lon, await self._features(params), radius_m)
+
+    async def _features(self, params: dict[str, str]) -> list[dict[str, Any]]:
+        response = await self._send("GET", self._wms, params=params)
+        data = api.parse(response.status_code, response.content)
+        if not isinstance(data, dict) or not isinstance(data.get("features"), list):
+            raise IdrogeoError(f"IdroGEO map service answered {str(data)[:200]!r}")
+        return list(data["features"])
+
     async def lookup(self, kind: api.Lookup, text: str, *, limit: int = 10) -> list[Any]:
         """Search a reference list by text: geological units, flights, bibliography…
 
@@ -304,6 +371,48 @@ class IdroGEO:
         """
         found = api.since_filter(filters, modified_since)
         return self._pages("frana/searchfilter", found, page_size, select, order)
+
+    async def iter_landslides_in(
+        self,
+        *,
+        region: int | None = None,
+        province: int | None = None,
+        municipality: int | None = None,
+        filters: dict[str, Any] | None = None,
+        modified_since: datetime | None = None,
+        select: list[str] | None = None,
+        page_size: int = 1_000_000,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Every IFFI landslide in a region, province or municipality (ISTAT codes).
+
+        The search has no reliable area filter (``regione_2019`` is empty
+        for 18% of the landslides), but every record knows its ``regione``,
+        ``provincia`` and ``comune``: the other filters run on the server and
+        the area is checked here. Without them it reads the whole inventory,
+        about 15 s with the default fields, in one page by default because
+        deep offsets are slow on IdroGEO (keyset paging is not possible:
+        ``id_frana`` takes no ``gt.``). Keep ``select`` short, and use
+        ``opendata(layer, area)`` for full records with geometry.
+        """
+        wanted = {
+            field: code
+            for field, code in (
+                ("regione", region),
+                ("provincia", province),
+                ("comune", municipality),
+            )
+            if code is not None
+        }
+        if not wanted:
+            raise ValueError("give a region, a province or a municipality")
+        fields = select or ["id_frana", "tipo_movimento", "stato", "modified"]
+        fields = [*fields, *(f for f in wanted if f not in fields and "*" not in fields)]
+        found = self.iter_landslides(
+            filters, modified_since=modified_since, page_size=page_size, select=fields
+        )
+        async for row in found:
+            if all(_area_code(row.get(field)) == code for field, code in wanted.items()):
+                yield row
 
     def iter_events(
         self,

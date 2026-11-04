@@ -31,7 +31,7 @@ async with IdroGEO() as idrogeo:
 
 -   :material-robot: **[AI agents](ai-agents.md)**
 
-    `idrogeo-mcp`: the same data as ten MCP tools for Claude and other agents.
+    `idrogeo-mcp`: the same data as MCP tools for Claude and other agents, locally or over HTTP.
 
 -   :material-map-marker-path: **[Roadmap & AI](roadmap.md)**
 

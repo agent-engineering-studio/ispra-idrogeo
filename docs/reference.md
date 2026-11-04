@@ -18,6 +18,14 @@
 
 ::: ispra_idrogeo.filters
 
+## Points: the public map service
+
+::: ispra_idrogeo.wms
+
+## Watching for changes
+
+::: ispra_idrogeo.watch
+
 ## Code lists
 
 ::: ispra_idrogeo.codes
