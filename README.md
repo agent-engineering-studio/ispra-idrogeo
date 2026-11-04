@@ -586,7 +586,7 @@ many in this municipality?* The API cannot answer by place, so
 
 ```bash
 idrogeo sync frane_piff pai_frane idraulica   # once; then only what changed
-idrogeo hazard 12.3397 45.4341                # Venezia, piazza San Marco
+idrogeo hazard 14.6297 40.8205                # Sarno, where the 1998 debris flows started
 idrogeo near 14.55 41.78 --radius 300         # the landslides around a point
 idrogeo sql "SELECT nome_reg, count(*) AS n FROM frane_piff GROUP BY 1 ORDER BY n DESC"
 ```
@@ -597,10 +597,11 @@ from ispra_idrogeo.warehouse import Warehouse
 async with IdroGEO() as idrogeo:
     with Warehouse() as warehouse:  # ~/.cache/ispra-idrogeo/idrogeo.duckdb
         await warehouse.sync(idrogeo, ["frane_piff", "pai_frane", "idraulica"])
-        warehouse.hazard_at(12.3397, 45.4341)
-        # {'landslide': None, 'flood': 'P3', 'flood_classes': ['P3', 'P2', 'P1'],
+        warehouse.hazard_at(14.6297, 40.8205)  # Sarno
+        # {'landslide': 'P4', 'landslide_classes': ['P4'], 'flood': None, …,
         #  'sources': ['ISPRA - Mosaicatura …', …], 'note': "ISPRA's national mosaics are …"}
-        warehouse.landslides_in(municipality=70081)  # Trivento: 921, by type
+        warehouse.hazard_at(12.3397, 45.4341)  # Venezia, piazza San Marco: flood 'P3'
+        warehouse.landslides_in(municipality=65135)  # Sarno: 53 landslides, by type
 ```
 
 `sync` downloads each layer only if it changed (as `fetch` does) and loads it
@@ -611,11 +612,14 @@ latitude. The landslide fields include the region, province and municipality
 codes, so `landslides_in` counts an area's landslides even where the API's
 `regione_2019` is empty.
 
-The national layers are big: loading the flood mosaic (85,460 polygons) takes
-about ten minutes, LANDSLIDE_LOAD; a point query takes up to a second or two.
-Checked against ISPRA's 2021 report, the loaded flood areas add up to 16,283,
-30,271 and 42,460 km² for P3, P2 and P1 (the report: 16,224, 30,196 and
-42,376 km², the gap being the projection).
+With the three national layers the file weighs 2.6 GB. Loading took 9 s for
+the 721,377 landslide points, 55 s for the 928,542 landslide hazard polygons
+and 9 minutes for the 85,460 flood polygons, whose reprojection is the slow
+part. A point query then takes 10–40 ms, up to a second inside the largest
+flood polygons. Checked on 4 November 2026: the landslides counted per
+municipality match the API (Sarno 53, Casamicciola Terme 213, Trivento 921),
+and the flood areas add up to 16,283, 30,271 and 42,460 km² for P3, P2 and P1
+against the API's 16,224, 30,196 and 42,376 km² (the gap is the projection).
 
 `Warehouse(read_only=True)` opens the file for readers (the MCP server, a
 notebook, `idrogeo sql`) and switches off DuckDB's access to files, URLs and
@@ -745,6 +749,7 @@ point to paths that no longer exist. This library handles these for you:
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
 | the flood mosaic in UTM 32N, like everything else | it is in **EPSG:3035** (ETRS89 LAEA), three files, one per scenario (`HPH_`, `MPH_`, `LPH_`) | the warehouse reprojects it and names the scenarios P3, P2, P1 |
 | reading the IFFI shapefiles as UTF-8 | `Invalid unicode`: the text is **ISO-8859-1**, said in a `.cst` file that GDAL ignores (it reads `.cpg`) | the warehouse reads the `.cst` and passes the encoding |
+| the API's landslide hazard areas to match the landslide mosaic | the downloadable mosaic (v4.0, 2020-2021) adds up to ~60,500 km² (P4 9,506 · P3 16,894 · P2 14,553 · P1 12,558 · AA 6,988); the API's `ar_fr_*` say 69,529 km², 10–20% more per class: probably another edition. The flood areas do match | uses each as it is, and says which: `hazard_at` the mosaic, `area_risk` the API |
 | the mosaics under CC BY 4.0, like the rest | their licence PDF says **CC BY-SA 4.0**, with a citation of its own | `warehouse.SOURCES` carries each citation, and every hazard answer its licence |
 
 All checked against the live service on 3–4 November 2026.
