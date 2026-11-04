@@ -90,6 +90,11 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 
 [[tool.mypy.overrides]]
+# The agent eval's SDK lives in the optional `evals` group, absent in CI.
+module = ["anthropic", "anthropic.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 # geopandas and shapely ship no type information.
 module = ["geopandas", "geopandas.*", "pandas", "pandas.*", "shapely", "shapely.*"]
 ignore_missing_imports = true
