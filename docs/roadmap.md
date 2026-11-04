@@ -11,8 +11,8 @@ promises: open an issue to discuss one before starting.
 | **Downloads** | Every open-data layer and mosaic, conditional GET, atomic swap, progress bar | – |
 | **Points and areas** | `hazard_at` and `landslides_near` through IdroGEO's public WMS; `iter_landslides_in` with exact area counts | One point per request: nothing for thousands of points, or offline ([#4](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/4)) |
 | **Changes** | `idrogeo watch`, resumable, for cron | No summary a person reads in a minute |
-| **AI agents** | `idrogeo-mcp`: 12 tools, stdio and streamable HTTP with `/health` | No way to rank or compare areas ([#1](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/1)); no measure of how well an agent uses the tools; untyped outputs |
-| **Quality** | `mypy --strict`, 100% coverage, mocked transport, notebooks run on the live service | Nothing notices when ISPRA moves a path again (see [Known traps](traps.md)) |
+| **AI agents** | `idrogeo-mcp`: 14 tools, 3 resources, 2 prompts, stdio and streamable HTTP with `/health` | No measure of how well an agent uses the tools; untyped outputs |
+| **Quality** | `mypy --strict`, 100% coverage, mocked transport, notebooks run on the live service | Nothing notices when ISPRA moves a path again ([#5](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/5)) |
 
 The library now answers "what is at this place?". The next step is for agents
 to **use** it well, and to have that checked: ranking and comparing without
@@ -28,9 +28,9 @@ test suite of questions with known answers.
 | 3 | `idrogeo watch`, progress bar, example notebooks | DX | ✅ 0.6.0 |
 | 4 | MCP over streamable HTTP, `/health`, env configuration | AI | ✅ 0.6.0 |
 | 5 | `llms.txt` for coding assistants | AI | ✅ this site |
-| 6 | MCP `rank_areas`, `compare_areas`, resources, prompts, accent-insensitive `find_area` | AI | 🔄 [#1](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/1) |
+| 6 | MCP `rank_areas`, `compare_areas`, resources, prompts, accent-insensitive `find_area` | AI | ✅ [#1](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/1), unreleased |
 | 7 | Local DuckDB warehouse, offline, with read-only SQL for agents (`warehouse_sql`) | Core · AI | 🔄 [#4](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/4) |
-| 8 | Live contract tests, weekly, opening an issue on drift | Quality | ⏳ next |
+| 8 | Live contract tests, weekly, opening an issue on drift | Quality | 🔄 [#5](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/5) |
 | 9 | Agent evaluation suite: questions with checked answers | AI | ⏳ next |
 | 10 | Typed tool outputs (`TypedDict`) and citations on every answer | AI | ⏳ |
 | 11 | Grounded area reports (`idrogeo report <comune>`) | AI | ⏳ |
@@ -42,20 +42,19 @@ test suite of questions with known answers.
 
 ```mermaid
 flowchart LR
-    subgraph D["Done in 0.6.0"]
+    subgraph D["Done"]
         direction TB
         P["hazard_at · landslides_near<br/>(WMS)"]
         W0["watch · notebooks"]
-        H["MCP over HTTP"]
+        RK["rank_areas · compare_areas<br/>resources · prompts"]
     end
     subgraph R["In review"]
         direction TB
-        RK["rank_areas · compare_areas<br/>resources · prompts (#1)"]
         WH["Warehouse + SQL (#4)"]
+        C["Live contract tests (#5)"]
     end
     subgraph N["Next"]
         direction TB
-        C["Live contract tests"]
         E["Agent eval suite"]
         T["Typed outputs"]
     end
@@ -70,7 +69,7 @@ flowchart LR
 
 ---
 
-## In review
+## Done, not yet released
 
 ### Rank and compare, explain the indicators ([#1](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/1))
 
@@ -80,6 +79,8 @@ numbers instead of computing them. The resource `idrogeo://indicators`
 explains keys such as `popfrp3p4p`; two prompts, `area_profile` and
 `recent_events`, show clients how to chain the tools. `find_area` ignores
 accents and suggests close names.
+
+## In review
 
 ### A local warehouse, offline and in SQL ([#4](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/4))
 
@@ -98,15 +99,14 @@ Building it turned up four facts now in [Known traps](traps.md):
 
 ---
 
+### Live contract tests ([#5](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/5))
+
+51 tests against the live service, weekly, outside `make check`. They cover
+every layer and area, the `304`, the fields the tools read, and the traps
+still being traps. On failure the workflow opens an issue labelled
+`live-contract`.
+
 ## Next
-
-### Live contract tests
-
-The [Known traps](traps.md) table was checked by hand. A scheduled workflow
-(`pytest -m live`, weekly) can check it every week: every path still answers,
-every field the library reads is still there, the `304` still comes back. On
-failure it opens an issue. ISPRA changes paths without notice; this is how
-the library notices first.
 
 ### Agent evaluation suite
 
@@ -201,5 +201,5 @@ written back as if they were ISPRA records.
 ## How to help
 
 Pick a row, open an issue saying which one, and read
-[Contributing](contributing.md). Live contract tests, typed outputs and the
-agent skill are good first contributions.
+[Contributing](contributing.md). Typed outputs and the agent skill are good
+first contributions.

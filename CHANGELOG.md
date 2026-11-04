@@ -8,11 +8,26 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- MCP tools `rank_areas` (top or bottom areas by any indicator, inside a
+  region or province, summaries kept on disk 30 days) and `compare_areas`
+  (up to 20 areas side by side); both carry the source and licence.
+- MCP resources `idrogeo://indicators` (what the indicator keys mean),
+  `idrogeo://datasets` and `idrogeo://codes/{name}`; prompts `area_profile`
+  and `recent_events`.
+- `summaries()` and `municipalities()` take `region` and `province`, and
+  `idrogeo municipalities` `--region` and `--province`, to ask only for the
+  areas inside them; `within(items, region=, province=)` filters a list.
 - Documentation site on GitHub Pages (MkDocs Material, API reference from the
   docstrings), built and deployed by the `docs` workflow; `make docs` and
   `make docs-serve`. Pages reuse the README sections, so there is one source.
 - A Roadmap & AI page: improvements and AI features, prioritised.
 - `llms.txt` on the site, for AI coding assistants.
+
+### Changed
+
+- `find_area` matches names without accents and apostrophes (`forli` finds
+  Forlì) and answers an unknown name with "did you mean" suggestions instead
+  of an empty list.
 
 ## [0.6.0] - 2026-11-03
 

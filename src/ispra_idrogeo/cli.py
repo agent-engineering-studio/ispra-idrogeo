@@ -7,6 +7,7 @@ a database loader.
     idrogeo fetch frane_piff --area puglia
     idrogeo summary pir comuni 72006
     idrogeo municipalities --max-age-days 30 > comuni.jsonl
+    idrogeo municipalities --region 16 > puglia.jsonl
     idrogeo landslides --since 2026-11-01T00:00:00Z --select '*'
     idrogeo sites --filter stato_monitoraggio=eq.1
     idrogeo lookup formazioni argille
@@ -76,6 +77,8 @@ def parser() -> argparse.ArgumentParser:
     every.add_argument("--summary", choices=("iffi", "pir"), default="pir")
     every.add_argument("--max-age-days", type=float, help="ask again answers older than this")
     every.add_argument("--concurrency", type=int, default=8)
+    every.add_argument("--region", type=int, help="only those of this region (ISTAT code)")
+    every.add_argument("--province", type=int, help="only those of this province (ISTAT code)")
 
     for name, what in (
         ("landslides", "IFFI landslides"),
@@ -200,7 +203,12 @@ async def run(
     elif command == "municipalities":
         age = None if args.max_age_days is None else timedelta(days=args.max_age_days)
         rows = await idrogeo.municipalities(
-            args.summary, args.dir, concurrency=args.concurrency, max_age=age
+            args.summary,
+            args.dir,
+            concurrency=args.concurrency,
+            max_age=age,
+            region=args.region,
+            province=args.province,
         )
         for row in rows:
             write(row)
