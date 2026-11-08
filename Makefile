@@ -20,10 +20,10 @@ build:
 	uv build
 
 docs:
-	uv run --group docs mkdocs build --strict
+	uv run --group docs zensical build --strict
 
 docs-serve:
-	uv run --group docs mkdocs serve
+	uv run --group docs zensical serve
 
 # The contract with the live IdroGEO service: needs the network (weekly in CI).
 live:

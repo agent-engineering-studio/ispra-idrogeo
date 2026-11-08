@@ -62,10 +62,10 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.8",
 ]
-# The documentation site (GitHub Pages): uv run --group docs mkdocs serve
+# The documentation site (Zensical, on GitHub Pages): make docs-serve
 docs = [
-    "mkdocs-material>=9.5",
-    "mkdocstrings[python]>=0.26",
+    "mkdocstrings-python>=1.18",
+    "zensical>=0.1.0",
 ]
 
 [tool.ruff]

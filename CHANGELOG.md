@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- The documentation site is built with Zensical (`zensical.toml`) instead of
+  MkDocs Material; same pages, theme and API reference.
+
 ## [0.7.0] - 2026-11-04
 
 ### Added
