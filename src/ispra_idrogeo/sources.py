@@ -86,6 +86,9 @@ PROVINCES: dict[int, str] = {
 #: National hazard mosaics, large and rarely updated: PAI landslide hazard
 #: v. 4.0 2020-2021 (1.2 GB, shapefile, CC BY-SA 4.0) and v. 5.0 2024 (0.79 GB,
 #: File Geodatabase, CC BY 4.0), flood hazard v. 5.0 2020 (0.75 GB, CC BY-SA 4.0).
+#: New mosaics are added here as ISPRA publishes them (``pai_frane_2024`` came
+#: in 0.9.0): name the mosaics you need one by one instead of looping over all
+#: of them, or a minor release can add a large download to your sync.
 Mosaic = Literal["pai_frane", "pai_frane_2024", "idraulica"]
 MOSAICS: dict[Mosaic, str] = {
     "pai_frane": "Mosaicatura_ISPRA_2020_2021_aree_pericolosita_frana_PAI",
