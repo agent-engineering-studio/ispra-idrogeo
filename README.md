@@ -267,7 +267,8 @@ async with IdroGEO() as idrogeo:
 | `opendata("dgpv_poly")` | deep-seated slope deformations | 4 MB | CC BY-SA 4.0 |
 | `opendata("eventi")` | dated landslide events (points) | 1 MB | CC BY-SA 4.0 |
 | `opendata("segnalazioni")` | reports | small | not stated |
-| `mosaic("pai_frane")` | PAI landslide hazard map 2020-2021 | 1.2 GB | CC BY-SA 4.0 |
+| `mosaic("pai_frane")` | PAI landslide hazard map v. 4.0, 2020-2021 (shapefile) | 1.2 GB | CC BY-SA 4.0 |
+| `mosaic("pai_frane_2024")` | PAI landslide hazard map v. 5.0, **2024**, the newest (File Geodatabase) | 0.79 GB | **CC BY 4.0** |
 | `mosaic("idraulica")` | flood hazard map 2020 | 0.75 GB | CC BY-SA 4.0 |
 | `sensor_data()` | monitoring network readings, CSV (bzip2) | | |
 
@@ -795,6 +796,12 @@ async with IdroGEO() as idrogeo:
         # two overlapping polygons counts twice)
 ```
 
+`idrogeo sync pai_frane_2024` adds the 2024 landslide mosaic (a File
+Geodatabase, read the same way): 1,060,084 polygons, downloaded and loaded in
+132 s on 22 November 2026. Its areas match the API's indicators within 0.1%
+per class (69,547 against 69,529 km²). When it is there, `hazard_at` takes
+the landslide class from it and says so in `landslide_mosaic` (Sarno: P4).
+
 `sync` downloads each layer only if it changed (as `fetch` does) and loads it
 with an R-tree index, in one transaction: a failed load leaves the old table
 in place. Every table is in EPSG:32632 metres, the flood mosaic reprojected
@@ -1154,7 +1161,7 @@ point to paths that no longer exist. This library handles these for you:
 | the flood mosaic in UTM 32N, like everything else | it is in **EPSG:3035** (ETRS89 LAEA), in three files, one per scenario (`HPH_`, `MPH_`, `LPH_`) | the warehouse reprojects it and names the scenarios P3, P2, P1 |
 | reading the IFFI shapefiles as UTF-8 | `Invalid unicode`: the text is **ISO-8859-1**, said in a `.cst` file that GDAL ignores (it reads `.cpg`) | the warehouse reads the `.cst` and passes the encoding |
 | IFFI and the mosaics under CC BY 4.0, ISPRA's default | IdroGEO's licence PDFs say **CC BY-SA 4.0** for the IFFI inventory (one PDF per region) and for the mosaics, each with its own citation; only the risk indicators are CC BY 4.0 | `warehouse.SOURCES` holds each citation, and the answers carry their licence |
-| the API's landslide hazard areas to add up like the mosaic you download | the mosaic (v4.0, 2020-2021) adds up to ~60,500 km² (P4 9,506 · P3 16,894 · P2 14,553 · P1 12,558 · AA 6,988); the API's `ar_fr_*` give 69,529 km², 10–20% more per class: probably another edition. The flood areas do match | says which is which: the warehouse uses the mosaic, `area_risk` and `summary("pir", …)` the API |
+| the API's landslide hazard areas to add up like the 2020-2021 mosaic | that mosaic (v4.0) adds up to ~60,500 km² (P4 9,506 · P3 16,894 · P2 14,553 · P1 12,558 · AA 6,988), the API's `ar_fr_*` to 69,529 km². The API uses the **2024 mosaic** (v5.0): it adds up to 69,547 km², within 0.1% per class (P4 10,609 · P3 18,206 · P2 18,076 · P1 15,491 · AA 7,165). The flood areas match | offers `mosaic("pai_frane_2024")`, which the warehouse prefers for `hazard_at` |
 
 All checked against the live service on 3–4 November 2026, and again every
 week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
@@ -1300,6 +1307,7 @@ and in its licence PDF (checked on 22 November 2026):
 | Data | Licence | How to cite it |
 |---|---|---|
 | IFFI landslides (`frane_*`, `aree_poly`, `dgpv_poly`) and events (`eventi`) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode) | ISPRA – Regione *name*. Inventario dei Fenomeni Franosi in Italia - IFFI. idrogeo.isprambiente.it |
+| Landslide hazard mosaic 2024 (`pai_frane_2024`, v. 5.0) | CC BY 4.0 | ISPRA - Mosaicatura nazionale delle aree a pericolosità da frana PAI (v. 5.0 – 2024) – Piattaforma IdroGEO https://idrogeo.isprambiente.it |
 | Landslide hazard mosaic (`pai_frane`, v. 4.0, 2020-2021) | CC BY-SA 4.0 | ISPRA - Mosaicatura nazionale delle aree a pericolosità da frana PAI (v. 4.0 – 2020-2021), https://idrogeo.isprambiente.it |
 | Flood hazard mosaic (`idraulica`, v. 5.0, 2020) | CC BY-SA 4.0 | ISPRA - Mosaicatura delle aree a pericolosità idraulica (v. 5.0 – 2020), https://idrogeo.isprambiente.it |
 | Risk indicators (`summary("pir", …)`, `municipalities`) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/legalcode) | ISPRA (2024) Pericolosità e indicatori di rischio frane – Piattaforma IdroGEO; ISPRA (2020) Pericolosità e indicatori di rischio alluvioni – Piattaforma IdroGEO |
@@ -1310,17 +1318,19 @@ What this means for you:
 
 - **Always credit the source.** `ispra_idrogeo.warehouse.SOURCES` holds the
   citations above.
-- **Share-alike.** Data you derive from IFFI, the events or the mosaics must
-  be shared under CC BY-SA 4.0 too. The code that processes it can keep its
+- **Share-alike.** Data you derive from IFFI, the events, the 2020-2021
+  landslide mosaic or the flood mosaic must be shared under CC BY-SA 4.0 too
+  (the 2024 landslide mosaic is CC BY 4.0). The code that processes it can keep its
   own licence.
 - The IFFI licence is per region: the citation names the region the data
   comes from.
 
 ISPRA adds that the mosaics are technical and scientific works updated every
 few years: the maps with legal value are those of the basin district
-authorities and of the provinces of Trento and Bolzano. IdroGEO also
-publishes a newer landslide mosaic (v. 5.0, 2024, CC BY 4.0) that this
-library does not download yet.
+authorities and of the provinces of Trento and Bolzano. For new work,
+prefer the 2024 landslide mosaic (`pai_frane_2024`): it is newer, it is the
+one the API's risk indicators are computed on, and it is CC BY 4.0, not
+share-alike.
 
 **A hazard map is not an alert.** For warnings, follow the bulletins of the
 Civil Protection Department and of your region.

@@ -51,8 +51,9 @@ SOURCES: dict[Kind, str] = {
     ),
     "hazard": (
         "ISPRA \u2014 IdroGEO map service: PAI landslide and flood hazard mosaics, "
-        "https://idrogeo.isprambiente.it (CC BY-SA 4.0 for the landslide mosaic v. 4.0 and the "
-        "flood mosaic v. 5.0; the service does not say which edition it shows)"
+        "https://idrogeo.isprambiente.it (landslide mosaic v. 5.0 2024 CC BY 4.0, v. 4.0 "
+        "2020-2021 CC BY-SA 4.0; flood mosaic v. 5.0 2020 CC BY-SA 4.0; the service does not "
+        "say which edition it shows)"
     ),
     "monitoring": (
         "ISPRA \u2014 IdroGEO, monitoring sites, https://idrogeo.isprambiente.it, CC BY 4.0"

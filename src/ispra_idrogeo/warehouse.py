@@ -69,6 +69,11 @@ SOURCES: dict[str, str] = {
         "ISPRA - Mosaicatura nazionale delle aree a pericolosità da frana PAI "
         "(v. 4.0 \u2013 2020-2021), https://idrogeo.isprambiente.it, CC BY-SA 4.0"
     ),
+    "pai_frane_2024": (
+        "ISPRA - Mosaicatura nazionale delle aree a pericolosità da frana PAI "
+        "(v. 5.0 \u2013 2024) \u2013 Piattaforma IdroGEO https://idrogeo.isprambiente.it, "
+        "CC BY 4.0"
+    ),
     "idraulica": (
         "ISPRA - Mosaicatura delle aree a pericolosità idraulica (v. 5.0 \u2013 2020), "
         "https://idrogeo.isprambiente.it, CC BY-SA 4.0"
@@ -90,7 +95,11 @@ LANDSLIDE_CLASSES = ("P4", "P3", "P2", "P1", "AA")
 #: Flood hazard scenarios, most frequent first, by the prefix of their file.
 FLOOD_CLASSES = {"HPH": "P3", "MPH": "P2", "LPH": "P1"}
 #: Where each mosaic says its class.
-_CLASS_FIELD = {"pai_frane": "per_fr_ita", "idraulica": "scenario"}
+_CLASS_FIELD = {"pai_frane": "per_fr_ita", "pai_frane_2024": "per_fr_ita", "idraulica": "scenario"}
+#: The landslide mosaics, the newest first: hazard_at reads the first one synced.
+_LANDSLIDE_MOSAICS = ("pai_frane_2024", "pai_frane")
+#: Columns of the sources that say nothing about the data.
+_SKIPPED = frozenset({"OGC_FID", "OBJECTID"})
 #: The coordinate system each layer is published in.
 _SOURCE_CRS = {"idraulica": "EPSG:3035"}
 #: Area codes come as decimals from the shapefiles; they are whole numbers.
@@ -155,10 +164,10 @@ class Warehouse:
         """Download ``layers`` (only if changed) and load the ones that changed.
 
         Layers: IFFI layers and events (``frane_piff``, ``frane_poly``, …,
-        ``eventi``) for ``area``, or the mosaics ``pai_frane`` and
-        ``idraulica`` (all of Italy). Each becomes a table of the same name; a
-        layer synced for another area replaces it. Returns, for each layer,
-        whether its table was (re)loaded.
+        ``eventi``) for ``area``, or the mosaics ``pai_frane``,
+        ``pai_frane_2024`` and ``idraulica`` (all of Italy). Each becomes a
+        table of the same name; a layer synced for another area replaces it.
+        Returns, for each layer, whether its table was (re)loaded.
         """
         loaded: dict[str, bool] = {}
         for name in layers:
@@ -184,17 +193,22 @@ class Warehouse:
 
         ``landslide`` is the most severe class found (P4 … P1, then AA),
         ``flood`` the most frequent scenario (P3 … P1); ``None`` means outside
-        every mapped area. A mosaic not synced yet is listed in ``missing``.
+        every mapped area. The landslide class comes from the newest landslide
+        mosaic synced (``pai_frane_2024``, else ``pai_frane``), named in
+        ``landslide_mosaic``. A mosaic not synced yet is listed in ``missing``.
         """
         x, y = self._project(lat, lon)
         answer: dict[str, Any] = {"lat": lat, "lon": lon, "missing": []}
+        landslides = next((n for n in _LANDSLIDE_MOSAICS if self._has(n)), "pai_frane")
+        used = []
         for name, order, key in (
-            ("pai_frane", LANDSLIDE_CLASSES, "landslide"),
+            (landslides, LANDSLIDE_CLASSES, "landslide"),
             ("idraulica", tuple(FLOOD_CLASSES.values()), "flood"),
         ):
             if not self._has(name):
                 answer["missing"].append(name)
                 continue
+            used.append(name)
             found = {
                 c
                 for (c,) in self._db.execute(
@@ -205,7 +219,9 @@ class Warehouse:
             classes = [c for c in order if c in found]
             answer[key] = classes[0] if classes else None
             answer[f"{key}_classes"] = classes
-        answer["sources"] = [SOURCES[n] for n in ("pai_frane", "idraulica") if self._has(n)]
+        if landslides in used:
+            answer["landslide_mosaic"] = landslides
+        answer["sources"] = [SOURCES[n] for n in used]
         answer["note"] = DISCLAIMER
         return answer
 
@@ -313,10 +329,12 @@ class Warehouse:
     # internals
 
     def _load(self, name: str, folder: Path, area: str, version: str) -> None:
-        shapefiles = sorted(folder.rglob("*.shp"))
-        if not shapefiles:
-            raise IdrogeoError(f"no shapefile in {folder}")
-        parts = [self._select(name, shp) for shp in shapefiles]
+        found = sorted(folder.rglob("*.shp")) + sorted(
+            p for p in folder.rglob("*.gdb") if p.is_dir()
+        )
+        if not found:
+            raise IdrogeoError(f"no shapefile or File Geodatabase in {folder}")
+        parts = [self._select(name, path) for path in found]
         with self._transaction():
             self._db.execute(
                 f"CREATE OR REPLACE TABLE {name} AS {' UNION ALL BY NAME '.join(parts)}"
@@ -328,23 +346,26 @@ class Warehouse:
             )
 
     def _select(self, name: str, shp: Path) -> str:
-        """The SELECT that reads one shapefile into the table's shape."""
+        """The SELECT that reads one shapefile (or File Geodatabase) into the table's shape."""
         source = f"ST_Read('{_quote(shp)}'{_encoding(shp)})"
-        columns = [c for c, *_ in self._db.execute(f"DESCRIBE SELECT * FROM {source}").fetchall()]
+        described = self._db.execute(f"DESCRIBE SELECT * FROM {source}").fetchall()
+        # shapefiles call the geometry "geom", a File Geodatabase "SHAPE"
+        shape = next((c for c, t, *_ in described if str(t).startswith("GEOMETRY")), "geom")
         fields = [
-            f"CAST({c} AS INTEGER) AS {c}" if c in _CODES else c
-            for c in columns
-            if c not in ("geom", "OGC_FID")
+            f"CAST({c} AS INTEGER) AS {c}" if c in _CODES else _ident(c)
+            for c, *_ in described
+            if c != shape and c not in _SKIPPED
         ]
         crs = _SOURCE_CRS.get(name)
-        geom = f"ST_Transform(geom, '{crs}', '{CRS}', always_xy := true)" if crs else "geom"
+        column = _ident(shape)
+        geom = f"ST_Transform({column}, '{crs}', '{CRS}', always_xy := true)" if crs else column
         fields.append(f"{geom}::GEOMETRY AS geom")
         if name == "idraulica":
             prefix = shp.name[:3].upper()
             if prefix not in FLOOD_CLASSES:
                 raise IdrogeoError(f"unexpected flood scenario file {shp.name}")
             fields.append(f"'{FLOOD_CLASSES[prefix]}' AS class")
-        elif name == "pai_frane":
+        elif name in _CLASS_FIELD:
             fields.append(f"regexp_extract(trim({_CLASS_FIELD[name]}), '(P[1-4]|AA)$', 1) AS class")
         return f"SELECT {', '.join(fields)} FROM {source}"
 

@@ -6,6 +6,21 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `mosaic("pai_frane_2024")`: the PAI landslide hazard mosaic v. 5.0 (2024),
+  0.79 GB, a File Geodatabase, **CC BY 4.0** (its licence PDF). The
+  warehouse loads it (`idrogeo sync pai_frane_2024`; File Geodatabases are
+  read like shapefiles, the geometry found by type) and `hazard_at` prefers
+  it to the 2020-2021 mosaic, naming the one used in `landslide_mosaic`.
+  `warehouse.SOURCES` has its citation. Checked on the real file: 1,060,084
+  polygons in 132 s, areas within 0.1% of the API's `ar_fr_*` per class. This
+  explains the trap of the "10–20% more" areas: the API uses the 2024 mosaic.
+
+### Changed
+
+- `.claude/hillclimb/` (eval results) is ignored by git.
+
 ## [0.8.0] - 2026-11-22
 
 ### Added
