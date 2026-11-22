@@ -84,7 +84,8 @@ Every number in your answer must come from a tool result: do not estimate,
 add up or extrapolate (rank_areas and compare_areas do the arithmetic).
 null means not available, never zero. Each result carries "source" (citation
 and licence) and "retrieved_at" (UTC): cite the source of the numbers you
-use. Before giving an answer with numbers, call check_answer with your draft,
+use. For how far IFFI counts and dates can be trusted in a place, use
+data_reliability. Before giving an answer with numbers, call check_answer with your draft,
 the tool results you used and the question, and fix every unmatched number.
 """
 
@@ -441,6 +442,23 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         P3…P1) and are CC BY-SA 4.0. Show the user the SQL you ran.
         """
         return grounded(await local(lambda w: w.query(sql, limit=limit)), "warehouse")
+
+    @mcp.tool(annotations=_LOCAL)
+    @_tool_errors
+    async def data_reliability(level: AreaLevel, code: int) -> dict[str, Any]:
+        """How far the IFFI inventory and the dated events can be trusted in a
+        region, province or municipality (ISTAT code, from find_area).
+
+        Shares of landslides with a date and with a date to the day, landslides
+        dated since 2018 (IFFI and events, with how many points are known to
+        1 km), how recently the records were edited, and what is not measured.
+        Say these limits when you answer about landslide counts or dates, and
+        before using dated landslides to judge rainfall. An estimate made from
+        outside, from a table built on the date in built_on.
+        """
+        from ispra_idrogeo.reliability import reliability
+
+        return grounded(reliability(level, code).as_dict(), "iffi")
 
     @mcp.tool(annotations=_LOCAL)
     @_tool_errors

@@ -18,6 +18,7 @@ a database loader.
     idrogeo watch --once >> changes.jsonl      # from cron
     idrogeo check facts.json < answer.txt      # numbers of a text not in the facts
     idrogeo dated --since 2018-01-01 --max-interval-days 1 --max-position-m 1000
+    idrogeo reliability comuni 65135               # how far to trust IFFI in Sarno
 """
 
 from __future__ import annotations
@@ -154,6 +155,12 @@ def parser() -> argparse.ArgumentParser:
     dated.add_argument("--max-interval-days", type=int, help="1 keeps dates known to the day")
     dated.add_argument("--max-position-m", type=int, help="keeps points known to these metres")
     dated.add_argument("--summary", action="store_true", help="counts instead of the list")
+
+    trust = commands.add_parser(
+        "reliability", help="how far to trust IFFI and the events in an area (no network)"
+    )
+    trust.add_argument("level", choices=("regioni", "province", "comuni"))
+    trust.add_argument("code", type=int, nargs="?", help="ISTAT code; without it, every area")
 
     check = commands.add_parser(
         "check", help="the numbers of a text that match no figure of a JSON file (no network)"
@@ -372,6 +379,21 @@ async def _main(args: argparse.Namespace, out: TextIO) -> None:
         await run(args, idrogeo, out)
 
 
+def _reliability(args: argparse.Namespace, out: TextIO) -> int:
+    """``idrogeo reliability``: one area, or every area of a level, as JSON lines."""
+    from ispra_idrogeo.reliability import reliability_map
+
+    found = reliability_map()
+    try:
+        areas = [found.at(args.level, args.code)] if args.code else found.all(args.level)
+    except ValueError as exc:
+        print(f"idrogeo: {exc}", file=sys.stderr)
+        return 1
+    for area in areas:
+        out.write(json.dumps(area.as_dict(), ensure_ascii=False) + "\n")
+    return 0
+
+
 def _check(args: argparse.Namespace, out: TextIO) -> int:
     """``idrogeo check``: 0 when every number is backed by the facts, else 1."""
     from ispra_idrogeo.grounding import check_text
@@ -386,6 +408,8 @@ def _check(args: argparse.Namespace, out: TextIO) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     """Entry point of the ``idrogeo`` command; the exit status."""
     args = parser().parse_args(argv)
+    if args.command == "reliability":
+        return _reliability(args, sys.stdout)
     if args.command == "check":
         try:
             return _check(args, sys.stdout)

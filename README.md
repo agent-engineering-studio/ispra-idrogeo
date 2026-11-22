@@ -44,6 +44,7 @@ async with IdroGEO() as idrogeo:
 | count landslides by region | [Landslides per region](#landslides-per-region-the-map-above) |
 | search landslides and events | [Walk through every landslide or event](#walk-through-every-landslide-or-event) |
 | use dated landslides (rainfall thresholds) | [Dated landslides](#dated-landslides-when-and-how-precisely) |
+| know how far to trust IFFI in a place | [How far to trust the data](#how-far-to-trust-the-data-place-by-place) |
 | keep a copy fresh every night | [Keep a national copy fresh](#keep-a-national-copy-fresh-every-night) · [Only what changed](#only-what-changed-since-last-time) · [Watch](#watch-for-changes) |
 | turn codes into words | [Translate the codes](#translate-the-codes) |
 | put API rows on a map | [API rows on a map](#api-rows-on-a-map) |
@@ -686,21 +687,121 @@ What the data holds (22 November 2026):
 | | IFFI records | Events |
 |---|---|---|
 | Landslides | 721,457 | 1,808 |
-| With a date | **26,601 (3.7%)**: 9,824 to the day, the rest an interval (6,447 within a month, 8,780 within a year, 1,550 longer) | 1,741 |
-| Dated since 2018 | 2,160, of which 1,565 to the day | 1,710, all to the day; 521 with a time |
+| With a date | **28,076 (3.9%)**: 10,822 to the day, the rest an interval (6,491 within a month, 9,213 within a year, 1,550 longer) | 1,741 |
+| Dated since 2018 | 2,216, of which 1,621 to the day | 1,710, all to the day; 521 with a time |
 | Accuracy of the point | **not stated**: every record says `esatta` | exact 652 · 100 m 501 · 1 km 455 · 10 km 102 (since 2018) |
 
 - **Most landslides have no date.** IFFI is mainly a map of *where*: 96% of
   its records have none, and a landslide without a date cannot validate a
   threshold.
-- **The dated ones are not spread evenly.** Since 2018, 1,525 of the 3,275
-  landslides dated to the day are in Trentino-Alto Adige.
+- **The dated ones are not spread evenly.** Since 2018, 1,581 of the 3,331
+  landslides dated to the day are in Trentino-Alto Adige. See
+  [how far to trust the data](#how-far-to-trust-the-data-place-by-place),
+  place by place.
 - **Treat `00:00` as "that day".** Most dates have no time; `time` is `None`
   for them. For rainfall, take the whole day, better ±1 day for the time zone.
 - **Uncertain dates can be a year or a month** (`"1979"`, `"1983-07"`): they
   become intervals. Impossible dates (year 7970) are left out.
 - **An event and an IFFI record may be the same landslide**: the open-data
   events do not carry the IFFI id, so nothing here merges them.
+
+### How far to trust the data, place by place
+
+<!-- --8<-- [start:reliability] -->
+
+IFFI is the best map of Italy's landslides, but it is not the same
+everywhere. Some regions date many of their landslides and others none; some
+were edited last year and others twenty years ago. `reliability` says which,
+for any region, province or municipality, from a table shipped with the
+package (no network):
+
+```python
+from ispra_idrogeo.reliability import reliability
+
+sarno = reliability("comuni", 65135)
+print(sarno.notes)
+# ('14 of 53 IFFI landslides (26.4%) have a date to the day.',
+#  '67.9% of the IFFI records were edited since 2021.',
+#  'Since 2018: 0 IFFI landslides dated to the day and 2 events, 1 of them with a point known to 1 km.')
+```
+
+```bash
+idrogeo reliability comuni 65135
+idrogeo reliability regioni > regions.jsonl
+```
+
+Each answer has the landslides and their density per km², the share with any
+date and with a date **to the day**, the landslides dated to the day since
+2018 (IFFI, and events with how many points are known to 1 km), the share of
+records **edited since 2021**, `notes` in plain words, and `not_measured`.
+The MCP tool `data_reliability` gives the same to an AI agent.
+
+By region (22 November 2026), sorted by the share dated to the day:
+
+| Region | IFFI landslides | per km² | dated | to the day | since 2018: IFFI · events | edited since 2021 |
+|---|---:|---:|---:|---:|---:|---:|
+| Trentino-Alto Adige | 25,301 | 1.86 | 57.7% | 24.6% | 1,395 · 186 | 61% |
+| Friuli-Venezia Giulia | 5,822 | 0.73 | 36.3% | 22.0% | 0 · 64 | 0% |
+| Veneto | 10,126 | 0.55 | 45.6% | 19.4% | 45 · 97 | 2% |
+| Sardegna | 2,051 | 0.09 | 13.3% | 4.3% | 3 · 34 | 26% |
+| Campania | 55,254 | 4.04 | 2.3% | 0.8% | 145 · 102 | 89% |
+| Piemonte | 37,786 | 1.49 | 2.2% | 0.6% | 0 · 130 | 3% |
+| Puglia | 839 | 0.04 | 4.8% | 0.4% | 0 · 2 | 0% |
+| Emilia-Romagna | 80,337 | 3.57 | 0.5% | 0.2% | 1 · 307 | 0% |
+| Liguria | 13,514 | 2.49 | 0.4% | 0.2% | 23 · 156 | 0% |
+| Umbria | 34,566 | 4.08 | 0.6% | 0.2% | 1 · 18 | 0% |
+| Lombardia | 141,970 | 5.95 | 0.2% | 0.1% | 4 · 235 | 0% |
+| Calabria | 10,100 | 0.66 | 0.5% | 0.1% | 0 · 47 | 0% |
+| Lazio | 10,550 | 0.61 | 0.2% | 0.1% | 2 · 64 | 0% |
+| Basilicata | 17,671 | 1.75 | 0.2% | <0.1% | 0 · 14 | 0% |
+| Toscana | 114,061 | 4.96 | 0.1% | <0.1% | 0 · 57 | 100% |
+| Molise | 23,949 | 5.37 | <0.1% | <0.1% | 0 · 8 | 0% |
+| Marche | 39,390 | 4.21 | <0.1% | <0.1% | 0 · 29 | 0% |
+| Sicilia | 83,864 | 3.25 | <0.1% | <0.1% | 2 · 96 | 73% |
+| Valle d'Aosta | 5,812 | 1.78 | 53.7% | 0.0% | 0 · 28 | 0% |
+| Abruzzo | 8,494 | 0.78 | 0.0% | 0.0% | 0 · 36 | 0% |
+
+What it shows:
+
+- **Dates are a north-eastern thing.** Three areas (Trentino-Alto Adige,
+  Friuli-Venezia Giulia, Veneto) date a fifth or more of their landslides to
+  the day; sixteen regions date fewer than one in a hundred, seven fewer than
+  one in a thousand. Valle d'Aosta dates half of them, but only to an
+  interval.
+- **Since 2018, the events matter more than IFFI** almost everywhere: outside
+  Trentino-Alto Adige and Campania, IFFI has a handful of landslides dated
+  to the day, the events file has tens or hundreds.
+- **6,814 of the 7,899 municipalities have no landslide dated to the day
+  since 2018**, and 2,276 have no IFFI landslide at all.
+- **Density is not completeness.** Lombardia maps 5.95 landslides per km²,
+  Puglia 0.04: geology explains part of it, the effort of each survey the
+  rest, and nothing here can tell the two apart.
+
+**Check:** the landslides counted per region are exactly the API's own
+counts (`summary("iffi", "regioni")`, all 20), and the dated totals match
+`dated_landslides` (28,076 IFFI records with a date, 10,822 to the day, 3,331
+landslides dated to the day since 2018).
+
+**What is not there:**
+
+- the accuracy of IFFI positions: every record says `esatta`;
+- how complete the inventory is: there is no reference to compare it with;
+- when each region last surveyed its landslides: the open-data page says the
+  year differs by region, but does not give it. "Edited since 2021" counts
+  bulk loads too (117,282 records carry the placeholder date 2000-12-31,
+  79,772 the migration of 18 July 2017): it says how recently the inventory
+  was touched, not surveyed;
+- whether an event and an IFFI record are the same landslide.
+
+The table is rebuilt with `uv run python tools/build_reliability.py` (about
+two minutes) and dated in `reliability_map().built_on`.
+
+**For Limen:** `iffi_density_500` weighs IFFI the same everywhere. Sixteen
+regions date fewer than 1% of their landslides to the day, so a backtest on
+IFFI dates would test the north-east only; and a low density in Puglia or Sardegna is not proof of safety. See
+limen#668.
+
+<!-- --8<-- [end:reliability] -->
 
 ### One landslide, in full
 
@@ -930,6 +1031,7 @@ clients use: `IDROGEO_MCP_ALLOWED_HOSTS=idrogeo-mcp:*,localhost:*`.
 | `code_list` | Any code list, in four languages |
 | `download_dataset` | A layer downloaded (only if changed) to the local folder |
 | `warehouse_schema` / `warehouse_sql` | The tables of the [local warehouse](#offline-many-places-at-once-your-own-sql-a-local-warehouse), and one read-only SQL query on them |
+| `data_reliability` | How far IFFI counts and dates can be trusted in an area, with what is not measured |
 | `check_answer` | The numbers of a draft answer that no tool returned: the agent checks itself before answering |
 
 Names are matched without accents or apostrophes (`forli` finds *Forlì*),
@@ -1043,7 +1145,7 @@ up a number, a date or a place. And nothing here is an alert.
 
 | Piece | What it does | Needs an Anthropic key? |
 |---|---|---|
-| [`idrogeo-mcp`](#for-ai-agents-the-mcp-server) | Gives the data to any AI agent as 17 tools: hazard at a point, nearby landslides, risk figures, rankings, searches, SQL on the warehouse, and `check_answer`. Every answer carries its source, licence and time | No: the agent brings its own model (Claude Desktop, Claude Code, your app) |
+| [`idrogeo-mcp`](#for-ai-agents-the-mcp-server) | Gives the data to any AI agent as 18 tools: hazard at a point, nearby landslides, risk figures, rankings, searches, SQL on the warehouse, and `check_answer`. Every answer carries its source, licence and time | No: the agent brings its own model (Claude Desktop, Claude Code, your app) |
 | [`llms.txt`](https://agentengineering.it/ispra-idrogeo/llms.txt) | A short guide to the library for AI coding assistants, with the traps | No |
 | [`check_text`](#check-a-text-for-invented-numbers) | Finds the numbers of a text that match no figure of the data it was written from. Also `idrogeo check` and the MCP tool `check_answer` | No |
 | [`evals/`](https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/evals) | Measures whether Claude, connected to `idrogeo-mcp`, answers 31 real questions right. The true answers are computed from the live data on every run | **Yes** (paid calls) |
@@ -1230,6 +1332,7 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `.lookup(kind, text, limit=10)` | Search geological units, flights, bibliography, institutions, funding. |
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
 | `ispra_idrogeo.dated.dated_landslides(idrogeo, since=, until=, region=, max_interval_days=, max_position_m=, sources=)` | Dated landslides of IFFI and of the events, with the precision of date and place; `summary(found)` counts them. |
+| `ispra_idrogeo.reliability.reliability(level, code)` | How far IFFI and the events can be trusted in an area: dates, events since 2018, upkeep, notes, what is not measured. |
 | `ispra_idrogeo.grounding.check_text(text, facts, question="")` | The numbers and dates of a text that match no figure of `facts`. |
 | `ispra_idrogeo.grounding.grounded(answer, kind)` / `SOURCES` | An answer with its `source` and `retrieved_at`; the citation and licence of each kind of data. |
 | `.labels(name, lang)` / `.code_labels(fields, lang)` / `decode(record, labels)` | Code lists, and records with `<field>_label` added. |
@@ -1242,8 +1345,8 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `.hazard_at(lat, lon)` / `.landslides_near(lat, lon, radius_m)` / `.landslides_in(...)` | The same questions as the client's, answered offline. |
 | `.download` / `.fetch(..., progress=callback)` | `callback(done, total)` after each chunk, for your own progress bar. |
 | `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` | One round of `idrogeo watch`: what changed since a `Mark`. |
-| `idrogeo-mcp` | An MCP server with the same data as 17 tools, 3 resources and 2 prompts (extra `[mcp]`). |
-| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`, `sync`, `sql`, `check`, `dated`. |
+| `idrogeo-mcp` | An MCP server with the same data as 18 tools, 3 resources and 2 prompts (extra `[mcp]`). |
+| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`, `sync`, `sql`, `check`, `dated`, `reliability`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,

@@ -149,6 +149,7 @@ async def test_tools_are_listed_and_read_only() -> None:
         "warehouse_schema",
         "warehouse_sql",
         "check_answer",
+        "data_reliability",
     }
     assert tools["area_risk"].annotations.read_only_hint
     assert not tools["warehouse_sql"].annotations.open_world_hint  # local, no network
@@ -371,3 +372,8 @@ async def test_check_answer_finds_invented_numbers() -> None:
     assert await _raw(mcp, "check_answer", text=good, facts=risk) == {"unmatched": [], "ok": True}
     bad = await _raw(mcp, "check_answer", text="About 7.4 million people.", facts=risk)
     assert bad == {"unmatched": ["7.4 million"], "ok": False}
+
+
+async def test_data_reliability() -> None:
+    sarno = await _call(_server(), "data_reliability", level="comuni", code=65135)
+    assert sarno["name"] == "Sarno" and sarno["not_measured"] and sarno["notes"]
