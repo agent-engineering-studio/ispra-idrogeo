@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-22
+
 ### Added
 
 - `app/`: the **Mappa dei dati su frane e pericolo** for public bodies (#22),
