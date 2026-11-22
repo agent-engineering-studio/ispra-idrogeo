@@ -155,6 +155,21 @@ async def test_events_and_their_dates(idrogeo: IdroGEO) -> None:
     assert rows and all("uid" in r for r in rows)
 
 
+async def test_dated_landslides_and_their_precision(idrogeo: IdroGEO, tmp_path: Path) -> None:
+    from ispra_idrogeo.dated import IFFI_FIELDS, dated_landslides, summary
+
+    found = summary(await dated_landslides(idrogeo, directory=tmp_path))
+    assert found["by_source"]["iffi"] > 20_000 and found["by_source"]["eventi"] > 1_000
+    # traps: IFFI calls every position "esatta", and uncertain dates can be a
+    # bare year or month ("1979", "1983-07")
+    rows = await idrogeo.search_landslides(limit=200, select=["accuratezza_posizione"])
+    assert {r["accuratezza_posizione"] for r in rows} == {"esatta"}
+    partial = await idrogeo.search_landslides(
+        {"data_incerta_min": "like.____"}, limit=1, select=list(IFFI_FIELDS)
+    )
+    assert partial and len(partial[0]["data_incerta_min"]) == 4
+
+
 async def test_monitoring_sites(idrogeo: IdroGEO) -> None:
     sites = await idrogeo.sites()
     assert len(sites) > 500

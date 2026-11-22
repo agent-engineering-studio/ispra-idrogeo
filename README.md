@@ -43,7 +43,7 @@ async with IdroGEO() as idrogeo:
 | get the risk figures of a town | [Ask the API](#4-ask-the-api) · [Every municipality](#every-municipality-in-one-table) |
 | count landslides by region | [Landslides per region](#landslides-per-region-the-map-above) |
 | search landslides and events | [Walk through every landslide or event](#walk-through-every-landslide-or-event) |
-| use dated landslide events | [How precise are the dates?](#dated-events-how-precise-is-the-date) |
+| use dated landslides (rainfall thresholds) | [Dated landslides](#dated-landslides-when-and-how-precisely) |
 | keep a copy fresh every night | [Keep a national copy fresh](#keep-a-national-copy-fresh-every-night) · [Only what changed](#only-what-changed-since-last-time) · [Watch](#watch-for-changes) |
 | turn codes into words | [Translate the codes](#translate-the-codes) |
 | put API rows on a map | [API rows on a map](#api-rows-on-a-map) |
@@ -645,38 +645,61 @@ ISTAT codes for areas and the code lists' codes for the rest; a list of
 codes means "any of these". You can still pass a plain `dict` if you know
 the syntax.
 
-### Dated events: how precise is the date?
+### Dated landslides: when, and how precisely
 
-`opendata("eventi")` is the file of landslide events that ISPRA dated. Before
-you use these dates, for example against rainfall, look at how precise they
-are:
+A rainfall threshold can only be checked on landslides with a date.
+`dated_landslides` gathers them from both places IdroGEO keeps them, the
+IFFI records and the events file, each with the precision of its date and of
+its place:
 
 ```python
-import json
+from datetime import date
 
-from ispra_idrogeo import IdroGEO, opendata
+from ispra_idrogeo import IdroGEO
+from ispra_idrogeo.dated import dated_landslides, summary
 
 async with IdroGEO() as idrogeo:
-    folder = await idrogeo.fetch(opendata("eventi", fmt="geojson"))
-[path] = folder.glob("*.json")
-events = [f["properties"] for f in json.loads(path.read_text())["features"]]
-recent = [e for e in events if (e["data_certa"] or "") >= "2018"]
-day_only = [e for e in recent if e["data_certa"][11:16] in ("", "00:00")]
-print(len(events), len(recent), len(day_only))  # 1808 1710 1466
+    found = await dated_landslides(
+        idrogeo,
+        since=date(2018, 1, 1),
+        max_interval_days=1,  # dates known to the day (or the hour)
+        max_position_m=1000,  # points known to 1 km: events only, see below
+    )
+print(len(found), found[0].start, found[0].precision, found[0].position_m)
+print(summary(found)["by_region"])
 ```
 
-On 22 November 2026:
+```bash
+idrogeo dated --since 2018-01-01 --max-interval-days 1 --summary
+idrogeo dated --source eventi --region 7 > liguria.jsonl
+```
 
-- **The date.** 1,466 of the 1,710 events since 2018 give only the day: the
-  time is `00:00` or missing. Treat `00:00` as "that day", not as midnight.
-- **The place.** Each point has an accuracy class (`nome_acc`). Since 2018:
-  exact 652, 100 m 501, 1 km 455, 10 km 102.
-- **Main events.** `evento_principale` is `"SI"` for 1,283 of them.
-- 67 events have no date at all.
+Each landslide has `start` and `end` (the day, or the interval it is known
+within), `time` when one is written, `precision` (`hour`, `day`,
+`interval`), `interval_days`, `position_m` (the stated accuracy of the
+point, `None` when the source does not state it), `lon`/`lat` in degrees,
+the area codes and its citation.
 
-The landslide records of the inventory have dates too (`data_certa`,
-`data_incerta_min`, `data_incerta_max`), but most of them are empty: IFFI is
-mainly a map of where landslides are, not of when they happened.
+What the data holds (22 November 2026):
+
+| | IFFI records | Events |
+|---|---|---|
+| Landslides | 721,457 | 1,808 |
+| With a date | **26,601 (3.7%)**: 9,824 to the day, the rest an interval (6,447 within a month, 8,780 within a year, 1,550 longer) | 1,741 |
+| Dated since 2018 | 2,160, of which 1,565 to the day | 1,710, all to the day; 521 with a time |
+| Accuracy of the point | **not stated**: every record says `esatta` | exact 652 · 100 m 501 · 1 km 455 · 10 km 102 (since 2018) |
+
+- **Most landslides have no date.** IFFI is mainly a map of *where*: 96% of
+  its records have none, and a landslide without a date cannot validate a
+  threshold.
+- **The dated ones are not spread evenly.** Since 2018, 1,525 of the 3,275
+  landslides dated to the day are in Trentino-Alto Adige.
+- **Treat `00:00` as "that day".** Most dates have no time; `time` is `None`
+  for them. For rainfall, take the whole day, better ±1 day for the time zone.
+- **Uncertain dates can be a year or a month** (`"1979"`, `"1983-07"`): they
+  become intervals. Impossible dates (year 7970) are left out.
+- **An event and an IFFI record may be the same landslide**: the open-data
+  events do not carry the IFFI id, so nothing here merges them.
 
 ### One landslide, in full
 
@@ -1149,6 +1172,8 @@ point to paths that no longer exist. This library handles these for you:
 | landslides of a region, `{"regione": "eq.16"}` | `not an embedded resource`; `regione_2019`, which does filter, is **empty for 18%** of the landslides, and `regione_orig` is worse (Campania: 19,710 and 6,224 of 55,254) | `iter_landslides_in(region=15)` checks the record's own `regione`, which is always set: 55,254 |
 | paging the whole inventory 100,000 at a time | each page slower than the last (2.5 s at offset 0, 6.7 s at 600,000), and `id_frana` takes no `gt.` for keyset paging | one page of a million rows for area scans: ~20 s for Italy |
 | a landslide search without `select` | HTTP **400** since November 2026: "Could not find a relationship between 'idrogeo_frane' and 'regioni_2022'" (the search's default fields embed a relation IdroGEO removed) | always names the fields: `LANDSLIDE_FIELDS` by default, `select=["*"]` for all |
+| `accuratezza_posizione` of IFFI records, to keep the precise ones | it is **`esatta` for all 721,457**: it tells nothing | `dated_landslides` gives IFFI `position_m = None` (not stated) |
+| uncertain dates as days | `data_incerta_min`/`max` can be a bare year (`"1979"`) or month (`"1983-07"`), and a few dates are impossible (year 7970) | `parse_period` reads them as intervals and leaves impossible ones out |
 | several landslides by id, `{"id_frana": "in.(…)"}` | an empty list, no error | `landslide(id)` for each one |
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
 | the flood mosaic in UTM 32N, like everything else | it is in **EPSG:3035** (ETRS89 LAEA), in three files, one per scenario (`HPH_`, `MPH_`, `LPH_`) | the warehouse reprojects it and names the scenarios P3, P2, P1 |
@@ -1197,6 +1222,7 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `.landslides_near(lat, lon, radius_m=500, limit=200)` | IFFI landslides around a point, with `distance_m`. |
 | `.lookup(kind, text, limit=10)` | Search geological units, flights, bibliography, institutions, funding. |
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
+| `ispra_idrogeo.dated.dated_landslides(idrogeo, since=, until=, region=, max_interval_days=, max_position_m=, sources=)` | Dated landslides of IFFI and of the events, with the precision of date and place; `summary(found)` counts them. |
 | `ispra_idrogeo.grounding.check_text(text, facts, question="")` | The numbers and dates of a text that match no figure of `facts`. |
 | `ispra_idrogeo.grounding.grounded(answer, kind)` / `SOURCES` | An answer with its `source` and `retrieved_at`; the citation and licence of each kind of data. |
 | `.labels(name, lang)` / `.code_labels(fields, lang)` / `decode(record, labels)` | Code lists, and records with `<field>_label` added. |
@@ -1210,7 +1236,7 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `.download` / `.fetch(..., progress=callback)` | `callback(done, total)` after each chunk, for your own progress bar. |
 | `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` | One round of `idrogeo watch`: what changed since a `Mark`. |
 | `idrogeo-mcp` | An MCP server with the same data as 17 tools, 3 resources and 2 prompts (extra `[mcp]`). |
-| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`, `sync`, `sql`, `check`. |
+| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`, `sync`, `sql`, `check`, `dated`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,

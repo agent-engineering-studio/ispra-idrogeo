@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `ispra_idrogeo.dated`: `dated_landslides()` gathers the dated landslides
+  of IFFI (API, one request) and of the events file, each with `start`/`end`,
+  `time`, `precision` (hour, day, interval), `interval_days`, `position_m`
+  (the stated accuracy of the point), `lon`/`lat` and its citation; filters
+  by dates, region, `max_interval_days` and `max_position_m`; `summary()`
+  counts them. `parse_period` reads partial dates (`"1979"`, `"1983-07"`) as
+  intervals and leaves impossible ones out; `utm32n_to_lonlat` converts the
+  events' EPSG:32632 points (Krüger series, under a millimetre from PROJ
+  across Italy). `idrogeo dated` from the shell. Measured on 22 November
+  2026: 26,601 of 721,457 IFFI records have a date (9,824 to the day), and
+  every IFFI record says its position is "esatta"; README, traps, live test.
+
 ## [0.8.0] - 2026-11-22
 
 ### Added

@@ -17,6 +17,7 @@ a database loader.
     idrogeo near 40.838 14.630 --radius 500
     idrogeo watch --once >> changes.jsonl      # from cron
     idrogeo check facts.json < answer.txt      # numbers of a text not in the facts
+    idrogeo dated --since 2018-01-01 --max-interval-days 1 --max-position-m 1000
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ import json
 import sys
 from collections.abc import AsyncIterable, Awaitable, Callable, Iterable, Sequence
 from dataclasses import asdict
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -142,6 +143,17 @@ def parser() -> argparse.ArgumentParser:
     sql = commands.add_parser("sql", help="one read-only SELECT on the local warehouse")
     sql.add_argument("query", nargs="?", help="SELECT …; without it, the tables and columns")
     sql.add_argument("--limit", type=int, default=1000)
+
+    dated = commands.add_parser(
+        "dated", help="dated landslides (IFFI and events) with the precision of date and place"
+    )
+    dated.add_argument("--since", type=date.fromisoformat, help="from this day (YYYY-MM-DD)")
+    dated.add_argument("--until", type=date.fromisoformat, help="before this day (YYYY-MM-DD)")
+    dated.add_argument("--region", type=int, help="ISTAT region code")
+    dated.add_argument("--source", action="append", choices=("iffi", "eventi"), help="repeatable")
+    dated.add_argument("--max-interval-days", type=int, help="1 keeps dates known to the day")
+    dated.add_argument("--max-position-m", type=int, help="keeps points known to these metres")
+    dated.add_argument("--summary", action="store_true", help="counts instead of the list")
 
     check = commands.add_parser(
         "check", help="the numbers of a text that match no figure of a JSON file (no network)"
@@ -263,6 +275,24 @@ async def run(
             write(row)
     elif command == "watch":
         await _watch(args, idrogeo, write, sleep)
+    elif command == "dated":
+        from ispra_idrogeo.dated import dated_landslides, summary
+
+        landslides = await dated_landslides(
+            idrogeo,
+            sources=args.source or ("iffi", "eventi"),
+            since=args.since,
+            until=args.until,
+            region=args.region,
+            max_interval_days=args.max_interval_days,
+            max_position_m=args.max_position_m,
+            directory=args.dir,
+        )
+        if args.summary:
+            write(summary(landslides))
+        else:
+            for one in landslides:
+                write(one.as_dict())
     elif command == "lookup":
         for row in await idrogeo.lookup(args.kind, args.text, limit=args.limit):
             write(row)
