@@ -39,6 +39,8 @@ description:
       - Quanto fidarsi dei dati IFFI in ogni Comune, e cosa non è misurato
       - Fonte, licenza e data di ogni dato; scarico in CSV e GeoJSON
       - Libreria Python, riga di comando e server MCP per gli assistenti
+    screenshots:
+      - docs/images/mappa-sarno.jpg
   en:
     shortDescription: Landslides and hydrogeological hazard from ISPRA IdroGEO, in Python and on a map for a municipality's site
     longDescription: >
@@ -63,6 +65,8 @@ description:
       - How far IFFI data can be trusted in each municipality, and what is not measured
       - Source, licence and date of every figure; CSV and GeoJSON downloads
       - Python library, command line and MCP server for assistants
+    screenshots:
+      - docs/images/mappa-sarno.jpg
 organisation:
   name: Agent Engineering Studio
   uri: "https://github.com/agent-engineering-studio"

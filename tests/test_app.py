@@ -160,7 +160,9 @@ def test_routes() -> None:
         assert csv.headers["content-type"].startswith("text/csv") and "non è un'allerta" in csv.text
         assert "comune-65135.csv" in csv.headers["content-disposition"]
         assert client.get("/api/comune/1/dati.csv").status_code == 502
-        assert "<html" in client.get("/").text
+        page = client.get("/")
+        assert "<html" in page.text and page.headers["cache-control"] == "no-cache"
+        assert client.get("/app.js").headers["cache-control"] == "no-cache"  # updates show at once
 
 
 async def test_layers_wait_for_the_warehouse() -> None:

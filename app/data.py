@@ -46,7 +46,11 @@ CITATIONS = {
         "ISPRA - Mosaicatura nazionale delle aree a pericolosità da frana PAI (v. 5.0 - 2024) - "
         "Piattaforma IdroGEO https://idrogeo.isprambiente.it, CC BY 4.0"
     ),
-    "flood": SOURCES["hazard"],
+    "flood": (
+        "ISPRA — servizio mappe di IdroGEO: mosaicature PAI di pericolo frana e alluvione, "
+        "https://idrogeo.isprambiente.it (alluvioni v. 5.0 2020, CC BY-SA 4.0; il servizio non "
+        "dice quale edizione mostra)"
+    ),
     "iffi": SOURCES["iffi"],
     "events": SOURCES["events"],
     "indicators": SOURCES["indicators"],

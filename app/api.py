@@ -25,6 +25,17 @@ from ispra_idrogeo import WMS_URL, IdroGEO, IdrogeoError
 from ispra_idrogeo.predisposition import NOTE, THRESHOLDS, rule
 
 STATIC = Path(__file__).parent / "static"
+
+
+class FreshStaticFiles(StaticFiles):
+    """Static files the browser revalidates every time (ETag), so an update shows at once."""
+
+    def file_response(self, *args: Any, **kwargs: Any) -> Response:
+        response = super().file_response(*args, **kwargs)
+        response.headers["cache-control"] = "no-cache"
+        return response
+
+
 BULLETIN = "https://mappe.protezionecivile.gov.it/it/mappe-rischi/bollettino-di-criticita"
 LIMEN = "https://github.com/agent-engineering-studio/limen"
 
@@ -132,6 +143,6 @@ def create_app(data: Data | None = None, config: dict[str, Any] | None = None) -
         Route("/api/comune/{code:int}/dated.geojson", layer("dated")),
         Route("/api/comune/{code:int}/dati.csv", csv_route),
         Route("/api/contract", contract),
-        Mount("/", StaticFiles(directory=STATIC, html=True), name="static"),
+        Mount("/", FreshStaticFiles(directory=STATIC, html=True), name="static"),
     ]
     return Starlette(routes=routes, lifespan=lifespan)

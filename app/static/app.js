@@ -4,6 +4,8 @@
 const COLORS = { P4: "#a50026", P3: "#f46d43", P2: "#fdae61", P1: "#fee08b", AA: "#bdbdbd" };
 const STEP_CLASS = { none: "class-none", low: "class-low", medium: "class-medium", high: "class-high", "very high": "class-very-high" };
 const KIND = { landslide: "Frana", flood: "Alluvione" };
+const PRECISION = { hour: "ora", day: "giorno", interval: "intervallo" };
+const SOURCE = { iffi: "IFFI", eventi: "evento" };
 const fmt = (v) => (v === null || v === undefined ? "non disponibile" : typeof v === "number" ? v.toLocaleString("it-IT") : String(v));
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -61,7 +63,7 @@ async function showComune(code) {
     json(`api/comune/${code}/iffi.geojson`).then((g) => {
       if (!live()) { return; }
       layers["Frane IFFI"] = L.geoJSON(g, {
-        pointToLayer: (_f, ll) => L.circleMarker(ll, { radius: 3, color: "#5d4037", weight: 1, fillOpacity: 0.8 }),
+        pointToLayer: (_f, ll) => L.circleMarker(ll, { radius: 3, color: "#5d4037", weight: 1, fillOpacity: 0.8, pane: "points" }),
         onEachFeature: (f, l) => l.bindPopup(`Frana IFFI ${esc(f.properties.id_frana)}<br>${esc(f.properties.type)}`),
       }).addTo(map);
     }).catch(() => state.push("Le frane IFFI sono in caricamento.")),
@@ -70,12 +72,12 @@ async function showComune(code) {
       const group = L.layerGroup();
       for (const f of g.features) {
         const d = f.properties, ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
-        if (d.position_m) { L.circle(ll, { radius: d.position_m, color: "#1565c0", weight: 1, fillOpacity: 0.05 }).addTo(group); }
+        if (d.position_m) { L.circle(ll, { radius: d.position_m, color: "#1565c0", weight: 1, fillOpacity: 0.05, interactive: false }).addTo(group); }
         const filled = d.precision !== "interval";
-        L.circleMarker(ll, { radius: d.precision === "hour" ? 7 : 6, color: "#1565c0", weight: 2, fillOpacity: filled ? 0.9 : 0 })
+        L.circleMarker(ll, { radius: d.precision === "hour" ? 7 : 6, color: "#1565c0", weight: 2, fillOpacity: filled ? 0.9 : 0, pane: "points" })
           .bindPopup(`<strong>${esc(d.start)}${d.end !== d.start ? " – " + esc(d.end) : ""}${d.time ? " ore " + esc(d.time) : ""}</strong><br>
-            Precisione della data: ${esc(d.precision)} · del punto: ${d.position_m === null ? "non dichiarata" : esc(d.position_m) + " m"}<br>
-            Fonte: ${esc(d.source)} ${esc(d.id)}<br><small>${esc(d.citation)}</small>`)
+            Precisione della data: ${esc(PRECISION[d.precision] || d.precision)} · del punto: ${d.position_m === null ? "non dichiarata" : d.position_m === 0 ? "esatta" : esc(d.position_m) + " m"}<br>
+            Fonte: ${esc(SOURCE[d.source] || d.source)} ${esc(d.id)}<br><small>${esc(d.citation)}</small>`)
           .addTo(group);
       }
       layers[`Frane datate (${g.features.length})`] = group.addTo(map);
@@ -120,7 +122,8 @@ async function start() {
   config = await json("api/config");
   $("ente").textContent = config.ente; $("bulletin").href = config.bulletin; $("limen").href = config.limen;
   map = L.map("map");
-  map.createPane("boundary").style.zIndex = 450;  // above the hazard polygons, below the points
+  map.createPane("boundary").style.zIndex = 450;  // above the hazard polygons
+  map.createPane("points").style.zIndex = 460;    // the landslides above everything, clickable
   L.tileLayer(config.tiles, { attribution: `${config.tiles_credit} · Dati ISPRA IdroGEO`, maxZoom: 18 }).addTo(map);
   legend();
   const code = Number(new URLSearchParams(location.search).get("comune")) || config.comune;
