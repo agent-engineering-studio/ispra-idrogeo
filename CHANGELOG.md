@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `mosaic("pai_frane_2024")`: the PAI landslide hazard mosaic v. 5.0 (2024),
+  0.79 GB, a File Geodatabase, **CC BY 4.0** (its licence PDF). The
+  warehouse loads it (`idrogeo sync pai_frane_2024`; File Geodatabases are
+  read like shapefiles, the geometry found by type) and `hazard_at` prefers
+  it to the 2020-2021 mosaic, naming the one used in `landslide_mosaic`.
+  `warehouse.SOURCES` has its citation.
+
+### Changed
+
+- `.claude/hillclimb/` (eval results) is ignored by git.
+
 ## [0.8.0] - 2026-11-22
 
 ### Added

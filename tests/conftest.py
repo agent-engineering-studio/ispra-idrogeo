@@ -68,6 +68,12 @@ def _shapefiles(folder: Path) -> dict[str, dict[str, bytes]]:
         " UNION ALL SELECT ' Aree di Attenzione AA', ST_Buffer(ST_Point(0, 0), 10) FROM here",
         "EPSG:32632",
     )
+    # the 2024 landslide mosaic is a File Geodatabase, with another class here
+    db.execute(
+        "COPY (SELECT ' Pericolosità media P2' AS per_fr_ita, ST_Buffer(p, 50) AS geom FROM here) "
+        f"TO '{folder / 'Mosaicatura_2024.gdb'}' WITH (FORMAT GDAL, DRIVER 'OpenFileGDB', "
+        "SRS 'EPSG:32632', GEOMETRY_TYPE 'POLYGON')"
+    )
     for prefix, metres in (("HPH", None), ("MPH", 300), ("LPH", 600)):
         area = (
             f"ST_Transform(ST_Buffer(p, {metres}), 'EPSG:32632', 'EPSG:3035')"
@@ -90,6 +96,10 @@ def _shapefiles(folder: Path) -> dict[str, dict[str, bytes]]:
     return {
         opendata("frane_piff", "molise").filename: members("frane_piff"),
         mosaic("pai_frane").filename: members("Mosaicatura_PAI"),
+        mosaic("pai_frane_2024").filename: {
+            f"Mosaicatura_2024.gdb/{p.name}": p.read_bytes()
+            for p in (folder / "Mosaicatura_2024.gdb").iterdir()
+        },
         mosaic("idraulica").filename: flood,
     }
 

@@ -83,11 +83,13 @@ PROVINCES: dict[int, str] = {
     89: "siracusa",
 }
 
-#: National hazard mosaics (PAI landslide hazard, flood hazard). Large (about
-#: 1.2 and 0.75 GB) and rarely updated.
-Mosaic = Literal["pai_frane", "idraulica"]
+#: National hazard mosaics, large and rarely updated: PAI landslide hazard
+#: v. 4.0 2020-2021 (1.2 GB, shapefile, CC BY-SA 4.0) and v. 5.0 2024 (0.79 GB,
+#: File Geodatabase, CC BY 4.0), flood hazard v. 5.0 2020 (0.75 GB, CC BY-SA 4.0).
+Mosaic = Literal["pai_frane", "pai_frane_2024", "idraulica"]
 MOSAICS: dict[Mosaic, str] = {
     "pai_frane": "Mosaicatura_ISPRA_2020_2021_aree_pericolosita_frana_PAI",
+    "pai_frane_2024": "Mosaicatura_ISPRA_2024_pericolosita_frana_PAI",
     "idraulica": "Mosaicatura_ISPRA_2020_aree_pericolosita_idraulica",
 }
 
@@ -129,7 +131,7 @@ def opendata(layer: Layer, area: str = ITALY, fmt: Format = "shapefile") -> Data
 
 
 def mosaic(name: Mosaic) -> Dataset:
-    """A national hazard mosaic (shapefile in a ZIP)."""
+    """A national hazard mosaic: a ZIP of shapefiles, or of a File Geodatabase (2024)."""
     try:
         stem = MOSAICS[name]
     except KeyError:
