@@ -6,8 +6,6 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-## [0.7.1] - 2026-11-22
-
 ### Added
 
 - `evals/`: an eval of Claude as an agent on `idrogeo-mcp`. 31 questions in
@@ -15,6 +13,11 @@ All notable changes to this project are documented here. The format follows
   grading, a runner that starts the real server over stdio and resumes, and a
   `report.md`. `make eval` runs it (API key from `--api-key` or
   `ANTHROPIC_API_KEY`); `make check` tests the grader and runner offline.
+
+## [0.7.1] - 2026-11-22
+
+### Added
+
 - `examples/00-test-the-library.ipynb`: every feature once against the live
   service, 23 checks, a table of results; `make test-notebooks` runs it and
   fails when a check fails. Dependency group `notebooks`.
