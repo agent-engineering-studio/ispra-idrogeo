@@ -5,6 +5,10 @@ flood zone? How many landslides are there in this valley? Is anyone watching
 the one above the road?* `idrogeo-mcp` lets an AI agent answer them from the
 source, with numbers it can cite, instead of from memory.
 
+## Where AI helps, and your Anthropic key
+
+--8<-- "README.md:ai"
+
 ## The MCP server
 
 --8<-- "README.md:mcp"

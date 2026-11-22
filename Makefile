@@ -12,6 +12,8 @@ IDROGEO_JUPYTER_PORT ?= 8888
 IDROGEO_JUPYTER_TOKEN ?= idrogeo
 export IDROGEO_NAME := $(NAME)
 export IDROGEO_MCP_PORT IDROGEO_JUPYTER_PORT IDROGEO_JUPYTER_TOKEN
+# The Claude API key, from .env or the shell: only `make eval` uses it.
+export ANTHROPIC_API_KEY
 COMPOSE := docker compose --profile notebooks --profile tools
 NOTEBOOK_TEST := examples/00-test-the-library.ipynb
 

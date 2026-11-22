@@ -49,6 +49,7 @@ async with IdroGEO() as idrogeo:
 | put API rows on a map | [API rows on a map](#api-rows-on-a-map) |
 | work offline, in SQL | [A local warehouse](#offline-many-places-at-once-your-own-sql-a-local-warehouse) |
 | give the data to an AI agent | [The MCP server](#for-ai-agents-the-mcp-server) |
+| know where AI helps, and use my Anthropic key | [AI: where it helps](#ai-where-it-helps) |
 | check that everything works | [Test notebook](#example-notebooks) |
 | credit the data correctly | [Data licence and credits](#data-licence-and-credits) |
 
@@ -66,6 +67,7 @@ async with IdroGEO() as idrogeo:
 - [How it works](#how-it-works)
 - [Recipes](#recipes)
 - [Example notebooks](#example-notebooks)
+- [AI: where it helps](#ai-where-it-helps)
 - [The traps we already fell into](#the-traps-we-already-fell-into)
 - [API at a glance](#api-at-a-glance)
 - [Contributing](#contributing) · [Ideas to work on](#ideas-to-work-on)
@@ -982,6 +984,98 @@ make docker-test-notebooks   # or inside a container
 If a check fails, the command fails too.
 
 <!-- --8<-- [end:notebooks] -->
+
+---
+
+## AI: where it helps
+
+<!-- --8<-- [start:ai] -->
+
+IdroGEO's data answers questions people really ask: *is my street in a flood
+area? Which landslides are near this road? Who lives in high hazard in my
+town?* An AI agent can answer them from the source, with numbers it can
+cite, if it reads the data instead of guessing.
+
+**The rule for every AI feature here: numbers come from the data, words from
+the model.** The library computes every figure. A model may only choose
+which tools to call and write sentences around the figures. It never makes
+up a number, a date or a place. And nothing here is an alert.
+
+### What is ready
+
+| Piece | What it does | Needs an Anthropic key? |
+|---|---|---|
+| [`idrogeo-mcp`](#for-ai-agents-the-mcp-server) | Gives the data to any AI agent as 16 tools: hazard at a point, nearby landslides, risk figures, rankings, searches, SQL on the warehouse | No: the agent brings its own model (Claude Desktop, Claude Code, your app) |
+| [`llms.txt`](https://agentengineering.it/ispra-idrogeo/llms.txt) | A short guide to the library for AI coding assistants, with the traps | No |
+| [`evals/`](https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/evals) | Measures whether Claude, connected to `idrogeo-mcp`, answers 31 real questions right. The true answers are computed from the live data on every run | **Yes** (paid calls) |
+
+### Where it can help
+
+| Who | Asks | What the agent does |
+|---|---|---|
+| A citizen | "Is my house in Sarno in a hazard area?" | `hazard_at` on the coordinates: P4 for landslides. It adds that a hazard map is not a safety assessment of a building |
+| A municipal officer | "A risk profile of my town, compared with the province" | `find_area`, `area_risk`, `area_landslides`, `monitoring_sites`, `compare_areas` |
+| A journalist | "The ten towns in Campania with the most people in landslide hazard" | `rank_areas`, so the ranking is computed and not done in the model's head |
+| A researcher | "IFFI points by PAI class in Molise" | `warehouse_sql`, read-only SQL on the local copy |
+| A developer | "Write a script that downloads Puglia's landslides" | reads `llms.txt` and uses the library the right way |
+| [Limen](https://github.com/agent-engineering-studio/limen) | its assistant and briefings | the same tools, next to its own risk model |
+
+### Where it must not be used
+
+- **To decide hazard or send alerts.** Hazard comes from the PAI maps,
+  alerts from the Civil Protection bulletins.
+- **To fill gaps in the data.** A landslide without a date stays without a
+  date. A model must not guess one, and such a landslide cannot be used to
+  check a rainfall threshold.
+- **To compute figures.** Sums, shares and rankings come from the tools.
+
+### Use your Anthropic key
+
+Only the agent eval calls a model, and only when you run it.
+
+1. Get a key on [console.anthropic.com](https://console.anthropic.com/).
+2. Copy `.env.example` to `.env` and write the key after
+   `ANTHROPIC_API_KEY=`, without quotes.
+3. Run a pilot of 5 questions, then all 31:
+
+```bash
+make eval ARGS="--limit 5"                           # a pilot (estimated $0.30–0.50)
+make eval                                            # all 31 (claude-sonnet-5-5, effort medium)
+make eval ARGS="--model claude-opus-5-5 --variant opus"   # another model, results kept apart
+```
+
+`make` reads the key from `.env` (or from your shell, or from `--api-key`).
+The results go to `.claude/hillclimb/agent-mcp/<variant>/`, and `report.md`
+gives the share of right answers by kind of question, the cost and the time.
+A stopped run resumes where it stopped.
+
+Keep the key safe:
+
+- `.env` is in `.gitignore`: git never commits it. Never put the key in
+  `.env.example`, which is committed.
+- The library, the MCP server and the containers never read the key. Only
+  `make eval` does.
+- If a key leaks, revoke it on the console and make a new one.
+
+### What comes next
+
+These are planned in the roadmap
+([#11](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/11),
+phase 5):
+
+- **Source and date in every answer.** Each tool result carries its source,
+  licence and the date of the data, so the credit ISPRA asks for reaches
+  the final answer.
+- **A checker for invented numbers.** `check_text` and `check_claims` compare
+  every number in a text with the data it came from, and a benchmark of
+  answers runs it in CI for free.
+- **Area reports.** `idrogeo report <comune>`: the figures from a template
+  with no model at all; with a key, a model writes a plain summary, and the
+  checker verifies it before it is saved.
+- **Change digests** on top of `idrogeo watch`, and an agent skill
+  (`SKILL.md`) for coding assistants.
+
+<!-- --8<-- [end:ai] -->
 
 ---
 
