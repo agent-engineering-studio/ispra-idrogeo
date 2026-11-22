@@ -54,6 +54,18 @@ async def test_hazard_at_a_point(tmp_path: Path, idrogeo: IdroGEO) -> None:
             warehouse.hazard_at(4600000, 500000)  # metres, not degrees
 
 
+async def test_the_2024_landslide_mosaic_comes_first(tmp_path: Path, idrogeo: IdroGEO) -> None:
+    with await _synced(tmp_path, idrogeo) as warehouse:
+        assert warehouse.hazard_at(LAT, LON)["landslide_mosaic"] == "pai_frane"
+        loaded = await warehouse.sync(idrogeo, ["pai_frane_2024"], directory=tmp_path)
+        assert loaded == {"pai_frane_2024": True}  # read from a File Geodatabase
+        here = warehouse.hazard_at(LAT, LON)
+        assert (here["landslide"], here["landslide_mosaic"]) == ("P2", "pai_frane_2024")
+        assert "v. 5.0" in here["sources"][0] and "CC BY 4.0" in here["sources"][0]
+        columns = {c["column"] for c in warehouse.schema()["pai_frane_2024"]}
+        assert {"per_fr_ita", "class", "geom"} <= columns and "OBJECTID" not in columns
+
+
 async def test_hazard_says_what_is_missing(tmp_path: Path, idrogeo: IdroGEO) -> None:
     with await _synced(tmp_path, idrogeo, ["frane_piff"]) as warehouse:
         answer = warehouse.hazard_at(LAT, LON)

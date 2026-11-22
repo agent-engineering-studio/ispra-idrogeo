@@ -8,6 +8,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `mosaic("pai_frane_2024")`: the PAI landslide hazard mosaic v. 5.0 (2024),
+  0.79 GB, a File Geodatabase, **CC BY 4.0** (its licence PDF). The
+  warehouse loads it (`idrogeo sync pai_frane_2024`; File Geodatabases are
+  read like shapefiles, the geometry found by type) and `hazard_at` prefers
+  it to the 2020-2021 mosaic, naming the one used in `landslide_mosaic`.
+  `warehouse.SOURCES` has its citation. Checked on the real file: 1,060,084
+  polygons in 132 s, areas within 0.1% of the API's `ar_fr_*` per class. This
+  explains the trap of the "10–20% more" areas: the API uses the 2024 mosaic.
 - `ispra_idrogeo.dated`: `dated_landslides()` gathers the dated landslides
   of IFFI (API, one request) and of the events file, each with `start`/`end`,
   `time`, `precision` (hour, day, interval), `interval_days`, `position_m`
@@ -19,6 +27,10 @@ All notable changes to this project are documented here. The format follows
   across Italy). `idrogeo dated` from the shell. Measured on 22 November
   2026: 26,601 of 721,457 IFFI records have a date (9,824 to the day), and
   every IFFI record says its position is "esatta"; README, traps, live test.
+
+### Changed
+
+- `.claude/hillclimb/` (eval results) is ignored by git.
 
 ## [0.8.0] - 2026-11-22
 
