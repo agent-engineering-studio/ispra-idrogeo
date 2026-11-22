@@ -114,7 +114,7 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 pythonpath = ["."]  # the evals/ package
 addopts = "--strict-markers -m 'not live'"
-markers = ["live: talks to the live IdroGEO service (pytest -m live; weekly in CI)"]
+markers = ["live: talks to the live IdroGEO service (pytest -m live; daily in CI)"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 

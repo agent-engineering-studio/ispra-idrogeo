@@ -8,6 +8,22 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `IdroGEO.head(dataset)` and `FileState`: a file's date, ETag and size
+  without downloading it. `ispra_idrogeo.freshness`: `freshness()` asks
+  about every published file (IFFI layers, events, reports, mosaics) and,
+  with a saved `state`, says which changed since last time; `summary()`.
+  `idrogeo freshness`, MCP tool `data_freshness`.
+- `skills/ispra-idrogeo/SKILL.md`, an agent skill for coding assistants, and
+  `tools/build_llms.py`, which publishes `llms-full.txt` (the whole README)
+  and the skill on the site after the build.
+
+### Changed
+
+- The live contract tests run every day, not every Monday: #9 went unseen
+  for a week.
+
+### Added
+
 - `benchmarks/`: known cases with known answers (Sarno P4, Venice P3, the
   plain of Foggia, Casamicciola 26/11/2022, Melito di Porto Salvo
   10/10/2026, Trivento, the #9 contract, the reliability map), 8 cases and

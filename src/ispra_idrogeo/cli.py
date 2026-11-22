@@ -19,6 +19,7 @@ a database loader.
     idrogeo check facts.json < answer.txt      # numbers of a text not in the facts
     idrogeo dated --since 2018-01-01 --max-interval-days 1 --max-position-m 1000
     idrogeo reliability comuni 65135               # how far to trust IFFI in Sarno
+    idrogeo freshness                              # when ISPRA last changed each file
 """
 
 from __future__ import annotations
@@ -156,6 +157,12 @@ def parser() -> argparse.ArgumentParser:
     dated.add_argument("--max-position-m", type=int, help="keeps points known to these metres")
     dated.add_argument("--summary", action="store_true", help="counts instead of the list")
 
+    fresh = commands.add_parser(
+        "freshness", help="date, size and changes of every published file (HEAD, no download)"
+    )
+    fresh.add_argument("--state", type=Path, help="where to keep the last answers")
+    fresh.add_argument("--summary", action="store_true", help="counts instead of the list")
+
     trust = commands.add_parser(
         "reliability", help="how far to trust IFFI and the events in an area (no network)"
     )
@@ -282,6 +289,16 @@ async def run(
             write(row)
     elif command == "watch":
         await _watch(args, idrogeo, write, sleep)
+    elif command == "freshness":
+        from ispra_idrogeo import freshness as fresh
+
+        state = args.state or (args.dir or default_directory()) / fresh.STATE
+        files = await fresh.freshness(idrogeo, state=state)
+        if args.summary:
+            write(fresh.summary(files))
+        else:
+            for item in files:
+                write(item.as_dict())
     elif command == "dated":
         from ispra_idrogeo.dated import dated_landslides, summary
 

@@ -286,3 +286,17 @@ def test_reliability(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["reliability", "regioni"]) == 0
     assert len(capsys.readouterr().out.splitlines()) == 20
     assert cli.main(["reliability", "comuni", "1"]) == 1
+
+
+async def test_freshness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from ispra_idrogeo import freshness
+
+    async def fake(idrogeo: IdroGEO, **kw: Any) -> list[freshness.Freshness]:
+        assert kw["state"] == tmp_path / "freshness.json"
+        return [freshness.Freshness("f.zip", "u", None, None, None, None, None)]
+
+    monkeypatch.setattr(freshness, "freshness", fake)
+    rows = await _run("--dir", str(tmp_path), "freshness")
+    assert rows[0]["filename"] == "f.zip"
+    [counts] = await _run("--dir", str(tmp_path), "freshness", "--summary")
+    assert counts["files"] == 1

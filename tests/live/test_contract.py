@@ -2,7 +2,7 @@
 
 Every test checks one thing the library or its README relies on: a path
 that answers, a field that is read, a trap that is still a trap. They need
-the network and run weekly in CI (``.github/workflows/live.yml``), never in
+the network and run daily in CI (``.github/workflows/live.yml``), never in
 ``make check``. When one fails, IdroGEO changed: fix the library, or the
 README's "traps we already fell into", then the test.
 """
