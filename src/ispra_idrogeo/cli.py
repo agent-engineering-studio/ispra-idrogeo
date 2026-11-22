@@ -16,6 +16,7 @@ a database loader.
     idrogeo hazard 40.829 14.617
     idrogeo near 40.838 14.630 --radius 500
     idrogeo watch --once >> changes.jsonl      # from cron
+    idrogeo check facts.json < answer.txt      # numbers of a text not in the facts
 """
 
 from __future__ import annotations
@@ -141,6 +142,13 @@ def parser() -> argparse.ArgumentParser:
     sql = commands.add_parser("sql", help="one read-only SELECT on the local warehouse")
     sql.add_argument("query", nargs="?", help="SELECT …; without it, the tables and columns")
     sql.add_argument("--limit", type=int, default=1000)
+
+    check = commands.add_parser(
+        "check", help="the numbers of a text that match no figure of a JSON file (no network)"
+    )
+    check.add_argument("facts", type=Path, help="JSON file the text was written from")
+    check.add_argument("--text", type=Path, help="the text (default: standard input)")
+    check.add_argument("--question", default="", help="numbers in it are allowed")
     return top
 
 
@@ -334,9 +342,26 @@ async def _main(args: argparse.Namespace, out: TextIO) -> None:
         await run(args, idrogeo, out)
 
 
+def _check(args: argparse.Namespace, out: TextIO) -> int:
+    """``idrogeo check``: 0 when every number is backed by the facts, else 1."""
+    from ispra_idrogeo.grounding import check_text
+
+    facts = json.loads(args.facts.read_text(encoding="utf-8"))
+    text = args.text.read_text(encoding="utf-8") if args.text else sys.stdin.read()
+    missing = check_text(text, facts, args.question)
+    out.write(json.dumps({"unmatched": missing, "ok": not missing}, ensure_ascii=False) + "\n")
+    return 1 if missing else 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Entry point of the ``idrogeo`` command; the exit status."""
     args = parser().parse_args(argv)
+    if args.command == "check":
+        try:
+            return _check(args, sys.stdout)
+        except (OSError, ValueError) as exc:
+            print(f"idrogeo: {exc}", file=sys.stderr)
+            return 1
     try:
         asyncio.run(_main(args, sys.stdout))
     except (IdrogeoError, ValueError, ImportError) as exc:

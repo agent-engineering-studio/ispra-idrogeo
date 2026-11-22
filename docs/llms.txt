@@ -30,3 +30,4 @@ Docs:
 - [Source](https://github.com/agent-engineering-studio/ispra-idrogeo)
 - A landslide search without `select` returns `LANDSLIDE_FIELDS` (with data_certa, data_incerta_min/max, accuratezza_posizione); IdroGEO's own default answered HTTP 400 from November 2026. Most IFFI records have no date; in eventi, 1,466 of 1,710 events since 2018 give only the day.
 - Containers: `make up` (MCP on :8767), `make notebooks`, `make cli ARGS="…"`; every name is prefixed by NAME (default ispra-idrogeo).
+- Grounding: every idrogeo-mcp answer has "source" (citation + licence) and "retrieved_at"; lists come as {"results", "count", "source", "retrieved_at"}. `ispra_idrogeo.grounding.check_text(text, facts)` (also `idrogeo check facts.json`, MCP `check_answer`) lists the numbers of a text that match no figure of the facts; it checks presence, not who-said-what.

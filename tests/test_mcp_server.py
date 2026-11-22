@@ -106,13 +106,27 @@ def _server() -> Any:
     return server(IdroGEO(client, sleep=_sleep))
 
 
-async def _call(mcp: Any, tool: str, **arguments: Any) -> Any:
+async def _raw(mcp: Any, tool: str, **arguments: Any) -> Any:
     result = await mcp.call_tool(tool, arguments)
     assert not result.is_error, result.content
     structured = result.structured_content
     if structured is None:  # a tool typed Any answers with JSON text only
         return json.loads(result.content[0].text)
     return structured.get("result", structured)
+
+
+_UNGROUNDED = {"download_dataset", "check_answer"}
+
+
+async def _call(mcp: Any, tool: str, **arguments: Any) -> Any:
+    """The answer of a tool without its source and time, checked to be there."""
+    answer = await _raw(mcp, tool, **arguments)
+    if tool in _UNGROUNDED:
+        return answer
+    assert answer["source"] and answer["retrieved_at"].endswith("Z"), answer
+    if "results" in answer:
+        return answer["results"]
+    return {k: v for k, v in answer.items() if k not in ("source", "retrieved_at")}
 
 
 async def test_tools_are_listed_and_read_only() -> None:
@@ -134,6 +148,7 @@ async def test_tools_are_listed_and_read_only() -> None:
         "landslides_near",
         "warehouse_schema",
         "warehouse_sql",
+        "check_answer",
     }
     assert tools["area_risk"].annotations.read_only_hint
     assert not tools["warehouse_sql"].annotations.open_world_hint  # local, no network
@@ -190,7 +205,7 @@ async def test_names_are_matched_without_accents() -> None:
 async def test_rank_and_compare(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("IDROGEO_DATA_DIR", str(tmp_path))
     mcp = _server()
-    ranked = await _call(mcp, "rank_areas", indicator="popfrp3p4p", top=2)
+    ranked = await _raw(mcp, "rank_areas", indicator="popfrp3p4p", top=2)
     assert ranked["areas_compared"] == 4  # Sbari has no value
     assert [(r["rank"], r["name"]) for r in ranked["ranking"]] == [
         (1, "Bari"),
@@ -333,3 +348,26 @@ def test_health_and_mcp_over_http() -> None:
         health = http.get("/health")
         assert health.status_code == 200 and health.json()["status"] == "ok"
         assert 400 <= http.get("/mcp").status_code < 500  # no session: refused, but alive
+
+
+async def test_every_answer_names_its_source_and_licence() -> None:
+    mcp = _server()
+    risk = await _raw(mcp, "area_risk", level="italia")
+    assert "CC BY 4.0" in risk["source"] and "indicatori di rischio" in risk["source"]
+    landslide = await _raw(mcp, "landslide", id_frana="0017680500")
+    assert "CC BY-SA 4.0" in landslide["source"] and "IFFI" in landslide["source"]
+    events = await _raw(mcp, "search_events", region=16, limit=2)
+    assert events["count"] == 2 and "CC BY-SA 4.0" in events["source"]
+    sites = await _raw(mcp, "monitoring_sites", region=1, limit=1)
+    assert "monitoring" in sites["source"]
+    hazard = await _raw(mcp, "hazard_at", lat=40.829, lon=14.617)
+    assert "map service" in hazard["source"]
+
+
+async def test_check_answer_finds_invented_numbers() -> None:
+    mcp = _server()
+    risk = await _call(mcp, "area_risk", level="italia")
+    good = f"In Italy {risk['pop_idr_p2']:,} people live in flood hazard P2."
+    assert await _raw(mcp, "check_answer", text=good, facts=risk) == {"unmatched": [], "ok": True}
+    bad = await _raw(mcp, "check_answer", text="About 7.4 million people.", facts=risk)
+    assert bad == {"unmatched": ["7.4 million"], "ok": False}
