@@ -278,3 +278,11 @@ async def test_dated(monkeypatch: pytest.MonkeyPatch) -> None:
     assert seen["max_interval_days"] == 1 and seen["max_position_m"] is None
     [counts] = await _run("dated", "--summary")
     assert counts["total"] == 1 and seen["sources"] == ("iffi", "eventi")
+
+
+def test_reliability(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["reliability", "comuni", "65135"]) == 0
+    assert json.loads(capsys.readouterr().out)["name"] == "Sarno"
+    assert cli.main(["reliability", "regioni"]) == 0
+    assert len(capsys.readouterr().out.splitlines()) == 20
+    assert cli.main(["reliability", "comuni", "1"]) == 1

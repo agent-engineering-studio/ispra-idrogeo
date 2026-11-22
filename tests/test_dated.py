@@ -203,9 +203,9 @@ async def test_dated_landslides_reads_both_sources(tmp_path: Path) -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/api/frana/searchfilter":
-            assert json.loads(request.content) == {
-                "or": "(data_certa.not.is.null,data_incerta_min.not.is.null)"
-            }
+            dated = ["data_certa", "data_incerta_min", "data_incerta_max"]
+            wanted = "(" + ",".join(f"{f}.not.is.null" for f in dated) + ")"
+            assert json.loads(request.content) == {"or": wanted}
             assert request.url.params["select"] == ",".join(IFFI_FIELDS)
             return httpx.Response(
                 200,

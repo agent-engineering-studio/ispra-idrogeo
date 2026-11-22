@@ -25,12 +25,28 @@ All notable changes to this project are documented here. The format follows
   intervals and leaves impossible ones out; `utm32n_to_lonlat` converts the
   events' EPSG:32632 points (Krüger series, under a millimetre from PROJ
   across Italy). `idrogeo dated` from the shell. Measured on 22 November
-  2026: 26,601 of 721,457 IFFI records have a date (9,824 to the day), and
+  2026: 28,076 of 721,457 IFFI records have a date (10,822 to the day), and
   every IFFI record says its position is "esatta"; README, traps, live test.
+
+- `ispra_idrogeo.reliability`: how far IFFI and the events can be trusted in
+  each region, province and municipality, from a table shipped with the
+  package (`data/reliability.json`, 354 kB, built by
+  `tools/build_reliability.py` from the live service): landslides and
+  density, share dated and dated to the day, landslides dated since 2018
+  (IFFI and events, points known to 1 km), share of records edited since
+  2021, notes in plain words and what is not measured. `idrogeo
+  reliability`, MCP tool `data_reliability`. Checked: per-region counts equal
+  the API's, dated totals equal `dated_landslides`.
 
 ### Changed
 
 - `.claude/hillclimb/` (eval results) is ignored by git.
+
+### Fixed
+
+- `dated_landslides` missed the IFFI records that have only
+  `data_incerta_max` (1,475): the server filter now asks for any of the three
+  date fields. IFFI records with a date: 28,076, not 26,601.
 
 ## [0.8.0] - 2026-11-22
 

@@ -3,9 +3,9 @@
 A rainfall threshold can only be checked on landslides with a date. IdroGEO
 has two kinds:
 
-- **IFFI records** (``iter_landslides``): 721,457 landslides, of which 6,144
-  have a certain date (``data_certa``) and about 22,000 only an interval
-  (``data_incerta_min`` / ``data_incerta_max``). The other 96% have no date.
+- **IFFI records** (``iter_landslides``): 721,457 landslides, of which 28,076
+  have a date: a certain one (``data_certa``, 6,144) or an interval
+  (``data_incerta_min`` / ``data_incerta_max``). The other 96% have none.
   Their ``accuratezza_posizione`` says ``esatta`` for every record, so it
   tells nothing: :attr:`DatedLandslide.position_m` is ``None`` for them.
 - **Events** (``opendata("eventi")``): about 1,800 dated events, most since
@@ -56,7 +56,9 @@ IFFI_FIELDS = (
     "comune",
 )
 #: IFFI records with a certain date or an interval, filtered on the server.
-_DATED = {"or": "(data_certa.not.is.null,data_incerta_min.not.is.null)"}
+_DATED = {
+    "or": "(data_certa.not.is.null,data_incerta_min.not.is.null,data_incerta_max.not.is.null)"
+}
 #: The accuracy classes of the events, in metres (``Esatta`` is 0).
 _EVENT_ACCURACY = {"esatta": 0, "100": 100, "1000": 1_000, "10000": 10_000}
 _DATE = re.compile(r"(\d{4})(?:-(\d{2})(?:-(\d{2})(?:[T ](\d{2}):(\d{2}))?)?)?")
