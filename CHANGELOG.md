@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-22
+
 ### Added
 
 - `examples/00-test-the-library.ipynb`: every feature once against the live
