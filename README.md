@@ -51,7 +51,7 @@ async with IdroGEO() as idrogeo:
 | work offline, in SQL | [A local warehouse](#offline-many-places-at-once-your-own-sql-a-local-warehouse) |
 | give the data to an AI agent | [The MCP server](#for-ai-agents-the-mcp-server) |
 | know where AI helps, and use my Anthropic key | [AI: where it helps](#ai-where-it-helps) |
-| check that everything works | [Test notebook](#example-notebooks) |
+| check that everything works | [Test notebook](#example-notebooks) · [Known cases](#known-cases) |
 | credit the data correctly | [Data licence and credits](#data-licence-and-credits) |
 
 ---
@@ -70,6 +70,7 @@ async with IdroGEO() as idrogeo:
 - [Example notebooks](#example-notebooks)
 - [AI: where it helps](#ai-where-it-helps)
 - [The traps we already fell into](#the-traps-we-already-fell-into)
+- [Known cases](#known-cases)
 - [API at a glance](#api-at-a-glance)
 - [Contributing](#contributing) · [Ideas to work on](#ideas-to-work-on)
 - [Data licence and credits](#data-licence-and-credits)
@@ -1295,6 +1296,71 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 `live` workflow opens an issue.
 
 <!-- --8<-- [end:traps] -->
+
+---
+
+## Known cases
+
+<!-- --8<-- [start:benchmark] -->
+
+A library that reads someone else's data is only as good as its last check
+against that data. `benchmarks/` holds places and events whose answer is
+known, and checks the library against them on every pull request, offline:
+
+| case | check | ispra-idrogeo | constant |
+|---|---|---|---|
+| sarno | the hills above the town are in landslide hazard P4 | ✅ | ❌ |
+| sarno | IFFI landslides of Sarno | ✅ | ❌ |
+| sarno | landslides mapped within 500 m of the slope above Episcopio | ✅ | ❌ |
+| venice | San Marco is in flood hazard P3, no landslide hazard | ✅ | ❌ |
+| foggia | a point of the plain is outside every hazard area | ✅ | ❌ |
+| casamicciola-2022-11-26 | the event of 26 November 2022 is recorded | ✅ | ❌ |
+| casamicciola-2022-11-26 | IFFI landslides of Casamicciola Terme | ✅ | ❌ |
+| melito-2026-10-10 | the town is in landslide hazard P2 | ✅ | ❌ |
+| melito-2026-10-10 | IFFI landslides of Melito di Porto Salvo | ✅ | ❌ |
+| melito-2026-10-10 | no landslide event recorded for the storm (yet) | ✅ | ✅ |
+| trivento | IFFI landslides of Trivento | ✅ | ❌ |
+| contract-select | a search with no select still answers | ✅ | ⚠️ error: HTTPStatusError |
+| reliability | Trentino-Alto Adige dates a fifth of its landslides to the day | ✅ | ❌ |
+| reliability | Abruzzo dates none | ✅ | ❌ |
+| **score** | | confirmed: 11/11 · known-gap: 3/3 | confirmed: 0/11 · known-gap: 1/3 |
+
+- **`ispra-idrogeo`** is the library, used as a user would. **`constant`**
+  gives the same answer everywhere (P4 and P3, nothing counted, a search
+  with IdroGEO's default fields): it shows that each check can tell a right
+  answer from a wrong one. It passes only "no event yet" at Melito, because
+  it always answers "no event".
+- **`known-gap`** records something IdroGEO does not have yet: the storm of
+  10 October 2026 at Melito di Porto Salvo (152 mm of radar rain) has no
+  landslide event on 22 November 2026. When ISPRA adds it, the check fails
+  and the case is updated on purpose.
+- **`contract-select`** keeps the lesson of #9: IdroGEO's own answer to a
+  search with its default fields (a 400) is in the recording, and the
+  library must not depend on it.
+
+How it works: `python -m benchmarks.record` runs each case once against the
+live service and keeps IdroGEO's real answers in `benchmarks/cassettes/`
+(260 kB of JSON, the answers only). `python -m benchmarks.run --check`
+replays them with no network and compares the outcome of every check with
+`benchmarks/results.json`; any difference fails CI. A request the
+recording has not seen fails too, so a change in what the library asks for
+cannot slip through as a silent call to the network.
+
+```bash
+make benchmark          # the table, offline, as in CI
+make benchmark-record   # re-record from the live service, then look at what changed
+```
+
+**What is not there.** The recordings are a snapshot of 22 November 2026:
+they prove the library reads those answers right, not that IdroGEO still
+gives them. The weekly live contract tests (`make live`) watch the service
+itself. The cases are few (8 cases, 14 checks); more are welcome, each with a
+source.
+
+**For Limen:** a fixed set of places where its hazard and count inputs must
+give the known answer, and a recorded gap (Melito) to watch for.
+
+<!-- --8<-- [end:benchmark] -->
 
 ---
 

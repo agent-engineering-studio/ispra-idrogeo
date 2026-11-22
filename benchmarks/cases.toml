@@ -1,0 +1,168 @@
+# Known cases with known answers. Each [[case]] has an id, a title, a status
+# and a source; each [[case.check]] a kind and what it expects:
+#
+#   hazard       lat, lon -> landslide, flood (PAI class, "" for none)
+#   count        level, code -> landslides (IFFI frane_totali, exact)
+#   events       municipality, start, end -> events (how many), first (uid, optional)
+#   near         lat, lon, radius_m -> at_least (IFFI landslides within the radius)
+#   search       -> works (a landslide search with no select must answer: #9)
+#   reliability  level, code, field -> min, max (from the shipped reliability map)
+#
+# status "confirmed": the answer is what the official data says.
+# status "known-gap": the answer records something IdroGEO does not have yet;
+# when ISPRA adds it the check fails, and the case is updated on purpose.
+#
+# The answers IdroGEO gave are in cassettes/<id>.json, recorded with
+# `python -m benchmarks.record`, and replayed offline by `python -m benchmarks.run`.
+
+# Places where the hazard is known
+
+[[case]]
+id = "sarno"
+title = "Sarno: the hills of the debris flows of 5 May 1998"
+status = "confirmed"
+source = "PAI landslide hazard on IdroGEO; the 1998 debris flows killed 137 people in Sarno"
+[[case.check]]
+kind = "hazard"
+name = "the hills above the town are in landslide hazard P4"
+lat = 40.829
+lon = 14.617
+landslide = "P4"
+flood = ""
+[[case.check]]
+kind = "count"
+name = "IFFI landslides of Sarno"
+level = "comuni"
+code = 65135
+landslides = 53
+[[case.check]]
+kind = "near"
+name = "landslides mapped within 500 m of the slope above Episcopio"
+lat = 40.838
+lon = 14.630
+radius_m = 500
+at_least = 1
+
+[[case]]
+id = "venice"
+title = "Venice: frequent floods (P3)"
+status = "confirmed"
+source = "Flood hazard mosaic 2020 (scenarios of D.Lgs. 49/2010) on IdroGEO"
+[[case.check]]
+kind = "hazard"
+name = "San Marco is in flood hazard P3, no landslide hazard"
+lat = 45.438
+lon = 12.330
+landslide = ""
+flood = "P3"
+
+[[case]]
+id = "foggia"
+title = "The plain of Foggia: no mapped hazard"
+status = "confirmed"
+source = "PAI landslide and flood mosaics on IdroGEO: no hazard area at this point"
+[[case.check]]
+kind = "hazard"
+name = "a point of the plain is outside every hazard area"
+lat = 41.46
+lon = 15.55
+landslide = ""
+flood = ""
+
+# Events that happened
+
+[[case]]
+id = "casamicciola-2022-11-26"
+title = "Casamicciola Terme (Ischia), the landslide of 26 November 2022"
+status = "confirmed"
+source = "IdroGEO event EIT202200067; the landslide killed 12 people"
+[[case.check]]
+kind = "events"
+name = "the event of 26 November 2022 is recorded"
+municipality = 63019
+start = 2022-11-01
+end = 2022-12-01
+events = 1
+first = "EIT202200067"
+[[case.check]]
+kind = "count"
+name = "IFFI landslides of Casamicciola Terme"
+level = "comuni"
+code = 63019
+landslides = 213
+
+[[case]]
+id = "melito-2026-10-10"
+title = "Melito di Porto Salvo (RC), the storm of 10 October 2026"
+status = "known-gap"
+source = "Limen flood.yaml and limen#199: 152 mm of radar rain at Melito; IdroGEO has no event for it on 22 November 2026"
+[[case.check]]
+kind = "hazard"
+name = "the town is in landslide hazard P2"
+lat = 37.925
+lon = 15.785
+landslide = "P2"
+flood = ""
+[[case.check]]
+kind = "count"
+name = "IFFI landslides of Melito di Porto Salvo"
+level = "comuni"
+code = 80050
+landslides = 58
+[[case.check]]
+kind = "events"
+name = "no landslide event recorded for the storm (yet)"
+municipality = 80050
+start = 2026-10-01
+end = 2026-11-01
+events = 0
+
+# Counts
+
+[[case]]
+id = "trivento"
+title = "Trivento (Molise), one of the towns with most mapped landslides"
+status = "confirmed"
+source = "IFFI on IdroGEO; the README checks the warehouse against it"
+[[case.check]]
+kind = "count"
+name = "IFFI landslides of Trivento"
+level = "comuni"
+code = 70081
+landslides = 921
+
+# How IdroGEO changed under us
+
+[[case]]
+id = "contract-select"
+title = "Landslide search with no select (issue #9)"
+status = "confirmed"
+source = "Since 9 November 2026 IdroGEO answers 400 to a search with its default fields (regioni_2022 removed)"
+[[case.check]]
+kind = "search"
+name = "a search with no select still answers"
+works = true
+
+# How far to trust the data (offline, from the shipped table)
+
+[[case]]
+id = "reliability"
+title = "Where IFFI has dates, and where it has none"
+status = "confirmed"
+source = "ispra_idrogeo.reliability, built from the live service"
+[[case.check]]
+kind = "reliability"
+name = "Trentino-Alto Adige dates a fifth of its landslides to the day"
+level = "regioni"
+code = 4
+field = "day_share"
+min = 0.2
+max = 0.3
+[[case.check]]
+kind = "reliability"
+name = "Abruzzo dates none"
+level = "regioni"
+code = 13
+field = "day_share"
+min = 0.0
+max = 0.0

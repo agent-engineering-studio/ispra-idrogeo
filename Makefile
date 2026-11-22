@@ -1,4 +1,4 @@
-.PHONY: help check lint format typecheck test build docs docs-serve live \
+.PHONY: help check lint format typecheck test build docs docs-serve live benchmark benchmark-record \
 	test-notebooks up down restart ps logs health notebooks cli shell \
 	docker-build docker-test-notebooks clean eval
 
@@ -49,6 +49,13 @@ docs-serve:  ## Serve the documentation site locally
 
 live:  ## The contract tests against the live IdroGEO service (network)
 	uv run pytest -m live
+
+benchmark:  ## The known cases, offline from the cassettes (as in CI)
+	uv run python -m benchmarks.run --check
+
+benchmark-record:  ## Re-record the cassettes from the live service, then the results
+	uv run python -m benchmarks.record
+	uv run python -m benchmarks.run --record
 
 test-notebooks:  ## Run the test notebook against the live service, here
 	uv run --group notebooks jupyter nbconvert --to notebook --execute --inplace \

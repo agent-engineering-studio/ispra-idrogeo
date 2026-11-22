@@ -1,0 +1,17 @@
+{
+ "recorded_on": "2026-11-22",
+ "entries": [
+  {
+   "request": "POST idrogeo.isprambiente.it/api/frana/searchfilter?limit=2&offset=0&select=id_frana,tipo_movimento,stato,regione,provincia,comune,accuratezza_posizione,data_certa,data_incerta_min,data_incerta_max,modified {}",
+   "status": 200,
+   "content_type": "application/json; charset=utf-8",
+   "text": "[{\"id_frana\":\"0463985600\",\"tipo_movimento\":2,\"stato\":\"validato_ispra\",\"regione\":9,\"provincia\":46,\"comune\":46003,\"accuratezza_posizione\":\"esatta\",\"data_certa\":null,\"data_incerta_min\":null,\"data_incerta_max\":null,\"modified\":\"2022-05-17T11:54:10.621+00:00\"},{\"id_frana\":\"0839278800\",\"tipo_movimento\":4,\"stato\":\"validato_ispra\",\"regione\":19,\"provincia\":83,\"comune\":83078,\"accuratezza_posizione\":\"esatta\",\"data_certa\":null,\"data_incerta_min\":null,\"data_incerta_max\":null,\"modified\":\"2026-01-10T16:43:17.395+00:00\"}]"
+  },
+  {
+   "request": "POST idrogeo.isprambiente.it/api/frana/searchfilter?limit=2&offset=0 {}",
+   "status": 400,
+   "content_type": "application/json; charset=utf-8",
+   "text": "{\"statusCode\":400,\"error\":\"Bad Request\",\"message\":\"Could not find a relationship between 'idrogeo_frane' and 'regioni_2022' in the schema cache\"}"
+  }
+ ]
+}
