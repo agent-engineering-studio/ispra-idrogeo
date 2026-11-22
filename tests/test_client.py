@@ -13,7 +13,15 @@ from typing import Any
 import httpx
 import pytest
 
-from ispra_idrogeo import CODE_DICTIONARIES, IdroGEO, IdrogeoError, mosaic, opendata, sensor_data
+from ispra_idrogeo import (
+    CODE_DICTIONARIES,
+    LANDSLIDE_FIELDS,
+    IdroGEO,
+    IdrogeoError,
+    mosaic,
+    opendata,
+    sensor_data,
+)
 
 Handler = Callable[[httpx.Request], httpx.Response]
 ETAG = '"6ae99507-416c44"'
@@ -327,6 +335,8 @@ async def test_iterators_walk_every_page() -> None:
             assert [r["n"] async for r in found] == list(range(rows))
         assert len(server.calls) == pages
         assert json.loads(server.calls[0].content) == {"tipo_movimento": 6}
+        # IdroGEO's own default fields answer 400 since November 2026 (#9)
+        assert server.calls[0].url.params["select"] == ",".join(LANDSLIDE_FIELDS)
     async with _idrogeo(_Paged(3)) as idrogeo:
         events = [r async for r in idrogeo.iter_events({"regione": "eq.16"}, select=["uid"])]
         assert len(events) == 3

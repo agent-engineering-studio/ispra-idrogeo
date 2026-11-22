@@ -46,6 +46,24 @@ _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 type Progress = Callable[[int, int | None], None]
 _CHUNK = 1 << 20
 
+#: The fields a landslide search asks for when ``select`` is not given. Since
+#: November 2026 the search's own default answers HTTP 400 (it embeds
+#: ``regioni_2022``, a relation IdroGEO removed), so the library always names
+#: the fields; ``select=["*"]`` still brings them all, geometry included.
+LANDSLIDE_FIELDS: tuple[str, ...] = (
+    "id_frana",
+    "tipo_movimento",
+    "stato",
+    "regione",
+    "provincia",
+    "comune",
+    "accuratezza_posizione",
+    "data_certa",
+    "data_incerta_min",
+    "data_incerta_max",
+    "modified",
+)
+
 
 def _area_code(value: Any) -> int | None:
     """An area field as an ISTAT code: a number, or the object the default fields embed."""
@@ -377,14 +395,16 @@ class IdroGEO:
         ``modified_since`` only the landslides changed since then: the
         incremental update of a local copy (``select=["*"]`` brings the
         geometry too). A landslide that is removed does not show up as
-        changed, it just stops being listed.
+        changed, it just stops being listed. Without ``select``, the fields in
+        :data:`LANDSLIDE_FIELDS`.
 
         Pages are ordered by ``order`` so that they do not overlap; IdroGEO
         changes daily, so a record edited while you iterate may be seen
         twice or missed.
         """
         found = api.since_filter(filters, modified_since)
-        return self._pages("frana/searchfilter", found, page_size, select, order)
+        fields = select or list(LANDSLIDE_FIELDS)
+        return self._pages("frana/searchfilter", found, page_size, fields, order)
 
     async def iter_landslides_in(
         self,
@@ -510,8 +530,12 @@ class IdroGEO:
         select: list[str] | None = None,
         order: str | None = None,
     ) -> list[dict[str, Any]]:
-        """One page of IFFI landslides matching ``filters``."""
-        return await self._search("frana/searchfilter", filters, limit, offset, select, order)
+        """One page of IFFI landslides matching ``filters``.
+
+        Without ``select``, the fields in :data:`LANDSLIDE_FIELDS`.
+        """
+        fields = select or list(LANDSLIDE_FIELDS)
+        return await self._search("frana/searchfilter", filters, limit, offset, fields, order)
 
     async def search_events(
         self,
