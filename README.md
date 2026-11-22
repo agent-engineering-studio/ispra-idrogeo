@@ -381,6 +381,8 @@ You need Docker and `make`. Nothing else: the images install Python and the
 library for you.
 
 ```bash
+make start                             # build every image and start everything: MCP, map, Jupyter
+make stop                              # stop everything (downloads stay in a volume)
 make up                                # the MCP server, on http://localhost:8767/mcp
 make health                            # {"status":"ok",…}
 make cli ARGS="hazard 40.829 14.617"   # any idrogeo command: P4, Sarno, 12.3°
