@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `evals/`: an eval of Claude as an agent on `idrogeo-mcp`. 31 questions in
+  Italian and English with their ground truth computed live, programmatic
+  grading, a runner that starts the real server over stdio and resumes, and a
+  `report.md`. `make eval` runs it (API key from `--api-key` or
+  `ANTHROPIC_API_KEY`); `make check` tests the grader and runner offline.
+
 ## [0.7.1] - 2026-11-22
 
 ### Added

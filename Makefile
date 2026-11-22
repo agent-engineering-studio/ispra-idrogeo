@@ -1,6 +1,6 @@
 .PHONY: help check lint format typecheck test build docs docs-serve live \
 	test-notebooks up down restart ps logs health notebooks cli shell \
-	docker-build docker-test-notebooks clean
+	docker-build docker-test-notebooks clean eval
 
 # Containers. Every name starts with NAME, so copies never clash:
 #   make up NAME=idrogeo-dev IDROGEO_MCP_PORT=8768
@@ -92,3 +92,7 @@ down:  ## Stop and remove the containers (the data volume stays)
 
 clean:  ## Remove containers, images and the data volume of this copy
 	$(COMPOSE) down --volumes --rmi local
+
+# The agent eval: Claude on idrogeo-mcp (costs API calls). ARGS="--limit 5" for a pilot.
+eval:  ## The agent eval of Claude on idrogeo-mcp (paid API calls): make eval ARGS="--limit 5"
+	uv run --group evals python -m evals.run $(ARGS)
