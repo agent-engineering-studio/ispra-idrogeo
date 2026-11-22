@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-22
+
 ### Added
 
 - `mosaic("pai_frane_2024")`: the PAI landslide hazard mosaic v. 5.0 (2024),
