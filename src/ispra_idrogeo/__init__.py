@@ -33,7 +33,7 @@ from ispra_idrogeo.cache import (
     write_json,
     write_validators,
 )
-from ispra_idrogeo.client import Download, IdroGEO
+from ispra_idrogeo.client import LANDSLIDE_FIELDS, Download, IdroGEO
 from ispra_idrogeo.codes import CODE_DICTIONARIES, Language, decode, parse_labels
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.filters import event_filter, landslide_filter, site_filter
@@ -68,6 +68,7 @@ __all__ = [
     "ENV_DATA_DIR",
     "EVENT_LAYERS",
     "ITALY",
+    "LANDSLIDE_FIELDS",
     "LANDSLIDE_LAYERS",
     "LOOKUPS",
     "MOSAICS",

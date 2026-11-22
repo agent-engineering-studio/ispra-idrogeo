@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Landslide searches (`search_landslides`, `iter_landslides`, the MCP tool
+  `search_landslides` and `idrogeo landslides` without `--select`) answered
+  HTTP 400 since November 2026: IdroGEO's default fields embed `regioni_2022`,
+  a relation it removed. The library now always names the fields, by default
+  `LANDSLIDE_FIELDS`, which adds the dates and the position accuracy (#9).
+
 ### Changed
 
 - The documentation site is built with Zensical (`zensical.toml`) instead of
