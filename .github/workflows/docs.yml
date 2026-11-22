@@ -6,7 +6,7 @@ on:
   pull_request:
     paths:
       - "docs/**"
-      - "mkdocs.yml"
+      - "zensical.toml"
       - "README.md"
       - "CHANGELOG.md"
       - "CONTRIBUTING.md"
@@ -31,7 +31,7 @@ jobs:
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --locked --group docs
-      - run: uv run mkdocs build --strict
+      - run: uv run zensical build --strict
       - uses: actions/upload-pages-artifact@v4
         if: github.event_name != 'pull_request'
         with:

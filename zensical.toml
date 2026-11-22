@@ -1,0 +1,111 @@
+# The documentation site, built with Zensical (https://zensical.org) and
+# published to GitHub Pages: https://agentengineering.it/ispra-idrogeo/
+#
+#   make docs        # zensical build --strict
+#   make docs-serve  # zensical serve
+
+[project]
+site_name = "ispra-idrogeo"
+site_description = "Italy's landslides and flood hazard, from ISPRA IdroGEO, in a few lines of Python."
+site_url = "https://agentengineering.it/ispra-idrogeo/"
+site_author = "Giuseppe Zileni"
+repo_url = "https://github.com/agent-engineering-studio/ispra-idrogeo"
+repo_name = "agent-engineering-studio/ispra-idrogeo"
+edit_uri = "edit/main/docs/"
+copyright = "Code Apache-2.0 · Data © ISPRA — IdroGEO, CC BY 4.0"
+docs_dir = "docs"
+exclude_docs = """
+make_figures.py
+"""
+
+nav = [
+  { "Home" = "index.md" },
+  { "Guide" = [
+    { "Getting started" = "getting-started.md" },
+    { "Datasets" = "datasets.md" },
+    { "How it works" = "how-it-works.md" },
+    { "Recipes" = "recipes.md" },
+    { "Known traps" = "traps.md" },
+  ] },
+  { "AI agents" = "ai-agents.md" },
+  { "Roadmap & AI" = "roadmap.md" },
+  { "API reference" = "reference.md" },
+  { "Project" = [
+    { "Contributing" = "contributing.md" },
+    { "Changelog" = "changelog.md" },
+  ] },
+]
+
+[project.theme]
+language = "en"
+favicon = "images/favicon.svg"
+features = [
+  "navigation.tabs",
+  "navigation.sections",
+  "navigation.top",
+  "navigation.footer",
+  "navigation.indexes",
+  "search.highlight",
+  "content.code.copy",
+  "content.action.edit",
+  "toc.follow",
+]
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+logo = "material/terrain"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "brown"
+accent = "deep orange"
+toggle.icon = "material/weather-night"
+toggle.name = "Dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "brown"
+accent = "deep orange"
+toggle.icon = "material/weather-sunny"
+toggle.name = "Light mode"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/agent-engineering-studio/ispra-idrogeo"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/python"
+link = "https://pypi.org/project/ispra-idrogeo/"
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+show_source = false
+show_root_heading = true
+show_root_full_path = false
+show_signature_annotations = true
+separate_signature = true
+members_order = "source"
+docstring_style = "sphinx"
+filters = ["!^_"]
+
+[project.markdown_extensions]
+admonition = {}
+attr_list = {}
+md_in_html = {}
+tables = {}
+toc.permalink = true
+pymdownx.details = {}
+pymdownx.highlight.anchor_linenums = true
+pymdownx.inlinehilite = {}
+pymdownx.snippets.base_path = ["."]
+pymdownx.snippets.check_paths = true
+pymdownx.superfences.custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+pymdownx.tabbed.alternate_style = true
+pymdownx.emoji.emoji_index = "zensical.extensions.emoji.twemoji"
+pymdownx.emoji.emoji_generator = "zensical.extensions.emoji.to_svg"

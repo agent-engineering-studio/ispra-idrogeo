@@ -1,6 +1,6 @@
 [project]
 name = "ispra-idrogeo"
-version = "0.6.0"
+version = "0.7.0"
 description = "Downloads and API client for ISPRA IdroGEO: IFFI landslide inventory, hazard mosaics and events, with a persistent conditional-GET cache"
 readme = "README.md"
 keywords = ["ispra", "idrogeo", "iffi", "landslide", "frane", "hazard", "pai", "flood", "italy", "gis"]
@@ -66,10 +66,19 @@ dev = [
 evals = [
     "anthropic>=1.0",
 ]
-# The documentation site (GitHub Pages): uv run --group docs mkdocs serve
+# Run the example notebooks, and execute them as tests: make test-notebooks
+notebooks = [
+    "ispra-idrogeo[geo,mcp,warehouse]",
+    "ipykernel>=6.29",
+    "jupyterlab>=4.2",
+    "matplotlib>=3.9",
+    "nbclient>=0.10",
+    "nbformat>=5.10",
+]
+# The documentation site (Zensical, on GitHub Pages): make docs-serve
 docs = [
-    "mkdocs-material>=9.5",
-    "mkdocstrings[python]>=0.26",
+    "mkdocstrings-python>=1.18",
+    "zensical>=0.1.0",
 ]
 
 [tool.ruff]

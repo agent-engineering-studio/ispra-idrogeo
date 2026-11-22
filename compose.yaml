@@ -1,0 +1,56 @@
+# Use the Makefile: `make help`. It sets IDROGEO_NAME, so two copies of this
+# project (or this and another one) never share a container, image, volume or
+# network name: everything is called "<IDROGEO_NAME>-…".
+name: ${IDROGEO_NAME:-ispra-idrogeo}
+
+services:
+  # The MCP server for AI agents, over streamable HTTP at /mcp.
+  mcp:
+    build:
+      context: .
+      target: app
+    image: ${IDROGEO_NAME:-ispra-idrogeo}:local
+    container_name: ${IDROGEO_NAME:-ispra-idrogeo}-mcp
+    environment:
+      IDROGEO_MCP_TRANSPORT: streamable-http
+      IDROGEO_MCP_HOST: 0.0.0.0
+      IDROGEO_MCP_PORT: "8767"
+      IDROGEO_MCP_ALLOWED_HOSTS: localhost:*,127.0.0.1:*,${IDROGEO_NAME:-ispra-idrogeo}-mcp:*
+    ports:
+      - "127.0.0.1:${IDROGEO_MCP_PORT:-8767}:8767"
+    volumes:
+      - data:/data/idrogeo
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8767/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  # Jupyter with the example notebooks (the folder examples/ is shared).
+  notebooks:
+    profiles: [notebooks]
+    build:
+      context: .
+      target: notebooks
+    image: ${IDROGEO_NAME:-ispra-idrogeo}-notebooks:local
+    container_name: ${IDROGEO_NAME:-ispra-idrogeo}-notebooks
+    environment:
+      JUPYTER_TOKEN: ${IDROGEO_JUPYTER_TOKEN:-idrogeo}
+    ports:
+      - "127.0.0.1:${IDROGEO_JUPYTER_PORT:-8888}:8888"
+    volumes:
+      - ./examples:/home/idrogeo/examples
+      - data:/data/idrogeo
+
+  # The `idrogeo` command, run once: make cli ARGS="hazard 40.829 14.617"
+  cli:
+    profiles: [tools]
+    image: ${IDROGEO_NAME:-ispra-idrogeo}:local
+    entrypoint: ["idrogeo"]
+    volumes:
+      - data:/data/idrogeo
+
+volumes:
+  data:
+    name: ${IDROGEO_NAME:-ispra-idrogeo}-data

@@ -1,6 +1,6 @@
 # ispra-idrogeo
 
-> Typed, async Python client for ISPRA IdroGEO: Italy's landslide inventory (IFFI), PAI landslide and flood hazard mosaics, landslide events, monitoring sites, and the IdroGEO REST API. Persistent download folder with conditional GET (ETag / Last-Modified). Python 3.12+, one dependency (httpx). Data: CC BY 4.0, credit "ISPRA — IdroGEO".
+> Typed, async Python client for ISPRA IdroGEO: Italy's landslide inventory (IFFI), PAI landslide and flood hazard mosaics, landslide events, monitoring sites, and the IdroGEO REST API. Persistent download folder with conditional GET (ETag / Last-Modified). Python 3.12+, one dependency (httpx). Data: IFFI landslides, events and hazard mosaics CC BY-SA 4.0 (credit "ISPRA – Regione <name>. Inventario dei Fenomeni Franosi in Italia - IFFI. idrogeo.isprambiente.it"); risk indicators CC BY 4.0.
 
 Install: `pip install ispra-idrogeo` (core), `[geo]` (GeoDataFrames, GeoParquet), `[mcp]` (the `idrogeo-mcp` server).
 
@@ -18,7 +18,7 @@ Essentials:
 - Codes to words: `labels = await idrogeo.code_labels(["tipo_movim"], lang="en")`, then `decode(record, labels)` or `ispra_idrogeo.geo.add_labels(frame, labels)`.
 - Errors: `IdrogeoError` when IdroGEO answers but not with what was asked (unknown id, moved path); `ValueError` for unknown layer/area names before any request; `httpx.HTTPError` for the network after retries.
 - CLI: `idrogeo fetch|summary|municipalities|landslides|events|sites|webcams|landslide|labels|dictionaries|lookup|hazard|near|watch`; JSON Lines output.
-- Licences: IdroGEO data is CC BY 4.0, but the two downloadable hazard mosaics (pai_frane, idraulica) are CC BY-SA 4.0. The flood mosaic is in EPSG:3035; IFFI shapefile text is ISO-8859-1 (declared in a .cst file).
+- Licences: the IFFI layers, eventi and the two hazard mosaics (pai_frane, idraulica) are CC BY-SA 4.0 (derived data must stay share-alike); the risk indicators (summary("pir"), municipalities) and monitoring sites are CC BY 4.0. The flood mosaic is in EPSG:3035; IFFI shapefile text is ISO-8859-1 (declared in a .cst file).
 
 Docs:
 - [Getting started](https://agentengineering.it/ispra-idrogeo/getting-started/)
@@ -28,3 +28,5 @@ Docs:
 - [AI agents / MCP server](https://agentengineering.it/ispra-idrogeo/ai-agents/)
 - [API reference](https://agentengineering.it/ispra-idrogeo/reference/)
 - [Source](https://github.com/agent-engineering-studio/ispra-idrogeo)
+- A landslide search without `select` returns `LANDSLIDE_FIELDS` (with data_certa, data_incerta_min/max, accuratezza_posizione); IdroGEO's own default answered HTTP 400 from November 2026. Most IFFI records have no date; in eventi, 1,466 of 1,710 events since 2018 give only the day.
+- Containers: `make up` (MCP on :8767), `make notebooks`, `make cli ARGS="…"`; every name is prefixed by NAME (default ispra-idrogeo).

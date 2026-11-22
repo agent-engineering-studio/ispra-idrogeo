@@ -84,7 +84,7 @@ async def test_landslides_near_and_in(tmp_path: Path, idrogeo: IdroGEO) -> None:
             "nome_tipo": "Complesso",
             "landslides": 2,
         }
-        assert "CC BY 4.0" in trivento["source"]
+        assert "CC BY-SA 4.0" in trivento["source"]
         assert warehouse.landslides_in(region=14)["landslides"] == 4
         forli = warehouse.landslides_in(province=94)["by_type"]
         assert forli == [{"tipo_movim": 2, "nome_tipo": "Scivolamento", "landslides": 1}]

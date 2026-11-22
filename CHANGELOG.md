@@ -13,6 +13,42 @@ All notable changes to this project are documented here. The format follows
   grading, a runner that starts the real server over stdio and resumes, and a
   `report.md`. `make eval` runs it (API key from `--api-key` or
   `ANTHROPIC_API_KEY`); `make check` tests the grader and runner offline.
+- `examples/00-test-the-library.ipynb`: every feature once against the live
+  service, 23 checks, a table of results; `make test-notebooks` runs it and
+  fails when a check fails. Dependency group `notebooks`.
+- Containers: `Dockerfile` (targets `app` and `notebooks`), `compose.yaml`,
+  `.env.example`. `make up` starts `idrogeo-mcp` on port 8767, `make
+  notebooks` Jupyter on 8888, `make cli ARGS=…` runs a command, `make
+  docker-test-notebooks` the test notebook. Every container, image, volume
+  and network starts with `NAME` (default `ispra-idrogeo`), so copies never
+  clash. `make help` lists every command.
+- README: a "Jump to what you need" table of every example, "Run it in
+  containers", how precise the dates of the events are, and the licence of
+  each dataset.
+
+### Fixed
+
+- The IFFI inventory and its events are **CC BY-SA 4.0**, not CC BY 4.0: the
+  licence PDFs linked from IdroGEO's open-data page say so, region by region.
+  `warehouse.SOURCES["iffi"]`, the MCP instructions, prompts and the
+  `idrogeo://datasets` resource now say it; only the risk indicators are
+  CC BY 4.0.
+
+- Landslide searches (`search_landslides`, `iter_landslides`, the MCP tool
+  `search_landslides` and `idrogeo landslides` without `--select`) answered
+  HTTP 400 since November 2026: IdroGEO's default fields embed `regioni_2022`,
+  a relation it removed. The library now always names the fields, by default
+  `LANDSLIDE_FIELDS`, which adds the dates and the position accuracy (#9).
+
+### Changed
+
+- The documentation site is built with Zensical (`zensical.toml`) instead of
+  MkDocs Material; same pages, theme and API reference.
+
+## [0.7.0] - 2026-11-04
+
+### Added
+
 - Extra `[warehouse]` (DuckDB) and `ispra_idrogeo.warehouse.Warehouse`: the
   layers in one local DuckDB file, R-tree indexed, all in EPSG:32632, for
   work offline, many places at once and SQL of your own. `sync()` loads only
@@ -24,7 +60,6 @@ All notable changes to this project are documented here. The format follows
   as the ISO-8859-1 its `.cst` file says.
 - `idrogeo sync` and `idrogeo sql`; MCP tools `warehouse_schema` and
   `warehouse_sql`.
-
 - MCP tools `rank_areas` (top or bottom areas by any indicator, inside a
   region or province, summaries kept on disk 30 days) and `compare_areas`
   (up to 20 areas side by side); both carry the source and licence.
@@ -50,7 +85,6 @@ All notable changes to this project are documented here. The format follows
 - README: the two hazard mosaics are CC BY-SA 4.0 (their licence PDF), not
   CC BY 4.0; the flood mosaic is in EPSG:3035; the API's landslide hazard
   areas do not add up like the downloadable mosaic.
-
 - `find_area` matches names without accents and apostrophes (`forli` finds
   Forlì) and answers an unknown name with "did you mean" suggestions instead
   of an empty list.
