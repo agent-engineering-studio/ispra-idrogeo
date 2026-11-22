@@ -797,8 +797,10 @@ async with IdroGEO() as idrogeo:
 ```
 
 `idrogeo sync pai_frane_2024` adds the 2024 landslide mosaic (a File
-Geodatabase, read the same way). When it is there, `hazard_at` takes the
-landslide class from it and says so in `landslide_mosaic`.
+Geodatabase, read the same way): 1,060,084 polygons, downloaded and loaded in
+132 s on 22 November 2026. Its areas match the API's indicators within 0.1%
+per class (69,547 against 69,529 km²). When it is there, `hazard_at` takes
+the landslide class from it and says so in `landslide_mosaic` (Sarno: P4).
 
 `sync` downloads each layer only if it changed (as `fetch` does) and loads it
 with an R-tree index, in one transaction: a failed load leaves the old table
@@ -1159,7 +1161,7 @@ point to paths that no longer exist. This library handles these for you:
 | the flood mosaic in UTM 32N, like everything else | it is in **EPSG:3035** (ETRS89 LAEA), in three files, one per scenario (`HPH_`, `MPH_`, `LPH_`) | the warehouse reprojects it and names the scenarios P3, P2, P1 |
 | reading the IFFI shapefiles as UTF-8 | `Invalid unicode`: the text is **ISO-8859-1**, said in a `.cst` file that GDAL ignores (it reads `.cpg`) | the warehouse reads the `.cst` and passes the encoding |
 | IFFI and the mosaics under CC BY 4.0, ISPRA's default | IdroGEO's licence PDFs say **CC BY-SA 4.0** for the IFFI inventory (one PDF per region) and for the mosaics, each with its own citation; only the risk indicators are CC BY 4.0 | `warehouse.SOURCES` holds each citation, and the answers carry their licence |
-| the API's landslide hazard areas to add up like the mosaic you download | the mosaic (v4.0, 2020-2021) adds up to ~60,500 km² (P4 9,506 · P3 16,894 · P2 14,553 · P1 12,558 · AA 6,988); the API's `ar_fr_*` give 69,529 km², 10–20% more per class: probably another edition. The flood areas do match | says which is which: the warehouse uses the mosaic, `area_risk` and `summary("pir", …)` the API |
+| the API's landslide hazard areas to add up like the 2020-2021 mosaic | that mosaic (v4.0) adds up to ~60,500 km² (P4 9,506 · P3 16,894 · P2 14,553 · P1 12,558 · AA 6,988), the API's `ar_fr_*` to 69,529 km². The API uses the **2024 mosaic** (v5.0): it adds up to 69,547 km², within 0.1% per class (P4 10,609 · P3 18,206 · P2 18,076 · P1 15,491 · AA 7,165). The flood areas match | offers `mosaic("pai_frane_2024")`, which the warehouse prefers for `hazard_at` |
 
 All checked against the live service on 3–4 November 2026, and again every
 week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
