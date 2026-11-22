@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `make start` builds every image and starts the MCP server, the map and
+  Jupyter in one command, printing their addresses; `make stop` stops them.
+
 ### Changed
 
 - README (traps), the `MOSAICS` comment and the 0.9.0 entry of this file say

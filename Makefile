@@ -1,4 +1,4 @@
-.PHONY: app app-up help check lint format typecheck test build docs docs-serve live benchmark benchmark-record \
+.PHONY: start stop app app-up help check lint format typecheck test build docs docs-serve live benchmark benchmark-record \
 	test-notebooks up down restart ps logs health notebooks cli shell \
 	docker-build docker-test-notebooks clean eval
 
@@ -73,6 +73,14 @@ app:  ## The Mappa dei dati, here: http://127.0.0.1:3002
 app-up:  ## The Mappa dei dati in a container: http://localhost:$(IDROGEO_APP_PORT)
 	docker compose --profile app up --build --detach app
 	@echo "Mappa dei dati: http://localhost:$(IDROGEO_APP_PORT) (container $(NAME)-app)"
+
+start: docker-build up app-up notebooks  ## Build every image and start everything: MCP, map, Jupyter
+	@echo ""
+	@echo "MCP server: http://localhost:$(IDROGEO_MCP_PORT)/mcp"
+	@echo "Mappa dei dati: http://localhost:$(IDROGEO_APP_PORT)"
+	@echo "Jupyter: http://localhost:$(IDROGEO_JUPYTER_PORT)/lab?token=$(IDROGEO_JUPYTER_TOKEN)"
+
+stop: down  ## Stop everything started by make start (the data volume stays)
 
 docker-build:  ## Build the images
 	$(COMPOSE) build
