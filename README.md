@@ -397,6 +397,10 @@ municipality and shows what the official data says and how far to trust it:
   the data there and what is not measured, the state of the contract with
   IdroGEO, sources, licences and downloads.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/mappa-sarno.jpg" alt="La Mappa dei dati aperta su Sarno: pericolo frana PAI 2024, pericolo alluvione, frane IFFI e frane datate; aperta la scheda di una frana del 5 maggio 1998, datata al giorno, con fonte e licenza; nel pannello la predisposizione a frana molto alta (43,4%) e ad alluvione media (6%)" width="100%">
+</p>
+
 How the page works:
 
 ```mermaid

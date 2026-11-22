@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- A screenshot of the *Mappa dei dati* on Sarno (`docs/images/mappa-sarno.jpg`)
+  in the README and in `publiccode.yml`.
 - README in plainer words: what the library does in six lines, "In one
   picture", three schemes (where the data comes from, the libraries and
   Limen, how the map page works) and two new charts generated from the data
@@ -22,6 +24,17 @@ All notable changes to this project are documented here. The format follows
 - README (traps), the `MOSAICS` comment and the 0.9.0 entry of this file say
   to name the mosaics one by one: since 0.9.0 `MOSAICS` holds
   `pai_frane_2024` too, and a loop over it downloads 790 MB more.
+
+### Fixed
+
+- The map: the PAI polygons covered the landslide points, so a click on a
+  dated landslide opened the polygon underneath; the points now have a pane
+  of their own above the polygons. The flood citation in "Fonti e licenze"
+  is in Italian, like the rest of the page, and so are the precision labels
+  of a dated landslide (ora, giorno, intervallo).
+- The map's files are served with `Cache-Control: no-cache`: after an update
+  a browser revalidates them and shows the new page at once, instead of a
+  cached old one.
 
 ## [0.10.0] - 2026-11-22
 
