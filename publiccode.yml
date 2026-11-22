@@ -1,0 +1,82 @@
+# The card of ispra-idrogeo for the software catalogue of Developers Italia.
+# Check it with: docker run --rm -i italia/publiccode-parser-go /dev/stdin < publiccode.yml
+publiccodeYmlVersion: "0"
+name: ispra-idrogeo
+url: "https://github.com/agent-engineering-studio/ispra-idrogeo.git"
+landingURL: "https://agentengineering.it/ispra-idrogeo/"
+releaseDate: "2026-11-22"
+softwareVersion: "0.9.0"
+platforms: [web, linux, mac, windows]
+categories: [geographic-information-systems, data-visualization, data-analytics]
+usedBy: []
+developmentStatus: beta
+softwareType: library
+intendedAudience:
+  scope: [environment, emergency-services, local-authorities, science-and-technology]
+  countries: [IT]
+description:
+  it:
+    shortDescription: Frane e pericolo idrogeologico di ISPRA IdroGEO, in Python e su una mappa per il sito del Comune
+    longDescription: >
+      ispra-idrogeo legge i dati aperti di IdroGEO, la piattaforma dell'ISPRA sul dissesto
+      idrogeologico: l'Inventario dei Fenomeni Franosi in Italia (IFFI), le mosaicature nazionali
+      delle aree a pericolosità da frana e da alluvione dei Piani di Assetto Idrogeologico, gli
+      eventi franosi datati e gli indicatori di rischio di Regioni, Province e Comuni. È una
+      libreria Python con riga di comando e server MCP, e una pagina web pronta per il sito di un
+      ente: la «Mappa dei dati su frane e pericolo», che si apre su un Comune e mostra le aree a
+      pericolo frana della mappa PAI 2024, il pericolo alluvione, le frane censite e quelle datate
+      con la precisione della data e del punto, le persone e i beni esposti, una classe di
+      predisposizione calcolata solo sulle mappe ufficiali e quanto ci si può fidare di quei dati
+      in quel Comune. Ogni dato porta la sua fonte e la sua licenza, e la pagina controlla ogni ora
+      che il servizio di IdroGEO risponda come previsto. Non legge la pioggia e non è un sistema di
+      allerta: l'allerta ufficiale resta il bollettino del Dipartimento della Protezione Civile e
+      della Regione. Non usa dati personali e non richiede chiavi o account.
+    features:
+      - Mappa del Comune con le aree a pericolo frana PAI 2024 e il pericolo alluvione
+      - Frane censite IFFI e frane datate, con la precisione della data e del punto
+      - Persone, edifici e beni culturali esposti
+      - Classe di predisposizione dalle mappe ufficiali, senza pioggia, mai un'allerta
+      - Quanto fidarsi dei dati IFFI in ogni Comune, e cosa non è misurato
+      - Fonte, licenza e data di ogni dato; scarico in CSV e GeoJSON
+      - Libreria Python, riga di comando e server MCP per gli assistenti
+  en:
+    shortDescription: Landslides and hydrogeological hazard from ISPRA IdroGEO, in Python and on a map for a municipality's site
+    longDescription: >
+      ispra-idrogeo reads the open data of IdroGEO, ISPRA's platform on landslides and floods: the
+      Italian landslide inventory (IFFI), the national mosaics of the landslide and flood hazard
+      areas of the basin plans (PAI), dated landslide events, and the risk indicators of regions,
+      provinces and municipalities. It is a Python library with a command line and an MCP server,
+      and a web page ready for the site of a public body: the "Mappa dei dati su frane e
+      pericolo", which opens on a municipality and shows the landslide hazard areas of the 2024
+      PAI mosaic, flood hazard, the mapped and the dated landslides with how precise their date
+      and place are, the people and assets exposed, a predisposition class computed from the
+      official maps only, and how far that data can be trusted in that municipality. Every figure
+      carries its source and licence, and the page checks every hour that IdroGEO still answers as
+      expected. It reads no rain and is not an alert system: the official alert stays the bulletin
+      of the Civil Protection Department and of the region. It uses no personal data and needs no
+      key or account.
+    features:
+      - Map of a municipality with the 2024 PAI landslide hazard areas and flood hazard
+      - IFFI landslides and dated landslides, with the precision of date and place
+      - People, buildings and cultural heritage exposed
+      - Predisposition class from the official maps, no rain, never an alert
+      - How far IFFI data can be trusted in each municipality, and what is not measured
+      - Source, licence and date of every figure; CSV and GeoJSON downloads
+      - Python library, command line and MCP server for assistants
+organisation:
+  name: Agent Engineering Studio
+  uri: "https://github.com/agent-engineering-studio"
+legal:
+  license: Apache-2.0
+  mainCopyrightOwner: Agent Engineering Studio
+maintenance:
+  type: community
+  contacts:
+    - name: Giuseppe Zileni
+localisation:
+  localisationReady: true
+  availableLanguages: [it, en]
+IT:
+  countryExtensionVersion: "1.0"
+  riuso:
+    codiceIPA: ""   # empty until the software belongs to a public administration

@@ -75,6 +75,12 @@ notebooks = [
     "nbclient>=0.10",
     "nbformat>=5.10",
 ]
+# The page for public bodies (app/): make app
+app = [
+    "ispra-idrogeo[mcp,warehouse]",
+    "starlette>=0.40",
+    "uvicorn>=0.30",
+]
 # The documentation site (Zensical, on GitHub Pages): make docs-serve
 docs = [
     "mkdocstrings-python>=1.18",
@@ -90,6 +96,7 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "ARG", "PTH", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ARG", "B018"]
+"tests/test_app.py" = ["ARG", "E501"]
 # the constant method ignores its arguments on purpose
 "benchmarks/methods.py" = ["ARG002"]
 

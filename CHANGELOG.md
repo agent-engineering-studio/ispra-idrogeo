@@ -8,6 +8,31 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `app/`: the **Mappa dei dati su frane e pericolo** for public bodies (#22),
+  a page in Italian with Bootstrap Italia and Leaflet served without CDN and
+  a small Starlette API over the library. For one municipality: the PAI 2024
+  landslide hazard polygons and the IFFI points from a local warehouse
+  loaded at start, flood hazard and the boundary from IdroGEO's WMS, the
+  dated landslides with their precision, a predisposition class (no rain,
+  not an alert), exposure, landslides by type, how far to trust the data,
+  the live state of the contract with IdroGEO, sources, licences and CSV or
+  GeoJSON downloads. `make app`, `make app-up` (container `<NAME>-app`, port
+  3002), `docs/riuso.md` and `publiccode.yml`, validated in CI.
+- `ispra_idrogeo.predisposition`: the landslide and flood predisposition
+  classes of an area from `summary("pir", …)`, five fixed steps on the
+  official share of land in hazard (P3+P4 of the 2024 mosaic; flood
+  scenario P2), with the counts of the 7,899 municipalities.
+
+### Fixed
+
+- Two `Warehouse(read_only=True)` on the same file in one process (two MCP
+  calls at once, two requests of the page) failed: the second tried to set
+  up and lock the configuration the first had already locked.
+- `make help` printed "Makefile" instead of the command names when a `.env`
+  file was there.
+
+### Added
+
 - `IdroGEO.head(dataset)` and `FileState`: a file's date, ETag and size
   without downloading it. `ispra_idrogeo.freshness`: `freshness()` asks
   about every published file (IFFI layers, events, reports, mosaics) and,

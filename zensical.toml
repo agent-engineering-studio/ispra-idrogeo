@@ -28,6 +28,7 @@ nav = [
     { "Known traps" = "traps.md" },
   ] },
   { "AI agents" = "ai-agents.md" },
+  { "Mappa per gli enti" = "riuso.md" },
   { "Roadmap & AI" = "roadmap.md" },
   { "API reference" = "reference.md" },
   { "Project" = [

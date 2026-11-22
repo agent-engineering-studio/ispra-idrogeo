@@ -40,3 +40,12 @@ jobs:
       - run: uv sync --locked
       - name: Known cases, offline, against the recorded results
         run: uv run python -m benchmarks.run --check
+
+  publiccode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: italia/publiccode-parser-action@v1
+        with:
+          publiccode: publiccode.yml
+          no-network: true

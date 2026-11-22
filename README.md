@@ -38,6 +38,7 @@ async with IdroGEO() as idrogeo:
 | download a layer and open it | [Quick start](#quick-start) |
 | use the command line | [From the command line](#3b-or-from-the-command-line) |
 | run everything in Docker | [Run it in containers](#run-it-in-containers) |
+| put a map on a municipality's site | [A map for public bodies](#a-map-for-public-bodies) |
 | know if a place is in a hazard area | [Hazard at a point](#is-this-place-at-risk-hazard-at-a-point) |
 | find the landslides near a place | [Landslides near a point](#landslides-near-a-point) |
 | get the risk figures of a town | [Ask the API](#4-ask-the-api) · [Every municipality](#every-municipality-in-one-table) |
@@ -64,6 +65,7 @@ async with IdroGEO() as idrogeo:
 - [Quick start](#quick-start)
 - [What you can download](#what-you-can-download)
 - [Where downloads are saved](#where-downloads-are-saved)
+- [A map for public bodies](#a-map-for-public-bodies)
 - [Run it in containers](#run-it-in-containers)
 - [How it works](#how-it-works)
 - [Recipes](#recipes)
@@ -329,6 +331,45 @@ volumes:
 ```
 
 <!-- --8<-- [end:saved] -->
+
+---
+
+## A map for public bodies
+
+<!-- --8<-- [start:app] -->
+
+`app/` is the **Mappa dei dati su frane e pericolo**, a page in Italian for
+the site of a municipality or another public body. It opens on a
+municipality and shows what the official data says and how far to trust it:
+
+- **on the map**: the landslide hazard areas of the 2024 PAI mosaic, flood
+  hazard, the IFFI landslides, the dated landslides with how precise their
+  date and place are, and the municipality's boundary;
+- **in the panel**: a predisposition class for landslides and floods (the
+  share of land in official hazard, in five fixed steps, **no rain, never an
+  alert**), people and assets exposed, landslides by type, how far to trust
+  the data there and what is not measured, the state of the contract with
+  IdroGEO, sources, licences and downloads.
+
+```bash
+make app-up                                   # in Docker: http://localhost:3002 (container ispra-idrogeo-app)
+IDROGEO_COMUNE=72006 IDROGEO_ENTE="Comune di Bari" make app-up
+make app                                      # without Docker
+```
+
+It opens on Sarno (`?comune=<ISTAT>` or `IDROGEO_COMUNE` for another one).
+At first start it loads the IFFI points and the 2024 mosaic into a local
+DuckDB (about two minutes); meanwhile landslide hazard comes from IdroGEO's
+WMS. Bootstrap Italia and Leaflet are served by the page itself, no CDN.
+
+It reads no rain and gives no alert: the official alert is the bulletin of
+the Civil Protection Department and of the region, and the picture that
+joins rain, thresholds, landslides and hazard is
+[Limen](https://github.com/agent-engineering-studio/limen)'s. How to reuse
+it, in Italian: [`docs/riuso.md`](docs/riuso.md) and [`app/README.md`](app/README.md).
+`publiccode.yml` is checked in CI for the Developers Italia catalogue.
+
+<!-- --8<-- [end:app] -->
 
 ---
 
@@ -1425,6 +1466,7 @@ give the known answer, and a recorded gap (Melito) to watch for.
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
 | `ispra_idrogeo.dated.dated_landslides(idrogeo, since=, until=, region=, max_interval_days=, max_position_m=, sources=)` | Dated landslides of IFFI and of the events, with the precision of date and place; `summary(found)` counts them. |
 | `.head(dataset)` / `ispra_idrogeo.freshness.freshness(idrogeo, datasets=None, state=None)` | A file's date, ETag and size without downloading it; every file's freshness and whether it changed since the saved state. |
+| `ispra_idrogeo.predisposition.predisposition(summary)` | The landslide and flood predisposition classes of an area from its `summary("pir", …)`: five fixed steps on the official share of land in hazard, no rain. |
 | `ispra_idrogeo.reliability.reliability(level, code)` | How far IFFI and the events can be trusted in an area: dates, events since 2018, upkeep, notes, what is not measured. |
 | `ispra_idrogeo.grounding.check_text(text, facts, question="")` | The numbers and dates of a text that match no figure of `facts`. |
 | `ispra_idrogeo.grounding.grounded(answer, kind)` / `SOURCES` | An answer with its `source` and `retrieved_at`; the citation and licence of each kind of data. |

@@ -126,14 +126,19 @@ class Warehouse:
             self._db = duckdb.connect(str(self.path), read_only=read_only)
         except (duckdb.IOException, duckdb.ConnectionException) as exc:
             raise IdrogeoError(f"warehouse {self.path} is busy (a sync running?): {exc}") from exc
-        if not _has_spatial(self._db):  # pragma: no cover - once per machine, needs the network
-            self._db.execute("INSTALL spatial")
-        self._db.execute("LOAD spatial")
-        self._db.execute("SET geometry_always_xy = true")
-        if read_only:  # no files, no URLs, no way back: queries see only these tables
+        # a second reader of the same file in this process shares the first one's
+        # database, already set up, shut and locked: there is nothing left to do
+        locked = self._db.execute("SELECT current_setting('lock_configuration')").fetchone()
+        if not (locked and locked[0]):
+            if not _has_spatial(self._db):  # pragma: no cover - once per machine, needs the network
+                self._db.execute("INSTALL spatial")
+            self._db.execute("LOAD spatial")
+            self._db.execute("SET geometry_always_xy = true")
+        if read_only and not (locked and locked[0]):
+            # no files, no URLs, no way back: queries see only these tables
             self._db.execute("SET enable_external_access = false")
             self._db.execute("SET lock_configuration = true")
-        else:
+        if not read_only:
             self._db.execute(
                 "CREATE TABLE IF NOT EXISTS _layers ("
                 "name VARCHAR PRIMARY KEY, area VARCHAR, version VARCHAR, rows BIGINT)"

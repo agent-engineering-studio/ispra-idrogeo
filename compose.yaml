@@ -43,6 +43,30 @@ services:
       - ./examples:/home/idrogeo/examples
       - data:/data/idrogeo
 
+  # La Mappa dei dati su frane e pericolo, for public bodies (#22).
+  app:
+    profiles: [app]
+    build:
+      context: .
+      target: web
+    image: ${IDROGEO_NAME:-ispra-idrogeo}-web:local
+    container_name: ${IDROGEO_NAME:-ispra-idrogeo}-app
+    environment:
+      IDROGEO_ENTE: ${IDROGEO_ENTE:-Mappa dei dati su frane e pericolo}
+      IDROGEO_COMUNE: ${IDROGEO_COMUNE:-65135}
+      IDROGEO_TILES: ${IDROGEO_TILES:-}
+      IDROGEO_TILES_CREDIT: ${IDROGEO_TILES_CREDIT:-}
+    ports:
+      - "127.0.0.1:${IDROGEO_APP_PORT:-3002}:3002"
+    volumes:
+      - data:/data/idrogeo
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3002/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
   # The `idrogeo` command, run once: make cli ARGS="hazard 40.829 14.617"
   cli:
     profiles: [tools]
