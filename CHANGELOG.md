@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- README (traps), the `MOSAICS` comment and the 0.9.0 entry of this file say
+  to name the mosaics one by one: since 0.9.0 `MOSAICS` holds
+  `pai_frane_2024` too, and a loop over it downloads 790 MB more.
+
 ## [0.10.0] - 2026-11-22
 
 ### Added
@@ -62,6 +68,11 @@ All notable changes to this project are documented here. The format follows
   benchmark-record`.
 
 ## [0.9.0] - 2026-11-22
+
+> **Note (added after the release):** `MOSAICS` gained `pai_frane_2024`. Code
+> that loops over every entry of `MOSAICS` now downloads 790 MB more at each
+> sync; name the mosaics you need instead (`mosaic("pai_frane")`,
+> `mosaic("idraulica")`). Limen did so in limen#673.
 
 ### Added
 
