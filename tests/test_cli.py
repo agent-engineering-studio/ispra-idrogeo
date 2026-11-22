@@ -239,3 +239,18 @@ def test_main_exit_status(
 
     monkeypatch.setattr(cli, "_main", closed)
     assert cli.main(["dictionaries"]) == 0
+
+
+def test_check(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    facts = tmp_path / "facts.json"
+    facts.write_text(json.dumps({"pop_idr_p2": 4038, "popidp2_p": 1.278}), encoding="utf-8")
+    answer = tmp_path / "answer.txt"
+    answer.write_text("4,038 people, 1.3 %.", encoding="utf-8")
+    assert cli.main(["check", str(facts), "--text", str(answer)]) == 0
+    assert json.loads(capsys.readouterr().out) == {"unmatched": [], "ok": True}
+    monkeypatch.setattr("sys.stdin", io.StringIO("4,039 people within 500 m"))
+    assert cli.main(["check", str(facts), "--question", "within 500 m?"]) == 1
+    assert json.loads(capsys.readouterr().out)["unmatched"] == ["4,039"]
+    assert cli.main(["check", str(tmp_path / "missing.json")]) == 1

@@ -32,7 +32,7 @@ test suite of questions with known answers.
 | 7 | Local DuckDB warehouse, offline, with read-only SQL for agents (`warehouse_sql`) | Core · AI | 🔄 [#4](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/4) |
 | 8 | Live contract tests, weekly, opening an issue on drift | Quality | 🔄 [#5](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/5) |
 | 9 | Agent evaluation suite: questions with checked answers (`make eval`, needs an Anthropic key) | AI | ✅ [#6](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/6), not run yet |
-| 10 | Typed tool outputs (`TypedDict`) and citations on every answer | AI | ⏳ |
+| 10 | Citations on every answer (`source`, `retrieved_at`) and a check for invented numbers (`check_text`, `check_answer`); typed outputs still to do | AI | 🔄 citations ✅, types ⏳ |
 | 11 | Grounded area reports (`idrogeo report <comune>`) | AI | ⏳ |
 | 12 | AI digests on top of `idrogeo watch` | AI | ⏳ |
 | 13 | An agent skill for coding assistants (`SKILL.md`) | AI | ⏳ |

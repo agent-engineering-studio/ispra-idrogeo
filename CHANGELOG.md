@@ -8,6 +8,21 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `ispra_idrogeo.grounding`: `check_text(text, facts, question)` lists the
+  numbers and dates of a text that match no figure of the facts (rounded as
+  written, Italian and English formats, scale words, dates); `SOURCES` and
+  `grounded()` give each kind of data its citation and licence. `idrogeo
+  check facts.json` and the MCP tool `check_answer` do the same.
+
+### Changed
+
+- Every `idrogeo-mcp` answer carries `source` (citation and licence: IFFI and
+  events CC BY-SA 4.0, risk indicators CC BY 4.0) and `retrieved_at` (UTC).
+  Tools that answered a list now answer `{"results": [...], "count": n,
+  "source": ..., "retrieved_at": ...}`. The instructions ask the agent to take
+  every number from a tool, cite the source, never read null as zero, say
+  nothing is an alert, and call `check_answer` on its draft.
+
 - README "AI: where it helps": what is ready (`idrogeo-mcp`, `llms.txt`,
   `evals/`), who it helps and how, where AI must not be used, how to use an
   Anthropic key from `.env` with `make eval`, and what comes next. The

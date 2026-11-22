@@ -900,6 +900,7 @@ clients use: `IDROGEO_MCP_ALLOWED_HOSTS=idrogeo-mcp:*,localhost:*`.
 | `code_list` | Any code list, in four languages |
 | `download_dataset` | A layer downloaded (only if changed) to the local folder |
 | `warehouse_schema` / `warehouse_sql` | The tables of the [local warehouse](#offline-many-places-at-once-your-own-sql-a-local-warehouse), and one read-only SQL query on them |
+| `check_answer` | The numbers of a draft answer that no tool returned: the agent checks itself before answering |
 
 Names are matched without accents or apostrophes (`forli` finds *Forlì*),
 and a name that matches nothing comes back with "did you mean" suggestions.
@@ -913,6 +914,13 @@ and a name that matches nothing comes back with "did you mean" suggestions.
 Two prompts, `area_profile` and `recent_events`, give a client ready-made
 questions ("a risk profile of Sarno", "landslide events in Liguria since
 October") that use the tools the right way and credit the source.
+
+Every answer carries `source` (the citation and licence ISPRA asks for:
+CC BY-SA 4.0 for IFFI and the events, CC BY 4.0 for the risk indicators)
+and `retrieved_at` (UTC). Lists come as `{"results": […], "count": n,
+"source": …, "retrieved_at": …}`. The instructions ask the agent to take
+every number from a tool, to cite the source, and to call `check_answer` on
+its draft.
 
 Every tool but `download_dataset` only reads. Searches stop at `limit` rows
 (100 by default, 1,000 at most), so an agent never receives 700,000
@@ -1005,8 +1013,9 @@ up a number, a date or a place. And nothing here is an alert.
 
 | Piece | What it does | Needs an Anthropic key? |
 |---|---|---|
-| [`idrogeo-mcp`](#for-ai-agents-the-mcp-server) | Gives the data to any AI agent as 16 tools: hazard at a point, nearby landslides, risk figures, rankings, searches, SQL on the warehouse | No: the agent brings its own model (Claude Desktop, Claude Code, your app) |
+| [`idrogeo-mcp`](#for-ai-agents-the-mcp-server) | Gives the data to any AI agent as 17 tools: hazard at a point, nearby landslides, risk figures, rankings, searches, SQL on the warehouse, and `check_answer`. Every answer carries its source, licence and time | No: the agent brings its own model (Claude Desktop, Claude Code, your app) |
 | [`llms.txt`](https://agentengineering.it/ispra-idrogeo/llms.txt) | A short guide to the library for AI coding assistants, with the traps | No |
+| [`check_text`](#check-a-text-for-invented-numbers) | Finds the numbers of a text that match no figure of the data it was written from. Also `idrogeo check` and the MCP tool `check_answer` | No |
 | [`evals/`](https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/evals) | Measures whether Claude, connected to `idrogeo-mcp`, answers 31 real questions right. The true answers are computed from the live data on every run | **Yes** (paid calls) |
 
 ### Where it can help
@@ -1028,6 +1037,40 @@ up a number, a date or a place. And nothing here is an alert.
   date. A model must not guess one, and such a landslide cannot be used to
   check a rainfall threshold.
 - **To compute figures.** Sums, shares and rankings come from the tools.
+
+### Check a text for invented numbers
+
+```python
+from ispra_idrogeo.grounding import check_text
+
+facts = await idrogeo.summary("pir", "comuni", 72006)  # what the text was written from
+check_text("Bari ha 315.948 residenti, l'1,3 % in pericolo alluvione P2.", facts)  # []
+check_text("Bari has 315,949 residents.", facts)  # ['315,949']
+```
+
+```bash
+idrogeo summary pir comuni 72006 > bari.json
+echo "Bari has 315,949 residents." | idrogeo check bari.json   # exit 1: {"unmatched": ["315,949"], …}
+```
+
+A number passes when a figure of the facts, rounded the way the number is
+written, equals it:
+
+- `1.3 %` and `1,3 %` pass for 1.278;
+- `1.3 million` and `1,3 milioni` pass for 1,278,455;
+- a round number is read as rounded to its zeros, so `320,000` passes for
+  315,948;
+- `1,278` is read both ways, English (1278) and Italian (1.278).
+
+Codes inside words (`P4`, `EPSG:32632`) and list markers are skipped. A date
+must be among the dates of the facts. Numbers of the question are allowed
+(`question=`).
+
+**What it does not do.** It checks that a number exists in the facts, not
+that it is said of the right thing. With all the indicators of Bari as
+facts, "2 % in flood hazard P2" passes, because another indicator is 2.
+Pass only the facts the text uses. A check of who-said-what
+(`check_claims`) is not there yet.
 
 ### Use your Anthropic key
 
@@ -1063,12 +1106,13 @@ These are planned in the roadmap
 ([#11](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/11),
 phase 5):
 
-- **Source and date in every answer.** Each tool result carries its source,
-  licence and the date of the data, so the credit ISPRA asks for reaches
-  the final answer.
-- **A checker for invented numbers.** `check_text` and `check_claims` compare
-  every number in a text with the data it came from, and a benchmark of
-  answers runs it in CI for free.
+- ✅ **Source and date in every answer**, and ✅ **a checker for invented
+  numbers** (`check_text`, `idrogeo check`, `check_answer`): done.
+- **Who said what.** `check_claims`: a number said of the right indicator,
+  not just present in the facts.
+- **A faithfulness benchmark.** Answers written by a model from recorded
+  facts, scored by `check_text` for free in CI; the model runs only by hand,
+  with a key.
 - **Area reports.** `idrogeo report <comune>`: the figures from a template
   with no model at all; with a key, a model writes a plain summary, and the
   checker verifies it before it is saved.
@@ -1153,6 +1197,8 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `.landslides_near(lat, lon, radius_m=500, limit=200)` | IFFI landslides around a point, with `distance_m`. |
 | `.lookup(kind, text, limit=10)` | Search geological units, flights, bibliography, institutions, funding. |
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
+| `ispra_idrogeo.grounding.check_text(text, facts, question="")` | The numbers and dates of a text that match no figure of `facts`. |
+| `ispra_idrogeo.grounding.grounded(answer, kind)` / `SOURCES` | An answer with its `source` and `retrieved_at`; the citation and licence of each kind of data. |
 | `.labels(name, lang)` / `.code_labels(fields, lang)` / `decode(record, labels)` | Code lists, and records with `<field>_label` added. |
 | `ispra_idrogeo.geo.read(path)` | A downloaded file or folder as a GeoDataFrame (extra `[geo]`). |
 | `ispra_idrogeo.geo.frame(rows, geometry="point")` | API rows as a GeoDataFrame, in their own CRS. |
@@ -1163,8 +1209,8 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `.hazard_at(lat, lon)` / `.landslides_near(lat, lon, radius_m)` / `.landslides_in(...)` | The same questions as the client's, answered offline. |
 | `.download` / `.fetch(..., progress=callback)` | `callback(done, total)` after each chunk, for your own progress bar. |
 | `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` | One round of `idrogeo watch`: what changed since a `Mark`. |
-| `idrogeo-mcp` | An MCP server with the same data as 16 tools, 3 resources and 2 prompts (extra `[mcp]`). |
-| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`. |
+| `idrogeo-mcp` | An MCP server with the same data as 17 tools, 3 resources and 2 prompts (extra `[mcp]`). |
+| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`, `sync`, `sql`, `check`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,
