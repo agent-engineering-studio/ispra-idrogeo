@@ -15,3 +15,5 @@ site
 docs
 tests
 examples
+app/static/vendor
+**/__pycache__

@@ -11,3 +11,4 @@ htmlcov/
 site/
 .claude/hillclimb/
 .env
+app/static/vendor/

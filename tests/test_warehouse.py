@@ -188,3 +188,15 @@ def test_encoding(tmp_path: Path) -> None:
     shp.with_suffix(".cst").unlink()
     assert wh._encoding(shp) == ""
     assert wh._quote(Path("/a/b'c")) == "/a/b''c"
+
+
+async def test_two_readers_at_once(tmp_path: Path, idrogeo: IdroGEO) -> None:
+    with await _synced(tmp_path, idrogeo, ["frane_piff"]):
+        pass
+    path = tmp_path / "w.duckdb"
+    with Warehouse(path, read_only=True) as first, Warehouse(path, read_only=True) as second:
+        assert first.query("SELECT count(*) AS n FROM frane_piff") == second.query(
+            "SELECT count(*) AS n FROM frane_piff"
+        )
+        with pytest.raises(ValueError):
+            second.query("SELECT * FROM read_csv('/etc/hosts')")  # still shut

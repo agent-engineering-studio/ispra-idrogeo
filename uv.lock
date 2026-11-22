@@ -1145,6 +1145,11 @@ warehouse = [
 ]
 
 [package.dev-dependencies]
+app = [
+    { name = "ispra-idrogeo", extra = ["mcp", "warehouse"] },
+    { name = "starlette" },
+    { name = "uvicorn" },
+]
 dev = [
     { name = "ispra-idrogeo", extra = ["geo", "mcp", "warehouse"] },
     { name = "mypy" },
@@ -1180,6 +1185,11 @@ requires-dist = [
 provides-extras = ["geo", "warehouse", "mcp"]
 
 [package.metadata.requires-dev]
+app = [
+    { name = "ispra-idrogeo", extras = ["mcp", "warehouse"] },
+    { name = "starlette", specifier = ">=0.40" },
+    { name = "uvicorn", specifier = ">=0.30" },
+]
 dev = [
     { name = "ispra-idrogeo", extras = ["geo", "mcp", "warehouse"] },
     { name = "mypy", specifier = ">=1.13" },

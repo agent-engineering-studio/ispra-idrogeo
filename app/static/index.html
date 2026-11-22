@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mappa dei dati su frane e pericolo</title>
+  <link rel="stylesheet" href="vendor/bootstrap-italia/css/bootstrap-italia.min.css">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="it-header-center-wrapper py-3">
+    <div class="container">
+      <h1 id="ente" class="h3 mb-0 text-white">Mappa dei dati su frane e pericolo</h1>
+      <p class="mb-0 text-white small">Dati ufficiali ISPRA IdroGEO per un Comune · nessuna pioggia, nessuna allerta</p>
+    </div>
+  </header>
+
+  <main class="container my-3">
+    <div class="alert alert-warning" role="note">
+      <strong>Questa pagina non è un'allerta.</strong>
+      Mostra cosa dicono le mappe e gli inventari ufficiali e quanto fidarsi dei dati.
+      Per le allerte vale il <a id="bulletin" href="#" rel="noopener">bollettino di criticità del Dipartimento della Protezione Civile</a>
+      e quello della Regione. Il quadro con la pioggia è compito di <a id="limen" href="#" rel="noopener">Limen</a>.
+    </div>
+
+    <form id="search" class="row g-2 align-items-end mb-3" role="search">
+      <div class="col-sm-8 col-md-6">
+        <label for="q" class="form-label">Comune</label>
+        <input id="q" class="form-control" list="found" autocomplete="off" placeholder="Scrivi il nome di un Comune">
+        <datalist id="found"></datalist>
+      </div>
+      <div class="col-auto"><button class="btn btn-primary" type="submit">Mostra</button></div>
+    </form>
+
+    <div class="row g-3">
+      <section class="col-lg-8" aria-label="Mappa">
+        <h2 id="title" class="h4">…</h2>
+        <p id="crumbs" class="small text-muted mb-2"></p>
+        <div id="map" role="application" aria-label="Mappa del Comune"></div>
+        <div id="layer-state" class="small text-muted mt-1" aria-live="polite"></div>
+        <div id="legend" class="small mt-2"></div>
+      </section>
+
+      <aside class="col-lg-4" aria-label="Dati del Comune">
+        <div class="box">
+          <h3 class="h5">Predisposizione <small class="text-muted">(non è un'allerta)</small></h3>
+          <div id="predisposition"></div>
+          <p class="small text-muted mb-0" id="rule"></p>
+        </div>
+
+        <div class="box">
+          <h3 class="h5">Persone e beni esposti</h3>
+          <table class="table table-sm small mb-0"><tbody id="exposure"></tbody></table>
+        </div>
+
+        <div class="box">
+          <h3 class="h5">Frane censite (IFFI)</h3>
+          <div id="iffi" class="small"></div>
+        </div>
+
+        <div class="box">
+          <h3 class="h5">Quanto fidarsi di questi dati</h3>
+          <ul id="notes" class="small"></ul>
+          <p class="small mb-1"><strong>Non misurato:</strong></p>
+          <ul id="not-measured" class="small text-muted"></ul>
+        </div>
+
+        <div class="box">
+          <h3 class="h5">Stato del contratto con IdroGEO</h3>
+          <ul id="contract" class="small list-unstyled mb-1"></ul>
+          <p class="small text-muted mb-0" id="contract-time"></p>
+        </div>
+
+        <div class="box">
+          <h3 class="h5">Scarica</h3>
+          <ul class="small mb-0" id="downloads"></ul>
+        </div>
+
+        <div class="box">
+          <h3 class="h5">Fonti e licenze</h3>
+          <ul id="citations" class="small"></ul>
+          <p class="small text-muted mb-0" id="retrieved"></p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="container small text-muted mb-4">
+    Dati: ISPRA — IdroGEO (IFFI ed eventi CC BY-SA 4.0; mappa PAI frane 2024 e indicatori CC BY 4.0).
+    Nessun testo di questa pagina è scritto da un modello. Software:
+    <a href="https://github.com/agent-engineering-studio/ispra-idrogeo">ispra-idrogeo</a>, Apache-2.0.
+  </footer>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

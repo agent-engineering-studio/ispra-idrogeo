@@ -1,4 +1,4 @@
-.PHONY: help check lint format typecheck test build docs docs-serve live benchmark benchmark-record \
+.PHONY: app app-up help check lint format typecheck test build docs docs-serve live benchmark benchmark-record \
 	test-notebooks up down restart ps logs health notebooks cli shell \
 	docker-build docker-test-notebooks clean eval
 
@@ -14,11 +14,13 @@ export IDROGEO_NAME := $(NAME)
 export IDROGEO_MCP_PORT IDROGEO_JUPYTER_PORT IDROGEO_JUPYTER_TOKEN
 # The Claude API key, from .env or the shell: only `make eval` uses it.
 export ANTHROPIC_API_KEY
-COMPOSE := docker compose --profile notebooks --profile tools
+IDROGEO_APP_PORT ?= 3002
+export IDROGEO_APP_PORT
+COMPOSE := docker compose --profile notebooks --profile tools --profile app
 NOTEBOOK_TEST := examples/00-test-the-library.ipynb
 
 help:  ## List the commands
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/' | expand -t 24
+	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/' | expand -t 24
 
 # Development
 
@@ -62,7 +64,15 @@ test-notebooks:  ## Run the test notebook against the live service, here
 	uv run --group notebooks jupyter nbconvert --to notebook --execute --inplace \
 		--ExecutePreprocessor.timeout=600 $(NOTEBOOK_TEST)
 
+app:  ## The Mappa dei dati, here: http://127.0.0.1:3002
+	sh app/vendor.sh
+	uv run --group app uvicorn --factory app.api:create_app --host 127.0.0.1 --port 3002
+
 # Containers
+
+app-up:  ## The Mappa dei dati in a container: http://localhost:$(IDROGEO_APP_PORT)
+	docker compose --profile app up --build --detach app
+	@echo "Mappa dei dati: http://localhost:$(IDROGEO_APP_PORT) (container $(NAME)-app)"
 
 docker-build:  ## Build the images
 	$(COMPOSE) build
