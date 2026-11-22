@@ -1,0 +1,19 @@
+{
+  "metrics": [
+    {
+      "id": "correct",
+      "label": "correct",
+      "kind": "binary"
+    },
+    {
+      "id": "cited_source",
+      "label": "cites ISPRA",
+      "kind": "binary"
+    }
+  ],
+  "perf_fields": [
+    "latency_s",
+    "tool_calls",
+    "usage"
+  ]
+}

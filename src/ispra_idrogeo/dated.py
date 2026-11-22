@@ -1,0 +1,330 @@
+"""Dated landslides: the IFFI records and events that say *when*, and how precisely.
+
+A rainfall threshold can only be checked on landslides with a date. IdroGEO
+has two kinds:
+
+- **IFFI records** (``iter_landslides``): 721,457 landslides, of which 6,144
+  have a certain date (``data_certa``) and about 22,000 only an interval
+  (``data_incerta_min`` / ``data_incerta_max``). The other 96% have no date.
+  Their ``accuratezza_posizione`` says ``esatta`` for every record, so it
+  tells nothing: :attr:`DatedLandslide.position_m` is ``None`` for them.
+- **Events** (``opendata("eventi")``): about 1,800 dated events, most since
+  2018, each with a stated accuracy of its point (exact, 100 m, 1 km, 10 km).
+  Most dates give only the day.
+
+:func:`dated_landslides` reads both and gives one list, each landslide with
+the precision of its date and of its place, so a study can keep only what it
+can trust: ``max_interval_days=1`` keeps dates known to the day,
+``max_position_m=1000`` keeps points known to 1 km. Counted on 22 November
+2026; the figures above change as ISPRA updates the data.
+
+Not here: whether an event and an IFFI record are the same landslide (the
+open-data events do not carry the IFFI id), and any date for the 96% that
+have none. Both sources are CC BY-SA 4.0.
+"""
+
+from __future__ import annotations
+
+import calendar
+import json
+import math
+import re
+from collections import Counter
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import asdict, dataclass
+from datetime import date
+from pathlib import Path
+from typing import Any, Literal
+
+from ispra_idrogeo.client import IdroGEO
+from ispra_idrogeo.grounding import SOURCES
+from ispra_idrogeo.sources import opendata
+
+Source = Literal["iffi", "eventi"]
+Precision = Literal["hour", "day", "interval"]
+
+#: The fields read from each IFFI record.
+IFFI_FIELDS = (
+    "id_frana",
+    "data_certa",
+    "data_incerta_min",
+    "data_incerta_max",
+    "point",
+    "tipo_movimento",
+    "regione",
+    "provincia",
+    "comune",
+)
+#: IFFI records with a certain date or an interval, filtered on the server.
+_DATED = {"or": "(data_certa.not.is.null,data_incerta_min.not.is.null)"}
+#: The accuracy classes of the events, in metres (``Esatta`` is 0).
+_EVENT_ACCURACY = {"esatta": 0, "100": 100, "1000": 1_000, "10000": 10_000}
+_DATE = re.compile(r"(\d{4})(?:-(\d{2})(?:-(\d{2})(?:[T ](\d{2}):(\d{2}))?)?)?")
+
+
+@dataclass(frozen=True, slots=True)
+class DatedLandslide:
+    """One landslide with a date, and how far its date and place can be trusted."""
+
+    source: Source
+    id: str
+    lon: float | None
+    lat: float | None
+    #: The day, or the first day of the interval.
+    start: date
+    #: The same day, or the last day of the interval.
+    end: date
+    #: ``"HH:MM"`` when a time other than 00:00 is written, else ``None``.
+    time: str | None
+    precision: Precision
+    #: Days covered by the date: 1 for a day or an hour.
+    interval_days: int
+    #: Accuracy of the point in metres (0 = exact) when the source states it.
+    position_m: int | None
+    movement: int | None
+    region: int | None
+    province: int | None
+    municipality: int | None
+    #: Events only: ``True`` for the main event of a series.
+    main_event: bool | None
+    citation: str
+
+    def as_dict(self) -> dict[str, Any]:
+        """JSON-ready: dates as ISO strings."""
+        out = asdict(self)
+        out["start"], out["end"] = self.start.isoformat(), self.end.isoformat()
+        return out
+
+
+def parse_period(text: Any, today: date | None = None) -> tuple[date, date, str | None] | None:
+    """The first and last day a date stands for, and its time if one is written.
+
+    ``"2019-05-12"`` is that day; ``"1983-07"`` the whole month; ``"1979"``
+    the whole year. The time is ``"HH:MM"``, or ``None`` at 00:00 or when
+    absent; the day is the one written, whatever the time zone. ``None`` for
+    an empty or impossible date (before 1000, or starting after ``today``).
+    """
+    if not isinstance(text, str):
+        return None
+    match = _DATE.fullmatch(text.strip()) or _DATE.match(text.strip())
+    if not match:
+        return None
+    year, month, day, hour, minute = match.groups()
+    try:
+        y = int(year)
+        if day:
+            start = end = date(y, int(month), int(day))
+        elif month:
+            start = date(y, int(month), 1)
+            end = date(y, int(month), calendar.monthrange(y, int(month))[1])
+        else:
+            start, end = date(y, 1, 1), date(y, 12, 31)
+    except ValueError:
+        return None
+    if y < 1000 or start > (today or date.today()):
+        return None
+    clock = f"{hour}:{minute}" if hour and (hour, minute) != ("00", "00") else None
+    return start, end, clock
+
+
+def from_iffi(row: Mapping[str, Any], today: date | None = None) -> DatedLandslide | None:
+    """An IFFI record with a date as a :class:`DatedLandslide`; ``None`` without one."""
+    certain = parse_period(row.get("data_certa"), today)
+    low = parse_period(row.get("data_incerta_min"), today)
+    high = parse_period(row.get("data_incerta_max"), today)
+    if certain:
+        start, end, clock = certain
+    elif low or high:
+        first, last = low or high, high or low
+        assert first is not None and last is not None
+        start, end, clock = min(first[0], last[1]), max(first[0], last[1]), None
+    else:
+        return None
+    precision: Precision = "interval" if start != end else "hour" if clock else "day"
+    lon, lat = _xy(row.get("point")) or (None, None)
+    return DatedLandslide(
+        source="iffi",
+        id=str(row.get("id_frana")),
+        lon=lon,
+        lat=lat,
+        start=start,
+        end=end,
+        time=clock,
+        precision=precision,
+        interval_days=(end - start).days + 1,
+        position_m=None,  # IFFI says "esatta" for every record
+        movement=_int(row.get("tipo_movimento")),
+        region=_int(row.get("regione")),
+        province=_int(row.get("provincia")),
+        municipality=_int(row.get("comune")),
+        main_event=None,
+        citation=SOURCES["iffi"],
+    )
+
+
+def from_event(feature: Mapping[str, Any], today: date | None = None) -> DatedLandslide | None:
+    """A GeoJSON feature of ``opendata("eventi")`` as a :class:`DatedLandslide`."""
+    props = feature.get("properties") or {}
+    dated = parse_period(props.get("data_certa"), today)
+    if not dated:
+        return None
+    start, end, clock = dated
+    xy = _xy((feature.get("geometry") or {}).get("coordinates"))
+    lon, lat = utm32n_to_lonlat(*xy) if xy else (None, None)
+    accuracy = str(props.get("accuratezza_posizione") or "").strip().lower()
+    main = props.get("evento_principale")
+    return DatedLandslide(
+        source="eventi",
+        id=str(props.get("uid")),
+        lon=lon,
+        lat=lat,
+        start=start,
+        end=end,
+        time=clock,
+        precision="interval" if start != end else "hour" if clock else "day",
+        interval_days=(end - start).days + 1,
+        position_m=_EVENT_ACCURACY.get(accuracy),
+        movement=_int(props.get("tipo_movimento")),
+        region=_int(props.get("regione")),
+        province=_int(props.get("provincia")),
+        municipality=_int(props.get("comune")),
+        main_event=None if main is None else str(main).upper() == "SI",
+        citation=SOURCES["events"],
+    )
+
+
+def select(
+    found: Iterable[DatedLandslide],
+    *,
+    since: date | None = None,
+    until: date | None = None,
+    region: int | None = None,
+    max_interval_days: int | None = None,
+    max_position_m: int | None = None,
+) -> list[DatedLandslide]:
+    """The landslides inside the dates (``since`` included, ``until`` excluded),
+    the region (ISTAT code) and the precision asked for.
+
+    ``max_position_m`` keeps only landslides whose source states an accuracy
+    at least that good, so it leaves out every IFFI record.
+    """
+    return [
+        d
+        for d in found
+        if (since is None or d.end >= since)
+        and (until is None or d.start < until)
+        and (region is None or d.region == region)
+        and (max_interval_days is None or d.interval_days <= max_interval_days)
+        and (
+            max_position_m is None or (d.position_m is not None and d.position_m <= max_position_m)
+        )
+    ]
+
+
+async def dated_landslides(
+    idrogeo: IdroGEO,
+    *,
+    sources: Sequence[Source] = ("iffi", "eventi"),
+    since: date | None = None,
+    until: date | None = None,
+    region: int | None = None,
+    max_interval_days: int | None = None,
+    max_position_m: int | None = None,
+    directory: Path | None = None,
+) -> list[DatedLandslide]:
+    """Every dated landslide of IFFI and of the events, with its precision, oldest first.
+
+    IFFI is read from the API (one request, a few seconds); the events from
+    the open-data file (100 kB, downloaded only if changed, into
+    ``directory``). See :func:`select` for the filters.
+    """
+    found: list[DatedLandslide] = []
+    if "iffi" in sources:
+        rows = idrogeo.iter_landslides(dict(_DATED), select=list(IFFI_FIELDS), page_size=100_000)
+        found += [d async for r in rows if (d := from_iffi(r))]
+    if "eventi" in sources:
+        folder = await idrogeo.fetch(opendata("eventi", fmt="geojson"), directory)
+        for path in sorted(folder.glob("*.json")):
+            features = json.loads(path.read_text(encoding="utf-8")).get("features") or []
+            found += [d for f in features if (d := from_event(f))]
+    chosen = select(
+        found,
+        since=since,
+        until=until,
+        region=region,
+        max_interval_days=max_interval_days,
+        max_position_m=max_position_m,
+    )
+    return sorted(chosen, key=lambda d: (d.start, d.source, d.id))
+
+
+def summary(found: Iterable[DatedLandslide]) -> dict[str, Any]:
+    """Counts: by source, by precision of the date and of the place, by year and region."""
+    items = list(found)
+
+    def count(key: Any) -> dict[str, int]:
+        return {str(k): v for k, v in sorted(Counter(key(d) for d in items).items(), key=str)}
+
+    return {
+        "total": len(items),
+        "by_source": count(lambda d: d.source),
+        "by_precision": count(lambda d: d.precision),
+        "by_position_m": count(lambda d: "not stated" if d.position_m is None else d.position_m),
+        "by_year": count(lambda d: d.start.year),
+        "by_region": count(lambda d: d.region),
+    }
+
+
+# UTM zone 32N (EPSG:32632) to longitude and latitude, WGS 84: the events file
+# is in UTM, and a study crossing it with rainfall wants degrees. Krüger's
+# series to n³ (as on the UTM page of Wikipedia); checked against PROJ in the
+# tests to under a metre across Italy.
+_A = 6378137.0
+_F = 1 / 298.257223563
+_K0 = 0.9996
+_N = _F / (2 - _F)
+_AA = _A / (1 + _N) * (1 + _N**2 / 4 + _N**4 / 64)
+_BETA = (
+    _N / 2 - 2 * _N**2 / 3 + 37 * _N**3 / 96,
+    _N**2 / 48 + _N**3 / 15,
+    17 * _N**3 / 480,
+)
+_DELTA = (
+    2 * _N - 2 * _N**2 / 3 - 2 * _N**3,
+    7 * _N**2 / 3 - 8 * _N**3 / 5,
+    56 * _N**3 / 15,
+)
+
+
+def utm32n_to_lonlat(x: float, y: float) -> tuple[float, float]:
+    """Longitude and latitude (degrees) of a point in EPSG:32632 (metres)."""
+    xi = y / (_K0 * _AA)
+    eta = (x - 500_000.0) / (_K0 * _AA)
+    xi1 = xi - sum(
+        b * math.sin(2 * j * xi) * math.cosh(2 * j * eta) for j, b in enumerate(_BETA, 1)
+    )
+    eta1 = eta - sum(
+        b * math.cos(2 * j * xi) * math.sinh(2 * j * eta) for j, b in enumerate(_BETA, 1)
+    )
+    chi = math.asin(math.sin(xi1) / math.cosh(eta1))
+    lat = chi + sum(d * math.sin(2 * j * chi) for j, d in enumerate(_DELTA, 1))
+    lon = math.radians(9.0) + math.atan2(math.sinh(eta1), math.cos(xi1))
+    return math.degrees(lon), math.degrees(lat)
+
+
+def _xy(value: Any) -> tuple[float, float] | None:
+    """The first two numbers of a coordinate list, or ``None``."""
+    if (
+        isinstance(value, list | tuple)
+        and len(value) >= 2
+        and all(isinstance(v, int | float) for v in value[:2])
+    ):
+        return float(value[0]), float(value[1])
+    return None
+
+
+def _int(value: Any) -> int | None:
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None

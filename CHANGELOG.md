@@ -16,6 +16,17 @@ All notable changes to this project are documented here. The format follows
   `warehouse.SOURCES` has its citation. Checked on the real file: 1,060,084
   polygons in 132 s, areas within 0.1% of the API's `ar_fr_*` per class. This
   explains the trap of the "10–20% more" areas: the API uses the 2024 mosaic.
+- `ispra_idrogeo.dated`: `dated_landslides()` gathers the dated landslides
+  of IFFI (API, one request) and of the events file, each with `start`/`end`,
+  `time`, `precision` (hour, day, interval), `interval_days`, `position_m`
+  (the stated accuracy of the point), `lon`/`lat` and its citation; filters
+  by dates, region, `max_interval_days` and `max_position_m`; `summary()`
+  counts them. `parse_period` reads partial dates (`"1979"`, `"1983-07"`) as
+  intervals and leaves impossible ones out; `utm32n_to_lonlat` converts the
+  events' EPSG:32632 points (Krüger series, under a millimetre from PROJ
+  across Italy). `idrogeo dated` from the shell. Measured on 22 November
+  2026: 26,601 of 721,457 IFFI records have a date (9,824 to the day), and
+  every IFFI record says its position is "esatta"; README, traps, live test.
 
 ### Changed
 

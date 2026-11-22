@@ -254,3 +254,27 @@ def test_check(
     assert cli.main(["check", str(facts), "--question", "within 500 m?"]) == 1
     assert json.loads(capsys.readouterr().out)["unmatched"] == ["4,039"]
     assert cli.main(["check", str(tmp_path / "missing.json")]) == 1
+
+
+async def test_dated(monkeypatch: pytest.MonkeyPatch) -> None:
+    from datetime import date
+
+    from ispra_idrogeo import dated
+
+    seen: dict[str, Any] = {}
+
+    async def fake(idrogeo: IdroGEO, **kw: Any) -> list[dated.DatedLandslide]:
+        seen.update(kw)
+        one = dated.from_iffi({"id_frana": "1", "data_certa": "2019-11-12", "regione": 18})
+        assert one is not None
+        return [one]
+
+    monkeypatch.setattr(dated, "dated_landslides", fake)
+    rows = await _run(
+        "dated", "--since", "2018-01-01", "--source", "iffi", "--max-interval-days", "1"
+    )
+    assert rows[0]["id"] == "1" and rows[0]["start"] == "2019-11-12"
+    assert seen["since"] == date(2018, 1, 1) and seen["sources"] == ["iffi"]
+    assert seen["max_interval_days"] == 1 and seen["max_position_m"] is None
+    [counts] = await _run("dated", "--summary")
+    assert counts["total"] == 1 and seen["sources"] == ("iffi", "eventi")
