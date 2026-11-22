@@ -31,7 +31,7 @@ test suite of questions with known answers.
 | 6 | MCP `rank_areas`, `compare_areas`, resources, prompts, accent-insensitive `find_area` | AI | ✅ [#1](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/1), unreleased |
 | 7 | Local DuckDB warehouse, offline, with read-only SQL for agents (`warehouse_sql`) | Core · AI | 🔄 [#4](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/4) |
 | 8 | Live contract tests, weekly, opening an issue on drift | Quality | 🔄 [#5](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/5) |
-| 9 | Agent evaluation suite: questions with checked answers | AI | ⏳ next |
+| 9 | Agent evaluation suite: questions with checked answers (`make eval`, needs an Anthropic key) | AI | ✅ [#6](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/6), not run yet |
 | 10 | Typed tool outputs (`TypedDict`) and citations on every answer | AI | ⏳ |
 | 11 | Grounded area reports (`idrogeo report <comune>`) | AI | ⏳ |
 | 12 | AI digests on top of `idrogeo watch` | AI | ⏳ |

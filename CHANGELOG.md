@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- README "AI: where it helps": what is ready (`idrogeo-mcp`, `llms.txt`,
+  `evals/`), who it helps and how, where AI must not be used, how to use an
+  Anthropic key from `.env` with `make eval`, and what comes next. The
+  Makefile exports `ANTHROPIC_API_KEY` from `.env`; only `make eval` uses it.
+
 - `evals/`: an eval of Claude as an agent on `idrogeo-mcp`. 31 questions in
   Italian and English with their ground truth computed live, programmatic
   grading, a runner that starts the real server over stdio and resumes, and a
