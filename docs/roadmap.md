@@ -1,23 +1,22 @@
 # Roadmap & AI
 
-Where ispra-idrogeo stands at **0.6.0** (November 2026), and the improvements
-and AI features that would make it more useful. These are directions, not
-promises: open an issue to discuss one before starting.
+Where ispra-idrogeo stands at **0.10.0** (22 November 2026), and what would
+make it more useful. These are directions, not promises: open an issue to
+discuss one before starting. The roadmap that brought it here is
+[#11](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/11)
+(closed); the AI layer still to do is
+[#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23).
 
 ## Where we are
 
 | Area | Today | Gap |
 |---|---|---|
-| **Downloads** | Every open-data layer and mosaic, conditional GET, atomic swap, progress bar | – |
-| **Points and areas** | `hazard_at` and `landslides_near` through IdroGEO's public WMS; `iter_landslides_in` with exact area counts | One point per request: nothing for thousands of points, or offline ([#4](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/4)) |
-| **Changes** | `idrogeo watch`, resumable, for cron | No summary a person reads in a minute |
-| **AI agents** | `idrogeo-mcp`: 14 tools, 3 resources, 2 prompts, stdio and streamable HTTP with `/health` | No measure of how well an agent uses the tools; untyped outputs |
-| **Quality** | `mypy --strict`, 100% coverage, mocked transport, notebooks run on the live service | Nothing notices when ISPRA moves a path again ([#5](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/5)) |
-
-The library now answers "what is at this place?". The next step is for agents
-to **use** it well, and to have that checked: ranking and comparing without
-doing arithmetic in their heads, SQL for the questions no tool foresees, and a
-test suite of questions with known answers.
+| **Data** | Every open-data layer and mosaic (PAI 2024 too), conditional downloads, a local DuckDB warehouse | – |
+| **Places** | `hazard_at`, `landslides_near`, `iter_landslides_in`; risk figures of all 7,899 towns | PAI polygons clipped to a box, not to the town's outline, on the map |
+| **Trust** | `dated_landslides` with their precision, `reliability` per town, `freshness` of every file | No reference to measure how complete IFFI is |
+| **People** | The *Mappa dei dati* for public bodies, in Docker, with `publiccode.yml` | Italian only; no WCAG audit |
+| **AI agents** | `idrogeo-mcp`: 19 tools with source, licence and time in every answer; `check_answer`; `SKILL.md`, `llms-full.txt`; an eval (pilot 5/5) | `check_answer` not yet used by agents; no check of who-said-what |
+| **Quality** | 100% coverage, `mypy --strict`, known cases replayed in CI, live contract tests every day | – |
 
 ## Status
 
@@ -27,46 +26,43 @@ test suite of questions with known answers.
 | 2 | Landslides of an area: `iter_landslides_in` | Core | ✅ 0.6.0 |
 | 3 | `idrogeo watch`, progress bar, example notebooks | DX | ✅ 0.6.0 |
 | 4 | MCP over streamable HTTP, `/health`, env configuration | AI | ✅ 0.6.0 |
-| 5 | `llms.txt` for coding assistants | AI | ✅ this site |
-| 6 | MCP `rank_areas`, `compare_areas`, resources, prompts, accent-insensitive `find_area` | AI | ✅ [#1](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/1), unreleased |
-| 7 | Local DuckDB warehouse, offline, with read-only SQL for agents (`warehouse_sql`) | Core · AI | 🔄 [#4](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/4) |
-| 8 | Live contract tests, weekly, opening an issue on drift | Quality | 🔄 [#5](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/5) |
-| 9 | Agent evaluation suite: questions with checked answers (`make eval`, needs an Anthropic key) | AI | ✅ [#6](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/6), not run yet |
-| 10 | Citations on every answer (`source`, `retrieved_at`) and a check for invented numbers (`check_text`, `check_answer`); typed outputs still to do | AI | 🔄 citations ✅, types ⏳ |
-| 11 | Grounded area reports (`idrogeo report <comune>`) | AI | ⏳ |
-| 12 | AI digests on top of `idrogeo watch` | AI | ⏳ |
-| 13 | An agent skill for coding assistants (`SKILL.md`) | AI | ⏳ |
-| 14 | Container image for `idrogeo-mcp`; Python 3.14 in CI | DX | ⏳ |
-| 15 | Landslide susceptibility baseline (notebook) | Research | 💡 |
-| 18 | Benchmark of known cases, recorded answers replayed offline in CI (`benchmarks/`) | Quality | ✅ #11 phase 1 |
-| 17 | Dated landslides with their precision (`dated_landslides`) and how far to trust IFFI per place (`reliability`) | Data | ✅ [#18](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/18), [#11](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/11) phase 2 |
-| 16 | News → candidate events, for review | Research | 💡 |
+| 5 | `llms.txt` for coding assistants | AI | ✅ 0.7.0 |
+| 6 | MCP `rank_areas`, `compare_areas`, resources, prompts | AI | ✅ 0.7.0 |
+| 7 | Local DuckDB warehouse with read-only SQL for agents | Core · AI | ✅ 0.7.0 |
+| 8 | Live contract tests, every day since 0.10.0, opening an issue on drift | Quality | ✅ 0.7.0 |
+| 9 | Agent evaluation suite (`make eval`, needs an Anthropic key) | AI | ✅ 0.8.0, pilot 5/5 correct |
+| 10 | Source, licence and time in every MCP answer; `check_text` / `check_answer` | AI | ✅ 0.8.0 |
+| 11 | PAI landslide mosaic 2024 (`pai_frane_2024`), File Geodatabases in the warehouse | Data | ✅ 0.9.0 |
+| 12 | Dated landslides with their precision (`dated_landslides`) | Data | ✅ 0.9.0 |
+| 13 | How far to trust IFFI, town by town (`reliability`) | Data | ✅ 0.9.0 |
+| 14 | Benchmark of known cases, replayed offline in CI | Quality | ✅ 0.10.0 |
+| 15 | Freshness of every published file (`freshness`) | Data | ✅ 0.10.0 |
+| 16 | Agent skill (`SKILL.md`) and `llms-full.txt` | AI | ✅ 0.10.0 |
+| 17 | *Mappa dei dati* for public bodies, predisposition classes | People | ✅ 0.10.0 |
+| 18 | `check_claims`, faithfulness benchmark, typed tool outputs, area reports | AI | ⏳ [#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23) |
+| 19 | Map: polygons clipped to the town, EN switch, screenshot | People | ⏳ |
+| 20 | Landslide susceptibility baseline (notebook) | Research | 💡 |
+| 21 | News → candidate events, for review | Research | 💡 |
 
 ```mermaid
 flowchart LR
-    subgraph D["Done"]
+    subgraph D["Done (0.6 → 0.10)"]
         direction TB
-        P["hazard_at · landslides_near<br/>(WMS)"]
-        W0["watch · notebooks"]
-        RK["rank_areas · compare_areas<br/>resources · prompts"]
-    end
-    subgraph R["In review"]
-        direction TB
-        WH["Warehouse + SQL (#4)"]
-        C["Live contract tests (#5)"]
+        P["Places and risk figures"]
+        T["Dates and trust<br/>dated_landslides · reliability · freshness"]
+        M["Mappa dei dati"]
+        Q["Known cases · daily live tests"]
     end
     subgraph N["Next"]
         direction TB
-        E["Agent eval suite"]
-        T["Typed outputs"]
+        C["check_claims · faithfulness"]
+        Y["Typed outputs · area reports"]
     end
     subgraph L["Later"]
         direction TB
-        RP["Grounded reports"]
-        DG["Change digests"]
         S["Research"]
     end
-    D --> R --> N --> L
+    D --> N --> L
 ```
 
 ---

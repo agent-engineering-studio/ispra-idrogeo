@@ -8,6 +8,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- README in plainer words: what the library does in six lines, "In one
+  picture", three schemes (where the data comes from, the libraries and
+  Limen, how the map page works) and two new charts generated from the data
+  (`dates.svg`: landslides dated to the day by region; `classes.svg`: the
+  7,899 towns by predisposition step); the sizes chart lists the 2024 mosaic;
+  updated figures. The site's home and roadmap (0.10.0) follow.
 - `make start` builds every image and starts the MCP server, the map and
   Jupyter in one command, printing their addresses; `make stop` stops them.
 

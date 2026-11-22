@@ -12,15 +12,15 @@
 <text class="t2" x="40" y="128" font-size="18">Italy's landslides and flood hazard, from ISPRA IdroGEO,</text>
 <text class="t2" x="40" y="152" font-size="18">in a few lines of Python.</text>
 <g font-size="13">
-  <rect class="chip" x="40" y="182" width="146" height="28" rx="14"/><text class="t2" x="113" y="201" text-anchor="middle">721,365 landslides</text>
+  <rect class="chip" x="40" y="182" width="146" height="28" rx="14"/><text class="t2" x="113" y="201" text-anchor="middle">721,457 landslides</text>
   <rect class="chip" x="194" y="182" width="60" height="28" rx="14"/><text class="t2" x="224" y="201" text-anchor="middle">IFFI</text>
   <rect class="chip" x="262" y="182" width="52" height="28" rx="14"/><text class="t2" x="288" y="201" text-anchor="middle">PAI</text>
   <rect class="chip" x="322" y="182" width="64" height="28" rx="14"/><text class="t2" x="354" y="201" text-anchor="middle">async</text>
   <rect class="chip" x="394" y="182" width="96" height="28" rx="14"/><text class="t2" x="442" y="201" text-anchor="middle">no API key</text>
 </g>
 <g transform="translate(760 14)">
-<rect x="52.0" y="0.0" width="22" height="22" rx="2.6" fill="#ec8665"><title>Trentino-Alto Adige: 25,209 landslides, 185 per 100 km²</title></rect>
-<rect x="78.0" y="0.0" width="22" height="22" rx="2.6" fill="#f5b69a"><title>Friuli Venezia Giulia: 5,822 landslides, 73 per 100 km²</title></rect>
+<rect x="52.0" y="0.0" width="22" height="22" rx="2.6" fill="#ec8665"><title>Trentino-Alto Adige: 25,301 landslides, 186 per 100 km²</title></rect>
+<rect x="78.0" y="0.0" width="22" height="22" rx="2.6" fill="#f5b69a"><title>Friuli-Venezia Giulia: 5,822 landslides, 73 per 100 km²</title></rect>
 <rect x="0.0" y="26.0" width="22" height="22" rx="2.6" fill="#ec8665"><title>Valle d'Aosta: 5,812 landslides, 178 per 100 km²</title></rect>
 <rect x="26.0" y="26.0" width="22" height="22" rx="2.6" fill="#a8321f"><title>Lombardia: 141,970 landslides, 595 per 100 km²</title></rect>
 <rect x="52.0" y="26.0" width="22" height="22" rx="2.6" fill="#f5b69a"><title>Veneto: 10,126 landslides, 55 per 100 km²</title></rect>

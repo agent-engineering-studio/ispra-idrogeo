@@ -14,6 +14,8 @@ from pathlib import Path
 from typing import Any
 
 from ispra_idrogeo import IdroGEO
+from ispra_idrogeo.predisposition import predisposition
+from ispra_idrogeo.reliability import reliability_map
 
 OUT = Path(__file__).parent / "images"
 _today = datetime.date.today()
@@ -34,11 +36,19 @@ async def load() -> tuple[dict[int, dict[str, Any]], dict[int, int], int]:
                 "ar": hazard["ar_kmq"],
             }
         italy = await idrogeo.summary("iffi", "italia")
+        municipalities = await idrogeo.summaries(
+            "pir", "comuni", max_age=datetime.timedelta(days=30)
+        )
     types = {s["cod"]: s["nr_frane"] for s in italy["frane_stats"]}
-    return regions, types, italy["frane_totali"]
+    steps: dict[str, dict[str, int]] = {"landslide": {}, "flood": {}}
+    for row in municipalities:
+        for kind, found in predisposition(row).items():
+            key = found.step or "n/a"
+            steps[kind][key] = steps[kind].get(key, 0) + 1
+    return regions, types, italy["frane_totali"], steps
 
 
-regions, TYPE_COUNTS, TOTAL = asyncio.run(load())
+regions, TYPE_COUNTS, TOTAL, STEPS = asyncio.run(load())
 
 FONT = 'text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}'
 BASE_CSS = """
@@ -262,7 +272,8 @@ def types_chart() -> str:
 
 
 SIZES = [  # label, MB (Italy, zipped)
-    ('mosaic("pai_frane")  landslide hazard', 1200),
+    ('mosaic("pai_frane")  landslide hazard 2020-21', 1200),
+    ('mosaic("pai_frane_2024")  landslide hazard 2024', 790),
     ('mosaic("idraulica")  flood hazard', 750),
     ('"frane_poly"  landslide polygons', 573),
     ('"aree_poly"  diffuse landslide areas', 236),
@@ -274,7 +285,7 @@ SIZES = [  # label, MB (Italy, zipped)
 
 
 def sizes_chart() -> str:
-    x0, scale = 340, 470 / 1200
+    x0, scale = 380, 430 / 1200
     rows, grid = [], []
     n = len(SIZES)
     for v in range(0, 1201, 300):
@@ -311,8 +322,105 @@ def sizes_chart() -> str:
 """
 
 
+def dates_chart() -> str:
+    """How many IFFI landslides each region dates to the day (shipped reliability map)."""
+    found = sorted(reliability_map().all("regioni"), key=lambda r: -(r.day_share or 0))
+    x0, width = 250, 560
+    rows = []
+    for i, r in enumerate(found):
+        y = 70 + i * 26
+        share = (r.day_share or 0) * 100
+        w = max(share / 25 * width, 1.5)
+        north_east = r.code in (4, 5, 6)
+        fill = "#2a78d6" if north_east else "#a3a29b"
+        label = "under 0.1%" if 0 < share < 0.1 else f"{share:.1f}%"
+        rows.append(
+            f'<text class="t2" x="{x0 - 12}" y="{y + 15}" font-size="13" text-anchor="end">{r.name}</text>'
+        )
+        rows.append(
+            f'<rect x="{x0}" y="{y}" width="{min(w, width):.1f}" height="19" rx="3" fill="{fill}"><title>{r.name}: {label} of {r.landslides:,} landslides dated to the day</title></rect>'
+        )
+        rows.append(
+            f'<text class="val" x="{x0 + min(w, width) + 8:.1f}" y="{y + 15}" font-size="12" font-weight="600">{label}</text>'
+        )
+    height = 70 + len(found) * 26 + 60
+    built = reliability_map().built_on
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 {height}" role="img" aria-label="Share of IFFI landslides dated to the day, by region: Trentino-Alto Adige, Friuli-Venezia Giulia and Veneto about a fifth, sixteen regions under 1 percent">
+<style>{FONT}{BASE_CSS}</style>
+<rect class="bg" width="980" height="{height}" rx="14"/>
+<text class="h" x="40" y="40" font-size="17" font-weight="700">IFFI landslides with a date to the day, by region</text>
+{chr(10).join(rows)}
+<text class="t2" x="40" y="{height - 28}" font-size="13">Blue: the north-east. 16 regions date fewer than 1% of their landslides; a landslide with no date cannot check a rainfall threshold.</text>
+<text class="ax" x="40" y="{height - 10}" font-size="11">Source: ISPRA IdroGEO, IFFI (CC BY-SA 4.0), ispra_idrogeo.reliability built on {built}.</text>
+</svg>
+"""
+
+
+STEP_ORDER = ["none", "low", "medium", "high", "very high"]
+STEP_FILL = {
+    "none": "#d9d8d2",
+    "low": "#fee08b",
+    "medium": "#fdae61",
+    "high": "#f46d43",
+    "very high": "#a50026",
+}
+
+
+def classes_chart() -> str:
+    """How many municipalities fall in each predisposition step, landslide and flood."""
+    x0, width, top = 200, 700, 80
+    rows = []
+    for i, (kind, title) in enumerate(
+        (("landslide", "Landslide (P3+P4)"), ("flood", "Flood (P2)"))
+    ):
+        y = top + i * 70
+        counts = STEPS[kind]
+        total = sum(counts.get(s, 0) for s in STEP_ORDER) or 1
+        rows.append(
+            f'<text class="h" x="{x0 - 14}" y="{y + 26}" font-size="14" font-weight="600" text-anchor="end">{title}</text>'
+        )
+        x = x0
+        for step in STEP_ORDER:
+            n = counts.get(step, 0)
+            w = n / total * width
+            rows.append(
+                f'<rect class="edge" x="{x:.1f}" y="{y}" width="{w:.1f}" height="40" fill="{STEP_FILL[step]}" stroke-width="2"><title>{title}, {step}: {n:,} municipalities</title></rect>'
+            )
+            if w > 46:
+                colour = "#ffffff" if step in ("high", "very high") else "#222222"
+                rows.append(
+                    f'<text x="{x + w / 2:.1f}" y="{y + 25}" font-size="12" font-weight="600" text-anchor="middle" fill="{colour}">{n:,}</text>'
+                )
+            x += w
+    legend = []
+    lx = x0
+    for step, rule in zip(
+        STEP_ORDER, ("0%", "under 5%", "5 to 15%", "15 to 30%", "30% or more"), strict=True
+    ):
+        legend.append(
+            f'<rect x="{lx}" y="{top + 150}" width="14" height="14" rx="3" fill="{STEP_FILL[step]}"/>'
+        )
+        legend.append(
+            f'<text class="t2" x="{lx + 20}" y="{top + 162}" font-size="12">{step} ({rule})</text>'
+        )
+        lx += 140
+    height = top + 220
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 {height}" role="img" aria-label="The 7,899 municipalities by predisposition step, from the official share of land in hazard: landslide and flood">
+<style>{FONT}{BASE_CSS}</style>
+<rect class="bg" width="980" height="{height}" rx="14"/>
+<text class="h" x="40" y="40" font-size="17" font-weight="700">The 7,899 municipalities by predisposition step (share of land in official hazard)</text>
+{chr(10).join(rows)}
+{chr(10).join(legend)}
+<text class="t2" x="40" y="{height - 26}" font-size="13">A predisposition class from the hazard maps: it uses no rain and is not an alert.</text>
+<text class="ax" x="40" y="{height - 9}" font-size="11">Source: ISPRA IdroGEO risk indicators (CC BY 4.0), {TODAY}; ispra_idrogeo.predisposition.</text>
+</svg>
+"""
+
+
 OUT.mkdir(parents=True, exist_ok=True)
 (OUT / "banner.svg").write_text(banner())
 (OUT / "map.svg").write_text(tile_map())
 (OUT / "types.svg").write_text(types_chart())
 (OUT / "sizes.svg").write_text(sizes_chart())
+(OUT / "dates.svg").write_text(dates_chart())
+(OUT / "classes.svg").write_text(classes_chart())
