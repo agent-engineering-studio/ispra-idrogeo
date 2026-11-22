@@ -7,35 +7,41 @@ hide:
 
 ![ispra-idrogeo: Italy's landslides and flood hazard, from ISPRA IdroGEO, in a few lines of Python](images/banner.svg)
 
-**ispra-idrogeo** is a small, typed, async Python library for
-[IdroGEO](https://idrogeo.isprambiente.it/), the platform where ISPRA (Italy's
-national environmental agency) publishes what it knows about **landslides and
-floods** in Italy. A script can download the national landslide inventory and
-the hazard maps, keep them up to date, and ask the IdroGEO API for risk figures
-about any region, province or town. No browser, no copy-pasted links, no account.
+**ispra-idrogeo** brings Italy's official data on **landslides and floods**
+into your code, and tells you **how far you can trust it**. The data comes
+from [IdroGEO](https://idrogeo.isprambiente.it/), the platform of ISPRA,
+Italy's national environmental agency. No browser, no account, no API key.
 
 ```python
 async with IdroGEO() as idrogeo:
-    folder = await idrogeo.fetch(opendata("frane_piff"))  # 721,365 landslides, one point each
+    folder = await idrogeo.fetch(opendata("frane_piff"))  # 721,457 landslides, one point each
 ```
 
 <div class="grid cards" markdown>
 
 -   :material-rocket-launch: **[Getting started](getting-started.md)**
 
-    Install, download your first layer, look at it, ask the API.
+    Install, download your first layer, look at it, ask the API, or start everything in Docker.
 
 -   :material-database: **[Datasets](datasets.md)**
 
-    Every open-data layer and mosaic, for Italy, a region or a province.
+    Every layer and hazard map, and how far the data can be trusted town by town.
+
+-   :material-calendar-check: **[Dated landslides](recipes.md#dated-landslides-when-and-how-precisely)**
+
+    The landslides with a date, and how precise that date and point are.
+
+-   :material-map: **[Mappa per gli enti](riuso.md)**
+
+    A page for a town's site: hazard, landslides, exposure and trust. No rain, no alert.
 
 -   :material-robot: **[AI agents](ai-agents.md)**
 
-    `idrogeo-mcp`: the same data as MCP tools for Claude and other agents, locally or over HTTP.
+    `idrogeo-mcp`: the data as tools, with sources and a check for invented numbers.
 
--   :material-map-marker-path: **[Roadmap & AI](roadmap.md)**
+-   :material-check-decagram: **[How it works](how-it-works.md)**
 
-    Where the project goes next: improvements and AI features, prioritised.
+    Downloads that never break, known cases replayed in CI, daily live tests.
 
 </div>
 
@@ -43,6 +49,7 @@ async with IdroGEO() as idrogeo:
 pip install ispra-idrogeo            # downloads, API, the idrogeo command
 pip install "ispra-idrogeo[geo]"     # + GeoDataFrames and GeoParquet
 pip install "ispra-idrogeo[mcp]"     # + the MCP server for AI agents
+make start                           # or everything in Docker: MCP, map, Jupyter
 ```
 
 ## What is IdroGEO, in 30 seconds
@@ -56,6 +63,10 @@ pip install "ispra-idrogeo[mcp]"     # + the MCP server for AI agents
 ## Who is it for
 
 --8<-- "README.md:audience"
+
+## A map for public bodies
+
+--8<-- "README.md:app"
 
 ## Data licence and credits
 

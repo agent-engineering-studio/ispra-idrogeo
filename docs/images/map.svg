@@ -10,11 +10,11 @@
 <rect class="bg" width="980" height="806" rx="14"/>
 <text class="h" x="40" y="44" font-size="20" font-weight="700">The IFFI inventory, region by region</text>
 <text class="t2" x="40" y="68" font-size="14">One square per region (not to scale). The number is how many landslides are mapped there.</text>
-<rect x="192.0" y="92.0" width="70" height="70" rx="8.4" fill="#ec8665"><title>Trentino-Alto Adige: 25,209 landslides, 185 per 100 km²</title></rect>
+<rect x="192.0" y="92.0" width="70" height="70" rx="8.4" fill="#ec8665"><title>Trentino-Alto Adige: 25,301 landslides, 186 per 100 km²</title></rect>
 <circle cx="251.0" cy="103.0" r="4.5" fill="#3b1408" opacity=".85"/>
 <text x="227.0" y="124.0" text-anchor="middle" font-size="15" font-weight="700" fill="#3b1408">TAA</text>
-<text x="227.0" y="143.0" text-anchor="middle" font-size="12" fill="#3b1408">25,209</text>
-<rect x="268.0" y="92.0" width="70" height="70" rx="8.4" fill="#f5b69a"><title>Friuli Venezia Giulia: 5,822 landslides, 73 per 100 km²</title></rect>
+<text x="227.0" y="143.0" text-anchor="middle" font-size="12" fill="#3b1408">25,301</text>
+<rect x="268.0" y="92.0" width="70" height="70" rx="8.4" fill="#f5b69a"><title>Friuli-Venezia Giulia: 5,822 landslides, 73 per 100 km²</title></rect>
 <text x="303.0" y="124.0" text-anchor="middle" font-size="15" font-weight="700" fill="#5a2a1a">FVG</text>
 <text x="303.0" y="143.0" text-anchor="middle" font-size="12" fill="#5a2a1a">5,822</text>
 <rect x="40.0" y="168.0" width="70" height="70" rx="8.4" fill="#ec8665"><title>Valle d'Aosta: 5,812 landslides, 178 per 100 km²</title></rect>
@@ -104,5 +104,5 @@
 <text class="val" x="717.3" y="624" font-size="13" font-weight="600">55,254</text>
 <text class="ax" x="470" y="672" font-size="12">Density shows mapping effort as well as terrain:</text>
 <text class="ax" x="470" y="690" font-size="12">regions surveyed in more detail list more landslides.</text>
-<text class="ax" x="470" y="776" font-size="12">Source: ISPRA IdroGEO API, iffi/regioni, 3 November 2026.</text>
+<text class="ax" x="470" y="776" font-size="12">Source: ISPRA IdroGEO API, iffi/regioni, 22 November 2026.</text>
 </svg>

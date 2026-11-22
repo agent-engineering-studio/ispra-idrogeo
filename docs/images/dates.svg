@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 650" role="img" aria-label="Share of IFFI landslides dated to the day, by region: Trentino-Alto Adige, Friuli-Venezia Giulia and Veneto about a fifth, sixteen regions under 1 percent">
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .bg{fill:#fcfcfb} .h{fill:#0b0b0b} .t2{fill:#52514e} .ax{fill:#7a7974} .grid{stroke:#e6e5e0;stroke-width:1}
+  .chip{fill:#f0efec} .val{fill:#0b0b0b} .edge{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#1a1a19} .h{fill:#f0efec} .t2{fill:#c3c2b7} .ax{fill:#8f8e88} .grid{stroke:#2e2e2b}
+    .chip{fill:#2a2a28} .val{fill:#f0efec} .edge{stroke:#1a1a19}
+  }
+</style>
+<rect class="bg" width="980" height="650" rx="14"/>
+<text class="h" x="40" y="40" font-size="17" font-weight="700">IFFI landslides with a date to the day, by region</text>
+<text class="t2" x="238" y="85" font-size="13" text-anchor="end">Trentino-Alto Adige</text>
+<rect x="250" y="70" width="550.5" height="19" rx="3" fill="#2a78d6"><title>Trentino-Alto Adige: 24.6% of 25,301 landslides dated to the day</title></rect>
+<text class="val" x="808.5" y="85" font-size="12" font-weight="600">24.6%</text>
+<text class="t2" x="238" y="111" font-size="13" text-anchor="end">Friuli-Venezia Giulia</text>
+<rect x="250" y="96" width="492.9" height="19" rx="3" fill="#2a78d6"><title>Friuli-Venezia Giulia: 22.0% of 5,822 landslides dated to the day</title></rect>
+<text class="val" x="750.9" y="111" font-size="12" font-weight="600">22.0%</text>
+<text class="t2" x="238" y="137" font-size="13" text-anchor="end">Veneto</text>
+<rect x="250" y="122" width="435.1" height="19" rx="3" fill="#2a78d6"><title>Veneto: 19.4% of 10,126 landslides dated to the day</title></rect>
+<text class="val" x="693.1" y="137" font-size="12" font-weight="600">19.4%</text>
+<text class="t2" x="238" y="163" font-size="13" text-anchor="end">Sardegna</text>
+<rect x="250" y="148" width="97.2" height="19" rx="3" fill="#a3a29b"><title>Sardegna: 4.3% of 2,051 landslides dated to the day</title></rect>
+<text class="val" x="355.2" y="163" font-size="12" font-weight="600">4.3%</text>
+<text class="t2" x="238" y="189" font-size="13" text-anchor="end">Campania</text>
+<rect x="250" y="174" width="18.8" height="19" rx="3" fill="#a3a29b"><title>Campania: 0.8% of 55,254 landslides dated to the day</title></rect>
+<text class="val" x="276.8" y="189" font-size="12" font-weight="600">0.8%</text>
+<text class="t2" x="238" y="215" font-size="13" text-anchor="end">Piemonte</text>
+<rect x="250" y="200" width="12.6" height="19" rx="3" fill="#a3a29b"><title>Piemonte: 0.6% of 37,786 landslides dated to the day</title></rect>
+<text class="val" x="270.6" y="215" font-size="12" font-weight="600">0.6%</text>
+<text class="t2" x="238" y="241" font-size="13" text-anchor="end">Puglia</text>
+<rect x="250" y="226" width="8.0" height="19" rx="3" fill="#a3a29b"><title>Puglia: 0.4% of 839 landslides dated to the day</title></rect>
+<text class="val" x="266.0" y="241" font-size="12" font-weight="600">0.4%</text>
+<text class="t2" x="238" y="267" font-size="13" text-anchor="end">Emilia-Romagna</text>
+<rect x="250" y="252" width="5.4" height="19" rx="3" fill="#a3a29b"><title>Emilia-Romagna: 0.2% of 80,337 landslides dated to the day</title></rect>
+<text class="val" x="263.4" y="267" font-size="12" font-weight="600">0.2%</text>
+<text class="t2" x="238" y="293" font-size="13" text-anchor="end">Liguria</text>
+<rect x="250" y="278" width="5.3" height="19" rx="3" fill="#a3a29b"><title>Liguria: 0.2% of 13,514 landslides dated to the day</title></rect>
+<text class="val" x="263.3" y="293" font-size="12" font-weight="600">0.2%</text>
+<text class="t2" x="238" y="319" font-size="13" text-anchor="end">Umbria</text>
+<rect x="250" y="304" width="4.9" height="19" rx="3" fill="#a3a29b"><title>Umbria: 0.2% of 34,566 landslides dated to the day</title></rect>
+<text class="val" x="262.9" y="319" font-size="12" font-weight="600">0.2%</text>
+<text class="t2" x="238" y="345" font-size="13" text-anchor="end">Lombardia</text>
+<rect x="250" y="330" width="3.3" height="19" rx="3" fill="#a3a29b"><title>Lombardia: 0.1% of 141,970 landslides dated to the day</title></rect>
+<text class="val" x="261.3" y="345" font-size="12" font-weight="600">0.1%</text>
+<text class="t2" x="238" y="371" font-size="13" text-anchor="end">Calabria</text>
+<rect x="250" y="356" width="3.3" height="19" rx="3" fill="#a3a29b"><title>Calabria: 0.1% of 10,100 landslides dated to the day</title></rect>
+<text class="val" x="261.3" y="371" font-size="12" font-weight="600">0.1%</text>
+<text class="t2" x="238" y="397" font-size="13" text-anchor="end">Lazio</text>
+<rect x="250" y="382" width="3.0" height="19" rx="3" fill="#a3a29b"><title>Lazio: 0.1% of 10,550 landslides dated to the day</title></rect>
+<text class="val" x="261.0" y="397" font-size="12" font-weight="600">0.1%</text>
+<text class="t2" x="238" y="423" font-size="13" text-anchor="end">Basilicata</text>
+<rect x="250" y="408" width="1.5" height="19" rx="3" fill="#a3a29b"><title>Basilicata: under 0.1% of 17,671 landslides dated to the day</title></rect>
+<text class="val" x="259.5" y="423" font-size="12" font-weight="600">under 0.1%</text>
+<text class="t2" x="238" y="449" font-size="13" text-anchor="end">Toscana</text>
+<rect x="250" y="434" width="1.5" height="19" rx="3" fill="#a3a29b"><title>Toscana: under 0.1% of 114,061 landslides dated to the day</title></rect>
+<text class="val" x="259.5" y="449" font-size="12" font-weight="600">under 0.1%</text>
+<text class="t2" x="238" y="475" font-size="13" text-anchor="end">Molise</text>
+<rect x="250" y="460" width="1.5" height="19" rx="3" fill="#a3a29b"><title>Molise: under 0.1% of 23,949 landslides dated to the day</title></rect>
+<text class="val" x="259.5" y="475" font-size="12" font-weight="600">under 0.1%</text>
+<text class="t2" x="238" y="501" font-size="13" text-anchor="end">Marche</text>
+<rect x="250" y="486" width="1.5" height="19" rx="3" fill="#a3a29b"><title>Marche: under 0.1% of 39,390 landslides dated to the day</title></rect>
+<text class="val" x="259.5" y="501" font-size="12" font-weight="600">under 0.1%</text>
+<text class="t2" x="238" y="527" font-size="13" text-anchor="end">Sicilia</text>
+<rect x="250" y="512" width="1.5" height="19" rx="3" fill="#a3a29b"><title>Sicilia: under 0.1% of 83,864 landslides dated to the day</title></rect>
+<text class="val" x="259.5" y="527" font-size="12" font-weight="600">under 0.1%</text>
+<text class="t2" x="238" y="553" font-size="13" text-anchor="end">Valle d'Aosta</text>
+<rect x="250" y="538" width="1.5" height="19" rx="3" fill="#a3a29b"><title>Valle d'Aosta: 0.0% of 5,812 landslides dated to the day</title></rect>
+<text class="val" x="259.5" y="553" font-size="12" font-weight="600">0.0%</text>
+<text class="t2" x="238" y="579" font-size="13" text-anchor="end">Abruzzo</text>
+<rect x="250" y="564" width="1.5" height="19" rx="3" fill="#a3a29b"><title>Abruzzo: 0.0% of 8,494 landslides dated to the day</title></rect>
+<text class="val" x="259.5" y="579" font-size="12" font-weight="600">0.0%</text>
+<text class="t2" x="40" y="622" font-size="13">Blue: the north-east. 16 regions date fewer than 1% of their landslides; a landslide with no date cannot check a rainfall threshold.</text>
+<text class="ax" x="40" y="640" font-size="11">Source: ISPRA IdroGEO, IFFI (CC BY-SA 4.0), ispra_idrogeo.reliability built on 2026-11-22.</text>
+</svg>

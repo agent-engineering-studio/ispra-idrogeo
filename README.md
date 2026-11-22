@@ -12,23 +12,37 @@
   <a href="https://agentengineering.it/ispra-idrogeo/"><img src="https://img.shields.io/badge/docs-github%20pages-blue" alt="Documentation"></a>
 </p>
 
-**ispra-idrogeo** is a small Python library for
-[IdroGEO](https://idrogeo.isprambiente.it/). IdroGEO is where ISPRA, Italy's
-national environmental agency, publishes what it knows about **landslides and
-floods** in Italy.
+**ispra-idrogeo** brings Italy's official data on **landslides and floods**
+into your code, and tells you **how far you can trust it**.
 
-With this library a script can:
+The data comes from [IdroGEO](https://idrogeo.isprambiente.it/), the platform
+of ISPRA, Italy's national environmental agency. With this library you can:
 
-- download the national landslide inventory and the hazard maps;
-- keep them up to date, downloading only what changed;
-- ask for the risk figures of any region, province or town;
-- tell whether a place is in a hazard area.
+- **download** the national landslide inventory and the hazard maps, and keep
+  them fresh by downloading only what changed;
+- **ask** for the risk figures of any region, province or town;
+- **check a place**: is this point in a hazard area? Which landslides are near?
+- **find the landslides with a date**, and how precise that date is;
+- **know how far to trust** the data in each town, and say what is not measured;
+- **put it on a map** for a town's website, or **give it to an AI agent**.
 
-No browser, no account, no API key.
+No browser, no account, no API key. It reads no rain and gives no alert:
+for warnings, follow the bulletins of the Civil Protection.
 
 ```python
 async with IdroGEO() as idrogeo:
-    folder = await idrogeo.fetch(opendata("frane_piff"))  # 721,365 landslides, one point each
+    folder = await idrogeo.fetch(opendata("frane_piff"))  # 721,457 landslides, one point each
+```
+
+### In one picture
+
+```mermaid
+flowchart LR
+    I["🏛️ ISPRA IdroGEO<br/>landslide inventory · hazard maps<br/>risk figures · events"] --> L["📦 ispra-idrogeo<br/>download · ask · check a place<br/>dated landslides · how far to trust"]
+    L --> Y["🧑‍💻 Your work<br/>notebooks · GIS · SQL"]
+    L --> M["🗺️ Mappa dei dati<br/>a page for a town's site"]
+    L --> A["🤖 AI agents<br/>idrogeo-mcp, with sources"]
+    L --> X["🛰️ Limen<br/>joins it with rain and thresholds"]
 ```
 
 ### Jump to what you need
@@ -37,7 +51,7 @@ async with IdroGEO() as idrogeo:
 |---|---|
 | download a layer and open it | [Quick start](#quick-start) |
 | use the command line | [From the command line](#3b-or-from-the-command-line) |
-| run everything in Docker | [Run it in containers](#run-it-in-containers) |
+| start everything in Docker with one command | [Run it in containers](#run-it-in-containers) |
 | put a map on a municipality's site | [A map for public bodies](#a-map-for-public-bodies) |
 | know if a place is in a hazard area | [Hazard at a point](#is-this-place-at-risk-hazard-at-a-point) |
 | find the landslides near a place | [Landslides near a point](#landslides-near-a-point) |
@@ -46,6 +60,7 @@ async with IdroGEO() as idrogeo:
 | search landslides and events | [Walk through every landslide or event](#walk-through-every-landslide-or-event) |
 | use dated landslides (rainfall thresholds) | [Dated landslides](#dated-landslides-when-and-how-precisely) |
 | know how far to trust IFFI in a place | [How far to trust the data](#how-far-to-trust-the-data-place-by-place) |
+| know when ISPRA last changed a file | [Freshness](#when-did-ispra-last-change-each-file) |
 | keep a copy fresh every night | [Keep a national copy fresh](#keep-a-national-copy-fresh-every-night) · [Only what changed](#only-what-changed-since-last-time) · [Watch](#watch-for-changes) |
 | turn codes into words | [Translate the codes](#translate-the-codes) |
 | put API rows on a map | [API rows on a map](#api-rows-on-a-map) |
@@ -84,17 +99,22 @@ async with IdroGEO() as idrogeo:
 <!-- --8<-- [start:intro] -->
 
 Italy is one of the European countries most exposed to landslides and floods.
-For decades, ISPRA and the regions have mapped every landslide they found into
-one national database, **IFFI** (*Inventario dei Fenomeni Franosi in Italia*),
-and the river basin authorities have drawn **hazard maps** (the **PAI** plans)
-of where the ground may slide and where rivers may flood. ISPRA joins the
-regional maps into national **mosaics**, and puts everything on **IdroGEO**:
-a web map, open-data files and a public REST API.
+Three things are known about them, and IdroGEO publishes all three:
+
+1. **Where landslides happened.** For decades ISPRA and the regions have
+   mapped every landslide they found into one national inventory, **IFFI**
+   (*Inventario dei Fenomeni Franosi in Italia*).
+2. **Where the ground may slide or rivers may flood.** The river basin
+   authorities draw **hazard maps**, the **PAI** plans, in classes from P1
+   (low) to P4 (very high). ISPRA joins them into national **mosaics**.
+3. **Who and what is exposed.** From those maps and the census, ISPRA counts
+   the people, buildings and cultural heritage in each hazard class, town by
+   town.
 
 ```mermaid
 flowchart LR
-    R["🗺️ Regions and<br/>basin authorities<br/>surveys · PAI plans"] --> I["ISPRA<br/>IFFI inventory<br/>national mosaics"]
-    I --> W["IdroGEO<br/>open data (daily ZIPs)<br/>REST API"]
+    R["🗺️ Regions and<br/>basin authorities<br/>surveys · PAI plans"] --> I["ISPRA<br/>IFFI inventory<br/>national mosaics<br/>risk indicators"]
+    I --> W["IdroGEO<br/>open data (daily ZIPs)<br/>REST API · map service"]
     W -->|ispra-idrogeo| Y["📁 Shapefiles / GeoJSON<br/>on your disk"]
     W -->|ispra-idrogeo| J["🧾 JSON<br/>risk figures, code lists"]
     Y --> U["Your work<br/>GIS · models · dashboards"]
@@ -105,18 +125,19 @@ Some of what is in there, straight from the API:
 
 | Italy, November 2026 | |
 |---|---|
-| Landslides mapped in IFFI | **721,365** |
-| Land in high or very high landslide hazard (PAI P3 + P4) | **9.5 %** of the country, 28,801 km² |
+| Landslides mapped in IFFI | **721,457** |
+| … of which with a date | **28,076** (3.9%), 10,822 to the day |
+| Land in high or very high landslide hazard (PAI 2024, P3 + P4) | **9.5 %** of the country, 28,801 km² |
 | People living there | **1.28 million** |
 | People living in areas that can flood once in 100–200 years (P2) | **6.8 million**, 11.5 % of the population |
-| Dated landslide events since 2018 (open-data file, 22 November 2026) | **1,710**, of which 1,283 main events |
+| Dated landslide events since 2018 (open-data file) | **1,710** |
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/map.svg" alt="Tile map of Italy's 20 regions coloured by IFFI landslides per 100 km²: Lombardia, Molise and Toscana are highest, Puglia and Sardegna lowest" width="100%">
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/types.svg" alt="IFFI landslides by type of movement: slides 237,419, slow earth flows 142,352, rapid debris flows 89,317, then areas of shallow landslides, areas of rockfalls, complex, falls" width="100%">
+  <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/types.svg" alt="IFFI landslides by type of movement: slides first, then slow earth flows, rapid debris flows, areas of shallow landslides, areas of rockfalls, complex, falls" width="100%">
 </p>
 
 <!-- --8<-- [end:intro] -->
@@ -125,18 +146,20 @@ Some of what is in there, straight from the API:
 
 <!-- --8<-- [start:features] -->
 
-| | Feature | In plain words |
+| | What | In plain words |
 |---|---|---|
-| 📦 | **Every open-data file** | IFFI points, polygons and lines, diffuse-landslide areas, deep-seated deformations, dated events, reports, the two national hazard mosaics, the monitoring readings. |
-| 🗺️ | **Italy or one area** | The whole country, or one of 19 regions, or a province that publishes on its own (Bolzano, Trento, the Sicilian ones). Shapefile or GeoJSON. |
-| 💾 | **A folder that stays** | Files go to a persistent folder and are unpacked next to themselves, ready for GeoPandas or QGIS. |
-| 🔁 | **Download once, then only what changed** | Each file remembers its `ETag` and `Last-Modified`. The next run asks "changed?" and gets a `304` for a few hundred bytes. |
-| 🛡️ | **Never half a file** | Downloads stream to `.part` and are renamed when complete; ZIPs unpack beside the old folder and are swapped in whole. Memory stays flat even for 1.2 GB. |
-| 📊 | **The REST API** | Landslide counts and hazard and risk indicators for Italy, macro-regions, regions, provinces, municipalities; every municipality at once, kept on disk; full landslide records; monitoring sites and webcams; code lists; paged searches. |
-| 🔄 | **Retries built in** | Network errors, 429 and 5xx are retried with exponential backoff. Bring your own `httpx.AsyncClient` if you want to tune it. |
-| 🧪 | **Pure functions too** | URL builders, request builders and parsers have no network, for your own HTTP stack. |
+| 📦 | **Every open-data file** | The landslide points, outlines and lines, areas of many small landslides, deep-seated deformations, dated events, reports, the hazard maps (landslides 2020-21 and 2024, floods 2020), the monitoring readings. For Italy, a region or a province. |
+| 🔁 | **Download once, then only what changed** | Files go to a folder that stays. The next run asks IdroGEO "changed?" and gets a short "no" when nothing did. Never half a file, even at 1.2 GB. |
+| 📊 | **Risk figures** | Landslide counts, hazard areas, people, buildings and heritage exposed, for Italy, regions, provinces and all 7,899 towns. |
+| 📍 | **Check a place** | The hazard class of a point, its town and slope; the landslides around it, nearest first. One request, no big download. |
+| 📅 | **Landslides with a date** | `dated_landslides`: every dated landslide of IFFI and the events, with how precise its date (hour, day, interval) and its point are. |
+| 🧭 | **How far to trust the data** | `reliability`: for every town, how many landslides are dated, how recently the records were touched, and what nobody measured. |
+| 🕒 | **How fresh the data is** | `freshness`: when ISPRA last changed each file, without downloading it. |
+| 🗺️ | **A map for a town's site** | The *Mappa dei dati*: hazard, landslides, exposure and trust for one town, in Italian, in Docker. |
+| 🤖 | **For AI agents** | `idrogeo-mcp`: the same data as tools; every answer names its source and licence, and a check finds invented numbers. |
+| ✅ | **Checked** | 100% test coverage, known cases replayed in CI, the live service tested every day. |
 
-One dependency: [`httpx`](https://www.python-httpx.org/).
+One dependency for the core: [`httpx`](https://www.python-httpx.org/).
 
 <!-- --8<-- [end:features] -->
 
@@ -144,19 +167,42 @@ One dependency: [`httpx`](https://www.python-httpx.org/).
 
 <!-- --8<-- [start:audience] -->
 
-- **Researchers and students** in geology, hydrology, civil engineering and
-  remote sensing who want IFFI or PAI in a notebook.
+- **Researchers and students** in geology, hydrology and civil engineering who
+  want IFFI or PAI in a notebook, and need to know which landslides have a
+  date.
 - **GIS analysts and data engineers** who keep a copy of the national layers
-  and want it refreshed every night without downloading 3 GB every night.
-- **Civil protection, planning and infrastructure teams** who need the risk
-  figures of a town, a province or a region, from a script.
+  fresh every night without downloading 3 GB every night.
+- **Municipalities and public bodies** that want a page on their site with
+  what the official data says about their territory.
+- **Civil protection, planning and infrastructure teams** who need the figures
+  of a town, a province or a region, from a script.
 - **Journalists and civic-tech projects** telling the story of landslides and
-  floods in Italy with numbers you can check.
+  floods with numbers you can check.
 
 It started inside [Limen](https://github.com/agent-engineering-studio/limen),
-a multi-hazard risk monitor for Italy, where IFFI landslides and PAI hazard
-are inputs of a landslide-risk model, and was extracted so that anyone can use
-it.
+a multi-hazard risk monitor for Italy, and was extracted so that anyone can
+use it. The libraries do not depend on one another: only Limen joins them.
+
+```mermaid
+flowchart TB
+    subgraph data["Open data"]
+        direction LR
+        I["ISPRA IdroGEO<br/>landslides · hazard"]
+        D["Civil Protection radar<br/>rain"]
+    end
+    subgraph libs["Libraries, each on its own"]
+        direction LR
+        L["ispra-idrogeo<br/>where, and how far to trust"]
+        R["dpc-radar<br/>how much it rained"]
+        T["rainfall-thresholds<br/>is this rain enough?"]
+    end
+    I --> L
+    D --> R
+    L --> X["Limen<br/>joins them: risk, town by town"]
+    R --> X
+    T --> X
+    X -.-> B["The official alert stays<br/>the Civil Protection bulletin"]
+```
 
 <!-- --8<-- [end:audience] -->
 
@@ -350,6 +396,24 @@ municipality and shows what the official data says and how far to trust it:
   alert**), people and assets exposed, landslides by type, how far to trust
   the data there and what is not measured, the state of the contract with
   IdroGEO, sources, licences and downloads.
+
+How the page works:
+
+```mermaid
+flowchart LR
+    B["🌐 Browser<br/>Bootstrap Italia · Leaflet"] -->|/api/comune/…| A["⚙️ The page's API<br/>Starlette"]
+    A --> L["📦 ispra-idrogeo"]
+    L --> W[("🦆 Local warehouse<br/>IFFI points · PAI 2024")]
+    L --> I["🏛️ IdroGEO<br/>risk figures · dated landslides"]
+    B -->|map images| G["🗺️ IdroGEO WMS<br/>flood hazard · boundaries"]
+```
+
+The predisposition class is the share of the town's land in official hazard,
+in five fixed steps. This is how the 7,899 towns fall:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/classes.svg" alt="The 7,899 municipalities by predisposition step: landslide none 2,126, low 2,674, medium 1,519, high 926, very high 654; flood none 1,289, low 3,470, medium 1,764, high 774, very high 602" width="100%">
+</p>
 
 ```bash
 make app-up                                   # in Docker: http://localhost:3002 (container ispra-idrogeo-app)
@@ -804,6 +868,10 @@ date and with a date **to the day**, the landslides dated to the day since
 2018 (IFFI, and events with how many points are known to 1 km), the share of
 records **edited since 2021**, `notes` in plain words, and `not_measured`.
 The MCP tool `data_reliability` gives the same to an AI agent.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/dates.svg" alt="Share of IFFI landslides dated to the day, by region: Trentino-Alto Adige 24.6%, Friuli-Venezia Giulia 22.0%, Veneto 19.4%, then Sardegna 4.3%, and sixteen regions under 1%" width="100%">
+</p>
 
 By region (22 November 2026), sorted by the share dated to the day:
 
