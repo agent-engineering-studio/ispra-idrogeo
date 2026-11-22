@@ -1,30 +1,94 @@
-.PHONY: check lint format typecheck test build docs docs-serve live
+.PHONY: help check lint format typecheck test build docs docs-serve live \
+	test-notebooks up down restart ps logs health notebooks cli shell \
+	docker-build docker-test-notebooks clean
 
-check: lint typecheck test
+# Containers. Every name starts with NAME, so copies never clash:
+#   make up NAME=idrogeo-dev IDROGEO_MCP_PORT=8768
+# Defaults can also go in a .env file (see .env.example).
+-include .env
+NAME ?= $(or $(IDROGEO_NAME),ispra-idrogeo)
+IDROGEO_MCP_PORT ?= 8767
+IDROGEO_JUPYTER_PORT ?= 8888
+IDROGEO_JUPYTER_TOKEN ?= idrogeo
+export IDROGEO_NAME := $(NAME)
+export IDROGEO_MCP_PORT IDROGEO_JUPYTER_PORT IDROGEO_JUPYTER_TOKEN
+COMPOSE := docker compose --profile notebooks --profile tools
+NOTEBOOK_TEST := examples/00-test-the-library.ipynb
 
-lint:
+help:  ## List the commands
+	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/' | expand -t 24
+
+# Development
+
+check: lint typecheck test  ## ruff + mypy --strict + pytest, the CI gate
+
+lint:  ## ruff check and format check
 	uv run ruff check
 	uv run ruff format --check
 
-format:
+format:  ## Format the code and fix what ruff can
 	uv run ruff format
 	uv run ruff check --fix
 
-typecheck:
+typecheck:  ## mypy --strict
 	uv run mypy
 
-test:
+test:  ## The tests, offline (mocked transport)
 	uv run pytest --cov --cov-report=term-missing
 
-build:
+build:  ## The wheel and sdist
 	uv build
 
-docs:
+docs:  ## Build the documentation site
 	uv run --group docs zensical build --strict
 
-docs-serve:
+docs-serve:  ## Serve the documentation site locally
 	uv run --group docs zensical serve
 
-# The contract with the live IdroGEO service: needs the network (weekly in CI).
-live:
+live:  ## The contract tests against the live IdroGEO service (network)
 	uv run pytest -m live
+
+test-notebooks:  ## Run the test notebook against the live service, here
+	uv run --group notebooks jupyter nbconvert --to notebook --execute --inplace \
+		--ExecutePreprocessor.timeout=600 $(NOTEBOOK_TEST)
+
+# Containers
+
+docker-build:  ## Build the images
+	$(COMPOSE) build
+
+up:  ## Start the MCP server: http://localhost:$(IDROGEO_MCP_PORT)/mcp
+	docker compose up --build --detach --wait mcp
+	@echo "MCP server: http://localhost:$(IDROGEO_MCP_PORT)/mcp (container $(NAME)-mcp)"
+
+notebooks:  ## Start Jupyter with the examples
+	docker compose --profile notebooks up --build --detach notebooks
+	@echo "Jupyter: http://localhost:$(IDROGEO_JUPYTER_PORT)/lab?token=$(IDROGEO_JUPYTER_TOKEN) (container $(NAME)-notebooks)"
+
+docker-test-notebooks:  ## Run the test notebook inside a container
+	docker compose --profile notebooks run --rm --build --name $(NAME)-notebook-test notebooks \
+		jupyter nbconvert --to notebook --execute --inplace \
+		--ExecutePreprocessor.timeout=600 00-test-the-library.ipynb
+
+cli:  ## Run the idrogeo command: make cli ARGS="hazard 40.829 14.617"
+	docker compose --profile tools run --rm --name $(NAME)-cli-$$$$ cli $(ARGS)
+
+shell:  ## A shell in the MCP server container
+	docker compose exec mcp bash
+
+health:  ## Ask the MCP server if it is up
+	@curl -fsS http://localhost:$(IDROGEO_MCP_PORT)/health && echo
+
+ps:  ## The containers of this copy
+	$(COMPOSE) ps
+
+logs:  ## Follow the logs
+	$(COMPOSE) logs --follow
+
+restart: down up  ## Stop, then start again
+
+down:  ## Stop and remove the containers (the data volume stays)
+	$(COMPOSE) down
+
+clean:  ## Remove containers, images and the data volume of this copy
+	$(COMPOSE) down --volumes --rmi local
