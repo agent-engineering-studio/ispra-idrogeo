@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-22
+
 ### Added
 
 - `evals/`: an eval of Claude as an agent on `idrogeo-mcp`. 31 questions in
