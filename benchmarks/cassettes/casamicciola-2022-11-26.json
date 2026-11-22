@@ -1,0 +1,17 @@
+{
+ "recorded_on": "2026-11-22",
+ "entries": [
+  {
+   "request": "POST idrogeo.isprambiente.it/api/evento/main/filter?limit=1000&offset=0&order=uid&select=uid {\"and\": \"(computed_date.gte.2022-11-01,computed_date.lt.2022-12-01)\", \"comune\": \"eq.63019\"}",
+   "status": 200,
+   "content_type": "application/json; charset=utf-8",
+   "text": "[{\"uid\":\"EIT202200067\"}]"
+  },
+  {
+   "request": "GET idrogeo.isprambiente.it/api/iffi/comuni/63019?",
+   "status": 200,
+   "content_type": "application/json; charset=utf-8",
+   "text": "{\"uid\":63019,\"osmid\":40725,\"breadcrumb\":[{\"id\":4,\"name\":\"Sud\",\"t\":\"m\"},{\"id\":15,\"name\":\"Campania\",\"t\":\"r\"},{\"id\":63,\"name\":\"NA\",\"t\":\"p\"}],\"nome\":\"Casamicciola Terme\",\"extent\":[[13.890705617,40.729195544],[13.931728803,40.752836388]],\"frane_stats\":[{\"cod\":1,\"nr_frane\":10},{\"cod\":2,\"nr_frane\":104},{\"cod\":3,\"nr_frane\":0},{\"cod\":4,\"nr_frane\":55},{\"cod\":5,\"nr_frane\":35},{\"cod\":6,\"nr_frane\":0},{\"cod\":7,\"nr_frane\":1},{\"cod\":9,\"nr_frane\":2},{\"cod\":10,\"nr_frane\":0},{\"cod\":11,\"nr_frane\":6},{\"cod\":8,\"nr_frane\":0},{\"cod\":0,\"nr_frane\":0}],\"frane_totali\":213,\"frane_monitorate\":0,\"segnalazioni_totali\":0,\"eventi_stats\":[{\"anno\":2018,\"nr_eventi\":1},{\"anno\":2022,\"nr_eventi\":1}],\"eventi_totali\":2,\"documenti_totali\":1,\"foto_totali\":2,\"video_totali\":3,\"frane_monitorate_stats\":null,\"itinerari_totali\":0,\"webcam_totali\":0,\"siti_monitoraggio_totali\":0,\"siti_monitoraggio_stats\":null,\"siti_monitoraggio_strumstats\":[{\"cod\":33,\"nr_siti\":0},{\"cod\":21,\"nr_siti\":0},{\"cod\":18,\"nr_siti\":0},{\"cod\":23,\"nr_siti\":0},{\"cod\":28,\"nr_siti\":0},{\"cod\":32,\"nr_siti\":0},{\"cod\":37,\"nr_siti\":0},{\"cod\":30,\"nr_siti\":0},{\"cod\":39,\"nr_siti\":0},{\"cod\":25,\"nr_siti\":0},{\"cod\":27,\"nr_siti\":0},{\"cod\":29,\"nr_siti\":0},{\"cod\":31,\"nr_siti\":0},{\"cod\":34,\"nr_siti\":0},{\"cod\":36,\"nr_siti\":0},{\"cod\":26,\"nr_siti\":0},{\"cod\":20,\"nr_siti\":0},{\"cod\":17,\"nr_siti\":0},{\"cod\":22,\"nr_siti\":0},{\"cod\":19,\"nr_siti\":0},{\"cod\":16,\"nr_siti\":0},{\"cod\":38,\"nr_siti\":0},{\"cod\":15,\"nr_siti\":0},{\"cod\":24,\"nr_siti\":0}],\"cod_rip\":4,\"cod_reg\":15,\"cod_prov\":63,\"pro_com\":63019}"
+  }
+ ]
+}

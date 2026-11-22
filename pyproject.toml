@@ -90,6 +90,8 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "ARG", "PTH", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ARG", "B018"]
+# the constant method ignores its arguments on purpose
+"benchmarks/methods.py" = ["ARG002"]
 
 [tool.mypy]
 strict = true

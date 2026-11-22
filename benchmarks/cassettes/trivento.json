@@ -1,0 +1,11 @@
+{
+ "recorded_on": "2026-11-22",
+ "entries": [
+  {
+   "request": "GET idrogeo.isprambiente.it/api/iffi/comuni/70081?",
+   "status": 200,
+   "content_type": "application/json; charset=utf-8",
+   "text": "{\"uid\":70081,\"osmid\":41511,\"breadcrumb\":[{\"id\":4,\"name\":\"Sud\",\"t\":\"m\"},{\"id\":14,\"name\":\"Molise\",\"t\":\"r\"},{\"id\":70,\"name\":\"CB\",\"t\":\"p\"}],\"nome\":\"Trivento\",\"extent\":[[14.501929601,41.731625968],[14.643303878,41.821156847]],\"frane_stats\":[{\"cod\":1,\"nr_frane\":1},{\"cod\":2,\"nr_frane\":30},{\"cod\":3,\"nr_frane\":0},{\"cod\":4,\"nr_frane\":401},{\"cod\":5,\"nr_frane\":9},{\"cod\":6,\"nr_frane\":0},{\"cod\":7,\"nr_frane\":389},{\"cod\":9,\"nr_frane\":1},{\"cod\":10,\"nr_frane\":0},{\"cod\":11,\"nr_frane\":88},{\"cod\":8,\"nr_frane\":0},{\"cod\":0,\"nr_frane\":2}],\"frane_totali\":921,\"frane_monitorate\":1,\"segnalazioni_totali\":0,\"eventi_stats\":null,\"eventi_totali\":0,\"documenti_totali\":0,\"foto_totali\":0,\"video_totali\":0,\"frane_monitorate_stats\":null,\"itinerari_totali\":0,\"webcam_totali\":0,\"siti_monitoraggio_totali\":1,\"siti_monitoraggio_stats\":[{\"cod\":3,\"nr_siti\":1}],\"siti_monitoraggio_strumstats\":[{\"cod\":23,\"nr_siti\":0},{\"cod\":28,\"nr_siti\":0},{\"cod\":20,\"nr_siti\":0},{\"cod\":38,\"nr_siti\":0},{\"cod\":30,\"nr_siti\":0},{\"cod\":37,\"nr_siti\":0},{\"cod\":33,\"nr_siti\":0},{\"cod\":36,\"nr_siti\":0},{\"cod\":16,\"nr_siti\":0},{\"cod\":21,\"nr_siti\":0},{\"cod\":15,\"nr_siti\":0},{\"cod\":31,\"nr_siti\":0},{\"cod\":39,\"nr_siti\":0},{\"cod\":32,\"nr_siti\":0},{\"cod\":29,\"nr_siti\":0},{\"cod\":24,\"nr_siti\":0},{\"cod\":19,\"nr_siti\":0},{\"cod\":26,\"nr_siti\":0},{\"cod\":22,\"nr_siti\":1},{\"cod\":27,\"nr_siti\":0},{\"cod\":18,\"nr_siti\":0},{\"cod\":17,\"nr_siti\":0},{\"cod\":25,\"nr_siti\":1},{\"cod\":34,\"nr_siti\":0}],\"cod_rip\":4,\"cod_reg\":14,\"cod_prov\":70,\"pro_com\":70081}"
+  }
+ ]
+}

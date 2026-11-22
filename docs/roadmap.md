@@ -38,6 +38,7 @@ test suite of questions with known answers.
 | 13 | An agent skill for coding assistants (`SKILL.md`) | AI | ⏳ |
 | 14 | Container image for `idrogeo-mcp`; Python 3.14 in CI | DX | ⏳ |
 | 15 | Landslide susceptibility baseline (notebook) | Research | 💡 |
+| 18 | Benchmark of known cases, recorded answers replayed offline in CI (`benchmarks/`) | Quality | ✅ #11 phase 1 |
 | 17 | Dated landslides with their precision (`dated_landslides`) and how far to trust IFFI per place (`reliability`) | Data | ✅ [#18](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/18), [#11](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/11) phase 2 |
 | 16 | News → candidate events, for review | Research | 💡 |
 

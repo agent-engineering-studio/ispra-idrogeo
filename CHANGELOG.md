@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `benchmarks/`: known cases with known answers (Sarno P4, Venice P3, the
+  plain of Foggia, Casamicciola 26/11/2022, Melito di Porto Salvo
+  10/10/2026, Trivento, the #9 contract, the reliability map), 8 cases and
+  14 checks. IdroGEO's real answers are recorded once
+  (`python -m benchmarks.record`, 260 kB in `benchmarks/cassettes/`) and
+  replayed offline by `python -m benchmarks.run --check`, which CI runs and
+  which fails on any change against `benchmarks/results.json`. A constant
+  method shows each check can fail. `make benchmark`, `make
+  benchmark-record`.
+
 ## [0.9.0] - 2026-11-22
 
 ### Added

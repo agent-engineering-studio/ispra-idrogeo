@@ -1,0 +1,34 @@
+{
+ "ispra-idrogeo": {
+  "sarno · the hills above the town are in landslide hazard P4": "pass",
+  "sarno · IFFI landslides of Sarno": "pass",
+  "sarno · landslides mapped within 500 m of the slope above Episcopio": "pass",
+  "venice · San Marco is in flood hazard P3, no landslide hazard": "pass",
+  "foggia · a point of the plain is outside every hazard area": "pass",
+  "casamicciola-2022-11-26 · the event of 26 November 2022 is recorded": "pass",
+  "casamicciola-2022-11-26 · IFFI landslides of Casamicciola Terme": "pass",
+  "melito-2026-10-10 · the town is in landslide hazard P2": "pass",
+  "melito-2026-10-10 · IFFI landslides of Melito di Porto Salvo": "pass",
+  "melito-2026-10-10 · no landslide event recorded for the storm (yet)": "pass",
+  "trivento · IFFI landslides of Trivento": "pass",
+  "contract-select · a search with no select still answers": "pass",
+  "reliability · Trentino-Alto Adige dates a fifth of its landslides to the day": "pass",
+  "reliability · Abruzzo dates none": "pass"
+ },
+ "constant": {
+  "sarno · the hills above the town are in landslide hazard P4": "fail",
+  "sarno · IFFI landslides of Sarno": "fail",
+  "sarno · landslides mapped within 500 m of the slope above Episcopio": "fail",
+  "venice · San Marco is in flood hazard P3, no landslide hazard": "fail",
+  "foggia · a point of the plain is outside every hazard area": "fail",
+  "casamicciola-2022-11-26 · the event of 26 November 2022 is recorded": "fail",
+  "casamicciola-2022-11-26 · IFFI landslides of Casamicciola Terme": "fail",
+  "melito-2026-10-10 · the town is in landslide hazard P2": "fail",
+  "melito-2026-10-10 · IFFI landslides of Melito di Porto Salvo": "fail",
+  "melito-2026-10-10 · no landslide event recorded for the storm (yet)": "pass",
+  "trivento · IFFI landslides of Trivento": "fail",
+  "contract-select · a search with no select still answers": "error: HTTPStatusError",
+  "reliability · Trentino-Alto Adige dates a fifth of its landslides to the day": "fail",
+  "reliability · Abruzzo dates none": "fail"
+ }
+}
