@@ -12,18 +12,45 @@
   <a href="https://agentengineering.it/ispra-idrogeo/"><img src="https://img.shields.io/badge/docs-github%20pages-blue" alt="Documentation"></a>
 </p>
 
-**ispra-idrogeo** is a small, typed, async Python library for
-[IdroGEO](https://idrogeo.isprambiente.it/), the platform where ISPRA (Italy's
-national environmental agency) publishes what it knows about **landslides and
-floods** in Italy. With it, a script can download the national landslide
-inventory and the hazard maps, keep them up to date, and ask the IdroGEO API
-for risk figures about any region, province or town. No browser, no
-copy-pasted links, no account.
+**ispra-idrogeo** is a small Python library for
+[IdroGEO](https://idrogeo.isprambiente.it/). IdroGEO is where ISPRA, Italy's
+national environmental agency, publishes what it knows about **landslides and
+floods** in Italy.
+
+With this library a script can:
+
+- download the national landslide inventory and the hazard maps;
+- keep them up to date, downloading only what changed;
+- ask for the risk figures of any region, province or town;
+- tell whether a place is in a hazard area.
+
+No browser, no account, no API key.
 
 ```python
 async with IdroGEO() as idrogeo:
     folder = await idrogeo.fetch(opendata("frane_piff"))  # 721,365 landslides, one point each
 ```
+
+### Jump to what you need
+
+| I want to… | Example |
+|---|---|
+| download a layer and open it | [Quick start](#quick-start) |
+| use the command line | [From the command line](#3b-or-from-the-command-line) |
+| run everything in Docker | [Run it in containers](#run-it-in-containers) |
+| know if a place is in a hazard area | [Hazard at a point](#is-this-place-at-risk-hazard-at-a-point) |
+| find the landslides near a place | [Landslides near a point](#landslides-near-a-point) |
+| get the risk figures of a town | [Ask the API](#4-ask-the-api) · [Every municipality](#every-municipality-in-one-table) |
+| count landslides by region | [Landslides per region](#landslides-per-region-the-map-above) |
+| search landslides and events | [Walk through every landslide or event](#walk-through-every-landslide-or-event) |
+| use dated landslide events | [How precise are the dates?](#dated-events-how-precise-is-the-date) |
+| keep a copy fresh every night | [Keep a national copy fresh](#keep-a-national-copy-fresh-every-night) · [Only what changed](#only-what-changed-since-last-time) · [Watch](#watch-for-changes) |
+| turn codes into words | [Translate the codes](#translate-the-codes) |
+| put API rows on a map | [API rows on a map](#api-rows-on-a-map) |
+| work offline, in SQL | [A local warehouse](#offline-many-places-at-once-your-own-sql-a-local-warehouse) |
+| give the data to an AI agent | [The MCP server](#for-ai-agents-the-mcp-server) |
+| check that everything works | [Test notebook](#example-notebooks) |
+| credit the data correctly | [Data licence and credits](#data-licence-and-credits) |
 
 ---
 
@@ -35,6 +62,7 @@ async with IdroGEO() as idrogeo:
 - [Quick start](#quick-start)
 - [What you can download](#what-you-can-download)
 - [Where downloads are saved](#where-downloads-are-saved)
+- [Run it in containers](#run-it-in-containers)
 - [How it works](#how-it-works)
 - [Recipes](#recipes)
 - [Example notebooks](#example-notebooks)
@@ -75,7 +103,7 @@ Some of what is in there, straight from the API:
 | Land in high or very high landslide hazard (PAI P3 + P4) | **9.5 %** of the country, 28,801 km² |
 | People living there | **1.28 million** |
 | People living in areas that can flood once in 100–200 years (P2) | **6.8 million**, 11.5 % of the population |
-| Dated landslide events recorded since 2018 | **1,290** |
+| Dated landslide events since 2018 (open-data file, 22 November 2026) | **1,710**, of which 1,283 main events |
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/map.svg" alt="Tile map of Italy's 20 regions coloured by IFFI landslides per 100 km²: Lombardia, Molise and Toscana are highest, Puglia and Sardegna lowest" width="100%">
@@ -228,18 +256,18 @@ async with IdroGEO() as idrogeo:
   <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/sizes.svg" alt="Download sizes for the whole of Italy, from 1.2 GB for the landslide hazard mosaic to 1 MB for events; every later run of an unchanged file costs one 304 answer" width="100%">
 </p>
 
-| You write | What it is | Italy, zipped |
-|---|---|---|
-| `opendata("frane_piff")` | IFFI landslide identification points, one per landslide | 38 MB |
-| `opendata("frane_poly")` | IFFI landslide polygons (the outline of each landslide) | 573 MB |
-| `opendata("frane_line")` | IFFI landslides too narrow for a polygon | 18 MB |
-| `opendata("aree_poly")` | areas of diffuse landslides (many small ones together) | 236 MB |
-| `opendata("dgpv_poly")` | deep-seated gravitational slope deformations | 4 MB |
-| `opendata("eventi")` | dated landslide events (points) | 1 MB |
-| `opendata("segnalazioni")` | reports | small |
-| `mosaic("pai_frane")` | PAI landslide hazard mosaic 2020-2021 | 1.2 GB |
-| `mosaic("idraulica")` | flood hazard mosaic 2020 | 0.75 GB |
-| `sensor_data()` | monitoring network readings, CSV (bzip2) | |
+| You write | What it is | Italy, zipped | Licence |
+|---|---|---|---|
+| `opendata("frane_piff")` | IFFI landslides, one point each | 38 MB | CC BY-SA 4.0 |
+| `opendata("frane_poly")` | IFFI landslide outlines (polygons) | 573 MB | CC BY-SA 4.0 |
+| `opendata("frane_line")` | IFFI landslides too narrow for a polygon | 18 MB | CC BY-SA 4.0 |
+| `opendata("aree_poly")` | areas with many small landslides | 236 MB | CC BY-SA 4.0 |
+| `opendata("dgpv_poly")` | deep-seated slope deformations | 4 MB | CC BY-SA 4.0 |
+| `opendata("eventi")` | dated landslide events (points) | 1 MB | CC BY-SA 4.0 |
+| `opendata("segnalazioni")` | reports | small | not stated |
+| `mosaic("pai_frane")` | PAI landslide hazard map 2020-2021 | 1.2 GB | CC BY-SA 4.0 |
+| `mosaic("idraulica")` | flood hazard map 2020 | 0.75 GB | CC BY-SA 4.0 |
+| `sensor_data()` | monitoring network readings, CSV (bzip2) | | |
 
 Every `opendata` layer comes:
 
@@ -296,6 +324,43 @@ volumes:
 ```
 
 <!-- --8<-- [end:saved] -->
+
+---
+
+## Run it in containers
+
+<!-- --8<-- [start:containers] -->
+
+You need Docker and `make`. Nothing else: the images install Python and the
+library for you.
+
+```bash
+make up                                # the MCP server, on http://localhost:8767/mcp
+make health                            # {"status":"ok",…}
+make cli ARGS="hazard 40.829 14.617"   # any idrogeo command: P4, Sarno, 12.3°
+make notebooks                         # Jupyter on http://localhost:8888/lab?token=idrogeo
+make docker-test-notebooks             # run the test notebook inside a container
+make down                              # stop (downloads stay in a volume)
+make clean                             # stop and delete images and the volume
+make help                              # every command
+```
+
+**Unique names.** Every container, image, volume and network starts with
+`NAME` (by default `ispra-idrogeo`): `ispra-idrogeo-mcp`,
+`ispra-idrogeo-notebooks`, `ispra-idrogeo-data`. So this project never
+clashes with another one on the same computer. To run a second copy, give it
+another name and other ports:
+
+```bash
+make up NAME=idrogeo-dev IDROGEO_MCP_PORT=8768   # idrogeo-dev-mcp on port 8768
+make down NAME=idrogeo-dev
+```
+
+Defaults can also go in a `.env` file: copy `.env.example`. The ports listen
+on this computer only (`127.0.0.1`). The images are built from this folder,
+so they run the code you see.
+
+<!-- --8<-- [end:containers] -->
 
 ---
 
@@ -550,8 +615,13 @@ async with IdroGEO() as idrogeo:
 `iter_landslides` and `iter_events` ask for one page after another
 (`page_size`, 1,000 by default) and stop at the last one. They sort by a
 unique key (`id_frana`, `uid`) so pages do not overlap. An empty filter
-matches everything; `search_landslides` and `search_events` return a single
+matches everything. `search_landslides` and `search_events` return a single
 page, if you prefer to page yourself.
+
+Without `select`, a landslide search returns the fields in
+`LANDSLIDE_FIELDS`: id, type, state, region, province, municipality,
+position accuracy, the dates and `modified`. `select=["*"]` returns them all,
+geometry included.
 
 For the landslides of an area, `iter_landslides_in` checks each record's
 own region, province or municipality, because the search has no reliable
@@ -572,6 +642,39 @@ everywhere, and a range of dates is an `"and"` of two conditions. Codes are
 ISTAT codes for areas and the code lists' codes for the rest; a list of
 codes means "any of these". You can still pass a plain `dict` if you know
 the syntax.
+
+### Dated events: how precise is the date?
+
+`opendata("eventi")` is the file of landslide events that ISPRA dated. Before
+you use these dates, for example against rainfall, look at how precise they
+are:
+
+```python
+import json
+
+from ispra_idrogeo import IdroGEO, opendata
+
+async with IdroGEO() as idrogeo:
+    folder = await idrogeo.fetch(opendata("eventi", fmt="geojson"))
+[path] = folder.glob("*.json")
+events = [f["properties"] for f in json.loads(path.read_text())["features"]]
+recent = [e for e in events if (e["data_certa"] or "") >= "2018"]
+day_only = [e for e in recent if e["data_certa"][11:16] in ("", "00:00")]
+print(len(events), len(recent), len(day_only))  # 1808 1710 1466
+```
+
+On 22 November 2026:
+
+- **The date.** 1,466 of the 1,710 events since 2018 give only the day: the
+  time is `00:00` or missing. Treat `00:00` as "that day", not as midnight.
+- **The place.** Each point has an accuracy class (`nome_acc`). Since 2018:
+  exact 652, 100 m 501, 1 km 455, 10 km 102.
+- **Main events.** `evento_principale` is `"SI"` for 1,283 of them.
+- 67 events have no date at all.
+
+The landslide records of the inventory have dates too (`data_certa`,
+`data_incerta_min`, `data_incerta_max`), but most of them are empty: IFFI is
+mainly a map of where landslides are, not of when they happened.
 
 ### One landslide, in full
 
@@ -858,11 +961,25 @@ An unknown layer, area or mosaic name raises `ValueError` before any request.
 
 <!-- --8<-- [start:notebooks] -->
 
-[`examples/`](https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/examples) has three notebooks run on the live service, with
-their outputs: **a town and its landslides** (Sarno, from exposure figures
-to a map of its debris flows), **Italy in numbers** (who lives in hazard
-areas, municipality by municipality) and **what changed** (following the
-inventory day by day).
+[`examples/`](https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/examples) has four notebooks. They were run on the live
+service and keep their outputs.
+
+| Notebook | What it does |
+|---|---|
+| **00 · Test the library** | Uses every feature once and checks the answer: downloads, the 304, events, risk figures, searches, hazard at a point, landslides nearby, monitoring, GeoDataFrames, the warehouse, the MCP server. Ends with a table of ✅ and ❌. |
+| **01 · A town and its landslides** | Sarno, from its exposure figures to a map of its debris flows. |
+| **02 · Italy in numbers** | Who lives in hazard areas, municipality by municipality. |
+| **03 · What changed** | Following the inventory day by day. |
+
+Run the test notebook to check that the library and IdroGEO still work
+together (about a minute, small downloads):
+
+```bash
+make test-notebooks          # here, with uv
+make docker-test-notebooks   # or inside a container
+```
+
+If a check fails, the command fails too.
 
 <!-- --8<-- [end:notebooks] -->
 
@@ -898,7 +1015,7 @@ point to paths that no longer exist. This library handles these for you:
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
 | the flood mosaic in UTM 32N, like everything else | it is in **EPSG:3035** (ETRS89 LAEA), in three files, one per scenario (`HPH_`, `MPH_`, `LPH_`) | the warehouse reprojects it and names the scenarios P3, P2, P1 |
 | reading the IFFI shapefiles as UTF-8 | `Invalid unicode`: the text is **ISO-8859-1**, said in a `.cst` file that GDAL ignores (it reads `.cpg`) | the warehouse reads the `.cst` and passes the encoding |
-| the mosaics under CC BY 4.0, like the rest | the licence PDF in each ZIP says **CC BY-SA 4.0**, with a citation of its own | `warehouse.SOURCES` holds each citation, and the warehouse's hazard answers their licence |
+| IFFI and the mosaics under CC BY 4.0, ISPRA's default | IdroGEO's licence PDFs say **CC BY-SA 4.0** for the IFFI inventory (one PDF per region) and for the mosaics, each with its own citation; only the risk indicators are CC BY 4.0 | `warehouse.SOURCES` holds each citation, and the answers carry their licence |
 | the API's landslide hazard areas to add up like the mosaic you download | the mosaic (v4.0, 2020-2021) adds up to ~60,500 km² (P4 9,506 · P3 16,894 · P2 14,553 · P1 12,558 · AA 6,988); the API's `ar_fr_*` give 69,529 km², 10–20% more per class: probably another edition. The flood areas do match | says which is which: the warehouse uses the mosaic, `area_risk` and `summary("pir", …)` the API |
 
 All checked against the live service on 3–4 November 2026, and again every
@@ -936,6 +1053,7 @@ week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 | `sensor_data()` | The monitoring network readings. |
 | `REGIONS` / `PROVINCES` / `region_area(cod_reg)` | Area file names by ISTAT code. |
 | `LANDSLIDE_LAYERS` / `EVENT_LAYERS` / `MOSAICS` | What there is. |
+| `LANDSLIDE_FIELDS` | The fields a landslide search returns when you give no `select`. |
 | `default_directory()` | Where downloads go when no directory is given. |
 | `.hazard_at(lat, lon, lithology=False)` | `PointHazard`: landslide class, flood scenarios, municipality, slope. |
 | `.landslides_near(lat, lon, radius_m=500, limit=200)` | IFFI landslides around a point, with `distance_m`. |
@@ -973,6 +1091,7 @@ git clone https://github.com/agent-engineering-studio/ispra-idrogeo
 cd ispra-idrogeo
 uv sync          # install everything, dev tools included
 make check       # ruff + mypy --strict + pytest, the same gate as CI
+make help        # every other command
 ```
 
 The tests **need no network**: they run against a mocked transport
@@ -1018,7 +1137,7 @@ page has the longer analysis, AI features included.
 
 | Idea | Why it matters | Good for |
 |---|---|---|
-| 🧪 **Live contract tests**: a weekly workflow that checks every path and field against IdroGEO | ISPRA moves things without notice; the library should notice first | intermediate |
+| 📏 **How far to trust the data**: date, position and completeness of IFFI, region by region ([#11](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/11)) | Rainfall thresholds can only be checked on landslides with a date | intermediate |
 | 🧠 **An agent evaluation suite**: questions with checked answers, run against `idrogeo-mcp` | Tool descriptions are prompts: test them like code | intermediate, AI users |
 | 🧩 **A GeoServer bootstrap** that publishes the downloads, for [mcp-geo-server](https://github.com/agent-engineering-studio/mcp-geo-server) | From open data to a live map server in one command | advanced |
 | 📚 **Tutorials on the [documentation site](https://agentengineering.it/ispra-idrogeo/)** | Search and API reference are there; step-by-step guides are not yet | anyone |
@@ -1034,25 +1153,37 @@ with what you sent and what came back.
 
 <!-- --8<-- [start:licence] -->
 
-Unless stated otherwise, ISPRA publishes its data under
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/legalcode)
-([note legali](https://www.isprambiente.gov.it/it/note-legali)). Anything you
-publish from it **must credit the source**, for example:
+The data is ISPRA's, not ours. Each dataset has its own licence, stated on
+IdroGEO's [open-data page](https://idrogeo.isprambiente.it/app/page/open-data)
+and in its licence PDF (checked on 22 November 2026):
 
-> Source: ISPRA — IdroGEO, Italian landslide inventory (IFFI) and national hazard mosaics.
+| Data | Licence | How to cite it |
+|---|---|---|
+| IFFI landslides (`frane_*`, `aree_poly`, `dgpv_poly`) and events (`eventi`) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode) | ISPRA – Regione *name*. Inventario dei Fenomeni Franosi in Italia - IFFI. idrogeo.isprambiente.it |
+| Landslide hazard mosaic (`pai_frane`, v. 4.0, 2020-2021) | CC BY-SA 4.0 | ISPRA - Mosaicatura nazionale delle aree a pericolosità da frana PAI (v. 4.0 – 2020-2021), https://idrogeo.isprambiente.it |
+| Flood hazard mosaic (`idraulica`, v. 5.0, 2020) | CC BY-SA 4.0 | ISPRA - Mosaicatura delle aree a pericolosità idraulica (v. 5.0 – 2020), https://idrogeo.isprambiente.it |
+| Risk indicators (`summary("pir", …)`, `municipalities`) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/legalcode) | ISPRA (2024) Pericolosità e indicatori di rischio frane – Piattaforma IdroGEO; ISPRA (2020) Pericolosità e indicatori di rischio alluvioni – Piattaforma IdroGEO |
+| Monitoring sites | CC BY 4.0 | ISPRA — IdroGEO |
+| Everything else from ISPRA, unless stated | CC BY 4.0 ([note legali](https://www.isprambiente.gov.it/it/note-legali)) | ISPRA — IdroGEO |
 
-The two **hazard mosaics** you download state otherwise: the licence PDF in
-each ZIP says [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode),
-so data you derive from them must be shared under the same licence, with
-these citations (`ispra_idrogeo.warehouse.SOURCES`):
+What this means for you:
 
-> ISPRA - Mosaicatura nazionale delle aree a pericolosità da frana PAI (v. 4.0 – 2020-2021), https://idrogeo.isprambiente.it
->
-> ISPRA - Mosaicatura delle aree a pericolosità idraulica (v. 5.0 – 2020), https://idrogeo.isprambiente.it
+- **Always credit the source.** `ispra_idrogeo.warehouse.SOURCES` holds the
+  citations above.
+- **Share-alike.** Data you derive from IFFI, the events or the mosaics must
+  be shared under CC BY-SA 4.0 too. The code that processes it can keep its
+  own licence.
+- The IFFI licence is per region: the citation names the region the data
+  comes from.
 
 ISPRA adds that the mosaics are technical and scientific works updated every
 few years: the maps with legal value are those of the basin district
-authorities and of the provinces of Trento and Bolzano.
+authorities and of the provinces of Trento and Bolzano. IdroGEO also
+publishes a newer landslide mosaic (v. 5.0, 2024, CC BY 4.0) that this
+library does not download yet.
+
+**A hazard map is not an alert.** For warnings, follow the bulletins of the
+Civil Protection Department and of your region.
 
 This library only downloads the data. The figures in this README are drawn
 from IdroGEO API answers of 3 November 2026 (redraw them with

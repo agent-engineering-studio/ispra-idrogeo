@@ -19,10 +19,11 @@ For one point, :meth:`~ispra_idrogeo.IdroGEO.hazard_at` asks IdroGEO's map
 service and needs no download; the warehouse is for working offline, for
 many points or areas at once, and for SQL of your own.
 
-The two hazard mosaics are CC BY-SA 4.0 (the rest of IdroGEO is CC BY 4.0):
-:data:`SOURCES` holds the citation ISPRA asks for each one. Data derived from
-them must be shared under the same licence. They are a national technical
-mosaic, not the legally binding maps of the basin authorities.
+The IFFI inventory and the two hazard mosaics are CC BY-SA 4.0 (the licence
+PDFs on IdroGEO's open-data page): :data:`SOURCES` holds the citation ISPRA
+asks for each one, and data derived from them must be shared under the same
+licence. The mosaics are a national technical work, not the legally binding
+maps of the basin authorities.
 
 Loading needs DuckDB's ``spatial`` extension, which DuckDB downloads once from
 its extension repository the first time.
@@ -73,8 +74,8 @@ SOURCES: dict[str, str] = {
         "https://idrogeo.isprambiente.it, CC BY-SA 4.0"
     ),
     "iffi": (
-        "ISPRA — IdroGEO, Inventario dei Fenomeni Franosi in Italia (IFFI), "
-        "https://idrogeo.isprambiente.it, CC BY 4.0"
+        "ISPRA \u2013 Regioni e Province Autonome. Inventario dei Fenomeni Franosi in Italia "
+        "- IFFI. idrogeo.isprambiente.it, CC BY-SA 4.0"
     ),
 }
 #: Said with every hazard answer.

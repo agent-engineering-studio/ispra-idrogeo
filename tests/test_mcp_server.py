@@ -230,6 +230,7 @@ async def test_resources_and_prompts() -> None:
     assert "popfrp3p4p" in glossary
     catalogue = json.loads((await mcp.read_resource("idrogeo://datasets"))[0].content)
     assert "frane_piff" in catalogue["landslide_layers"] and "bolzano" in catalogue["areas"]
+    assert "CC BY-SA 4.0" in catalogue["licences"]["landslide_layers"]
     codes = json.loads((await mcp.read_resource("idrogeo://codes/tipo_movimento"))[0].content)
     assert codes == {"5": "rapid debris flow"}
     assert {p.name for p in await mcp.list_prompts()} == {"area_profile", "recent_events"}

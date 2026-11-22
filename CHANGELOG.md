@@ -6,7 +6,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `examples/00-test-the-library.ipynb`: every feature once against the live
+  service, 23 checks, a table of results; `make test-notebooks` runs it and
+  fails when a check fails. Dependency group `notebooks`.
+- Containers: `Dockerfile` (targets `app` and `notebooks`), `compose.yaml`,
+  `.env.example`. `make up` starts `idrogeo-mcp` on port 8767, `make
+  notebooks` Jupyter on 8888, `make cli ARGS=…` runs a command, `make
+  docker-test-notebooks` the test notebook. Every container, image, volume
+  and network starts with `NAME` (default `ispra-idrogeo`), so copies never
+  clash. `make help` lists every command.
+- README: a "Jump to what you need" table of every example, "Run it in
+  containers", how precise the dates of the events are, and the licence of
+  each dataset.
+
 ### Fixed
+
+- The IFFI inventory and its events are **CC BY-SA 4.0**, not CC BY 4.0: the
+  licence PDFs linked from IdroGEO's open-data page say so, region by region.
+  `warehouse.SOURCES["iffi"]`, the MCP instructions, prompts and the
+  `idrogeo://datasets` resource now say it; only the risk indicators are
+  CC BY 4.0.
 
 - Landslide searches (`search_landslides`, `iter_landslides`, the MCP tool
   `search_landslides` and `idrogeo landslides` without `--select`) answered

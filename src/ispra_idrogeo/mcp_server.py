@@ -61,8 +61,11 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
 
 AreaLevel = Literal["regioni", "province", "comuni"]
 INSTRUCTIONS = """\
-Italian landslide and flood data from ISPRA IdroGEO (CC BY 4.0: credit
-"ISPRA — IdroGEO"). For a place or an address, use its coordinates with
+Italian landslide and flood data from ISPRA IdroGEO. Credit the source of
+every number: the IFFI landslides and events and the hazard mosaics are
+CC BY-SA 4.0 ("ISPRA \u2013 Regione <name>. Inventario dei Fenomeni Franosi in
+Italia - IFFI. idrogeo.isprambiente.it"), the hazard and exposure
+indicators CC BY 4.0 ("ISPRA — IdroGEO"). For a place or an address, use its coordinates with
 hazard_at and landslides_near. Areas use ISTAT codes: call find_area first
 to turn a name into a code. area_risk gives hazard and exposure (residents, buildings,
 cultural heritage in each landslide class P1-P4/AA and flood class P1-P3);
@@ -99,7 +102,7 @@ of the area's total, 0-100. Example: popfr_p3p4 = residents in landslide
 hazard P3+P4; popfrp3p4p = the same as % of residents; pop_idr_p2 =
 residents in flood hazard P2; popidp2_p = the same as %.
 
-Source: ISPRA — IdroGEO, CC BY 4.0.
+Source: ISPRA — IdroGEO, indicators CC BY 4.0.
 """
 
 #: What compare_areas shows when no indicator is asked for.
@@ -445,7 +448,11 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
                 "mosaics": list(MOSAICS),
                 "areas": ["ispra", *sorted(REGIONS.values()), *sorted(PROVINCES.values())],
                 "crs": "EPSG:32632",
-                "source": SOURCE,
+                "licences": {
+                    "landslide_layers": IFFI_SOURCE,
+                    "event_layers": IFFI_SOURCE,
+                    "mosaics": "CC BY-SA 4.0 (citation in each ZIP's licence PDF)",
+                },
             }
         )
 
@@ -469,7 +476,8 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
             "Report residents, buildings "
             "and cultural heritage in landslide hazard P3+P4 and flood hazard P2, "
             "the landslides by type, and who monitors them. Quote only numbers the "
-            'tools returned, credit "Source: ISPRA — IdroGEO (CC BY 4.0)", and say '
+            'tools returned, credit "Source: ISPRA — IdroGEO (indicators CC BY 4.0, '
+            'IFFI CC BY-SA 4.0)", and say '
             "that this is not a safety assessment of any site."
         )
 
@@ -481,7 +489,7 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
             f"{since}. Use find_area for the ISTAT code (region, province or "
             "municipality), then search_events with start set to that date. Group "
             "them by month and type of movement, give the total, and credit "
-            '"Source: ISPRA — IdroGEO (CC BY 4.0)".'
+            '"Source: ISPRA \u2013 IFFI, idrogeo.isprambiente.it (CC BY-SA 4.0)".'
         )
 
     @mcp.tool(annotations=ToolAnnotations(idempotent_hint=True, open_world_hint=True))
@@ -530,6 +538,11 @@ _SITE_CODES = ("stato_monitoraggio", "finalita_monitoraggio", "tipo_acquisizione
 
 
 SOURCE = "ISPRA — IdroGEO (https://idrogeo.isprambiente.it), CC BY 4.0"
+#: The IFFI inventory and its events: share-alike, cited per region.
+IFFI_SOURCE = (
+    "ISPRA \u2013 Regione <name>. Inventario dei Fenomeni Franosi in Italia - IFFI. "
+    "idrogeo.isprambiente.it, CC BY-SA 4.0"
+)
 
 
 def _fold(text: str) -> str:
