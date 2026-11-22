@@ -65,6 +65,18 @@ LANDSLIDE_FIELDS: tuple[str, ...] = (
 )
 
 
+@dataclass(frozen=True, slots=True)
+class FileState:
+    """A published file as IdroGEO describes it (HTTP ``HEAD``)."""
+
+    filename: str
+    url: str
+    etag: str | None
+    #: The ``Last-Modified`` header, as sent (an HTTP date).
+    last_modified: str | None
+    size: int | None
+
+
 def _area_code(value: Any) -> int | None:
     """An area field as an ISTAT code: a number, or the object the default fields embed."""
     if isinstance(value, dict):
@@ -187,6 +199,24 @@ class IdroGEO:
                     raise
             await self._sleep(self._backoff_s * 2**attempt)
         raise AssertionError("unreachable")  # pragma: no cover
+
+    async def head(self, dataset: Dataset) -> FileState:
+        """What IdroGEO says about a file without downloading it: its date, ETag and size.
+
+        A 404 raises :class:`IdrogeoError`, as for :meth:`download`.
+        """
+        response = await self._send("HEAD", dataset.url)
+        if response.status_code == 404:
+            raise IdrogeoError(f"{dataset.url} does not exist (HTTP 404)")
+        response.raise_for_status()
+        size = response.headers.get("content-length")
+        return FileState(
+            filename=dataset.filename,
+            url=dataset.url,
+            etag=response.headers.get("etag"),
+            last_modified=response.headers.get("last-modified"),
+            size=int(size) if size and size.isdigit() else None,
+        )
 
     async def fetch(
         self,

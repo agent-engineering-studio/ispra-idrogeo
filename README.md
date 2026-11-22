@@ -511,6 +511,31 @@ next_since = max(datetime.fromisoformat(f["modified"]) for f in changed)
 ids = {f["id_frana"] async for f in idrogeo.iter_landslides(select=["id_frana"], page_size=100_000)}
 ```
 
+### When did ISPRA last change each file?
+
+```bash
+idrogeo freshness                 # one HEAD per file: date, age, size, changed since last time
+idrogeo freshness --summary       # {"files": 10, "changed": [...], "newest": ..., "oldest": ...}
+```
+
+```python
+from ispra_idrogeo.freshness import freshness
+
+async with IdroGEO() as idrogeo:
+    for f in await freshness(idrogeo, state=Path("freshness.json")):
+        print(f.filename, f.modified, f.age_days, f.changed)
+# frane_piff_ispra_opendata.zip 2026-11-22T08:36:52Z 0 None      ← rebuilt this morning
+# Mosaicatura_ISPRA_2024_pericolosita_frana_PAI.zip 2025-07-17T08:05:56Z 493 None
+# Mosaicatura_ISPRA_2020_aree_pericolosita_idraulica.zip 2023-12-03T23:02:08Z 1084 None
+```
+
+Nothing is downloaded. With `state`, the previous answers are kept in a JSON
+file, and `changed` says which files ISPRA changed since then (the first
+time it is `None`). A nightly job can run it and download only those; the
+MCP tool `data_freshness` tells an agent how recent the data behind an
+answer is. The IFFI files are rebuilt every day, the mosaics every few
+years.
+
 ### Watch for changes
 
 ```bash
@@ -1033,6 +1058,7 @@ clients use: `IDROGEO_MCP_ALLOWED_HOSTS=idrogeo-mcp:*,localhost:*`.
 | `download_dataset` | A layer downloaded (only if changed) to the local folder |
 | `warehouse_schema` / `warehouse_sql` | The tables of the [local warehouse](#offline-many-places-at-once-your-own-sql-a-local-warehouse), and one read-only SQL query on them |
 | `data_reliability` | How far IFFI counts and dates can be trusted in an area, with what is not measured |
+| `data_freshness` | When ISPRA last changed each published file, and how many days ago |
 | `check_answer` | The numbers of a draft answer that no tool returned: the agent checks itself before answering |
 
 Names are matched without accents or apostrophes (`forli` finds *Forlì*),
@@ -1146,8 +1172,8 @@ up a number, a date or a place. And nothing here is an alert.
 
 | Piece | What it does | Needs an Anthropic key? |
 |---|---|---|
-| [`idrogeo-mcp`](#for-ai-agents-the-mcp-server) | Gives the data to any AI agent as 18 tools: hazard at a point, nearby landslides, risk figures, rankings, searches, SQL on the warehouse, and `check_answer`. Every answer carries its source, licence and time | No: the agent brings its own model (Claude Desktop, Claude Code, your app) |
-| [`llms.txt`](https://agentengineering.it/ispra-idrogeo/llms.txt) | A short guide to the library for AI coding assistants, with the traps | No |
+| [`idrogeo-mcp`](#for-ai-agents-the-mcp-server) | Gives the data to any AI agent as 19 tools: hazard at a point, nearby landslides, risk figures, rankings, searches, SQL on the warehouse, and `check_answer`. Every answer carries its source, licence and time | No: the agent brings its own model (Claude Desktop, Claude Code, your app) |
+| [`llms.txt`](https://agentengineering.it/ispra-idrogeo/llms.txt), [`llms-full.txt`](https://agentengineering.it/ispra-idrogeo/llms-full.txt), [`SKILL.md`](https://github.com/agent-engineering-studio/ispra-idrogeo/blob/main/skills/ispra-idrogeo/SKILL.md) | A short guide, the whole documentation in one file, and an agent skill for coding assistants, with the traps | No |
 | [`check_text`](#check-a-text-for-invented-numbers) | Finds the numbers of a text that match no figure of the data it was written from. Also `idrogeo check` and the MCP tool `check_answer` | No |
 | [`evals/`](https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/evals) | Measures whether Claude, connected to `idrogeo-mcp`, answers 31 real questions right. The true answers are computed from the live data on every run | **Yes** (paid calls) |
 
@@ -1249,8 +1275,8 @@ phase 5):
 - **Area reports.** `idrogeo report <comune>`: the figures from a template
   with no model at all; with a key, a model writes a plain summary, and the
   checker verifies it before it is saved.
-- **Change digests** on top of `idrogeo watch`, and an agent skill
-  (`SKILL.md`) for coding assistants.
+- **Change digests** on top of `idrogeo watch` and `idrogeo freshness`.
+- ✅ An agent skill (`SKILL.md`) and `llms-full.txt`: done.
 
 <!-- --8<-- [end:ai] -->
 
@@ -1288,11 +1314,11 @@ point to paths that no longer exist. This library handles these for you:
 | reading the shapefile while a new version is unpacking | half a shapefile, or a crash | unpacks beside it and swaps the folder in whole |
 | the flood mosaic in UTM 32N, like everything else | it is in **EPSG:3035** (ETRS89 LAEA), in three files, one per scenario (`HPH_`, `MPH_`, `LPH_`) | the warehouse reprojects it and names the scenarios P3, P2, P1 |
 | reading the IFFI shapefiles as UTF-8 | `Invalid unicode`: the text is **ISO-8859-1**, said in a `.cst` file that GDAL ignores (it reads `.cpg`) | the warehouse reads the `.cst` and passes the encoding |
-| IFFI and the mosaics under CC BY 4.0, ISPRA's default | IdroGEO's licence PDFs say **CC BY-SA 4.0** for the IFFI inventory (one PDF per region) and for the mosaics, each with its own citation; only the risk indicators are CC BY 4.0 | `warehouse.SOURCES` holds each citation, and the answers carry their licence |
+| IFFI and the mosaics under CC BY 4.0, ISPRA's default | IdroGEO's licence PDFs say **CC BY-SA 4.0** for the IFFI inventory (one PDF per region) and for the 2020-2021 landslide and 2020 flood mosaics, each with its own citation; the 2024 landslide mosaic and the risk indicators are CC BY 4.0 | `warehouse.SOURCES` holds each citation, and the answers carry their licence |
 | the API's landslide hazard areas to add up like the 2020-2021 mosaic | that mosaic (v4.0) adds up to ~60,500 km² (P4 9,506 · P3 16,894 · P2 14,553 · P1 12,558 · AA 6,988), the API's `ar_fr_*` to 69,529 km². The API uses the **2024 mosaic** (v5.0): it adds up to 69,547 km², within 0.1% per class (P4 10,609 · P3 18,206 · P2 18,076 · P1 15,491 · AA 7,165). The flood areas match | offers `mosaic("pai_frane_2024")`, which the warehouse prefers for `hazard_at` |
 
 All checked against the live service on 3–4 November 2026, and again every
-week by `tests/live/` (`make live`): if IdroGEO changes one of these, the
+day by `tests/live/` (`make live`): if IdroGEO changes one of these, the
 `live` workflow opens an issue.
 
 <!-- --8<-- [end:traps] -->
@@ -1353,7 +1379,7 @@ make benchmark-record   # re-record from the live service, then look at what cha
 
 **What is not there.** The recordings are a snapshot of 22 November 2026:
 they prove the library reads those answers right, not that IdroGEO still
-gives them. The weekly live contract tests (`make live`) watch the service
+gives them. The daily live contract tests (`make live`) watch the service
 itself. The cases are few (8 cases, 14 checks); more are welcome, each with a
 source.
 
@@ -1398,6 +1424,7 @@ give the known answer, and a recorded gap (Melito) to watch for.
 | `.lookup(kind, text, limit=10)` | Search geological units, flights, bibliography, institutions, funding. |
 | `IdrogeoError` | IdroGEO answered, but not with what was asked for. |
 | `ispra_idrogeo.dated.dated_landslides(idrogeo, since=, until=, region=, max_interval_days=, max_position_m=, sources=)` | Dated landslides of IFFI and of the events, with the precision of date and place; `summary(found)` counts them. |
+| `.head(dataset)` / `ispra_idrogeo.freshness.freshness(idrogeo, datasets=None, state=None)` | A file's date, ETag and size without downloading it; every file's freshness and whether it changed since the saved state. |
 | `ispra_idrogeo.reliability.reliability(level, code)` | How far IFFI and the events can be trusted in an area: dates, events since 2018, upkeep, notes, what is not measured. |
 | `ispra_idrogeo.grounding.check_text(text, facts, question="")` | The numbers and dates of a text that match no figure of `facts`. |
 | `ispra_idrogeo.grounding.grounded(answer, kind)` / `SOURCES` | An answer with its `source` and `retrieved_at`; the citation and licence of each kind of data. |
@@ -1411,8 +1438,8 @@ give the known answer, and a recorded gap (Melito) to watch for.
 | `.hazard_at(lat, lon)` / `.landslides_near(lat, lon, radius_m)` / `.landslides_in(...)` | The same questions as the client's, answered offline. |
 | `.download` / `.fetch(..., progress=callback)` | `callback(done, total)` after each chunk, for your own progress bar. |
 | `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` | One round of `idrogeo watch`: what changed since a `Mark`. |
-| `idrogeo-mcp` | An MCP server with the same data as 18 tools, 3 resources and 2 prompts (extra `[mcp]`). |
-| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`, `sync`, `sql`, `check`, `dated`, `reliability`. |
+| `idrogeo-mcp` | An MCP server with the same data as 19 tools, 3 resources and 2 prompts (extra `[mcp]`). |
+| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`, `sync`, `sql`, `check`, `dated`, `reliability`, `freshness`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,

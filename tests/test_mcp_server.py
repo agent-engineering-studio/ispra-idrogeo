@@ -150,6 +150,7 @@ async def test_tools_are_listed_and_read_only() -> None:
         "warehouse_sql",
         "check_answer",
         "data_reliability",
+        "data_freshness",
     }
     assert tools["area_risk"].annotations.read_only_hint
     assert not tools["warehouse_sql"].annotations.open_world_hint  # local, no network
@@ -377,3 +378,8 @@ async def test_check_answer_finds_invented_numbers() -> None:
 async def test_data_reliability() -> None:
     sarno = await _call(_server(), "data_reliability", level="comuni", code=65135)
     assert sarno["name"] == "Sarno" and sarno["not_measured"] and sarno["notes"]
+
+
+async def test_data_freshness() -> None:
+    files = await _call(_server(), "data_freshness")
+    assert len(files) == 10 and {"filename", "modified", "changed"} <= files[0].keys()

@@ -41,8 +41,9 @@ test:  ## The tests, offline (mocked transport)
 build:  ## The wheel and sdist
 	uv build
 
-docs:  ## Build the documentation site
+docs:  ## Build the documentation site, llms-full.txt and SKILL.md
 	uv run --group docs zensical build --strict
+	uv run python tools/build_llms.py
 
 docs-serve:  ## Serve the documentation site locally
 	uv run --group docs zensical serve

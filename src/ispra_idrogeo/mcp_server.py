@@ -443,6 +443,16 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         """
         return grounded(await local(lambda w: w.query(sql, limit=limit)), "warehouse")
 
+    @mcp.tool(annotations=_READ)
+    @_tool_errors
+    async def data_freshness() -> dict[str, Any]:
+        """When ISPRA last changed each published file (IFFI layers, events,
+        hazard mosaics): date, age in days and size, from one HEAD request each.
+        Use it to say how recent the data behind an answer is."""
+        from ispra_idrogeo.freshness import freshness
+
+        return grounded([f.as_dict() for f in await freshness(client)], "idrogeo")
+
     @mcp.tool(annotations=_LOCAL)
     @_tool_errors
     async def data_reliability(level: AreaLevel, code: int) -> dict[str, Any]:

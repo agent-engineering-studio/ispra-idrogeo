@@ -1,12 +1,12 @@
 name: live
 
-# The contract with the live IdroGEO service (tests/live), once a week.
+# The contract with the live IdroGEO service (tests/live), every day.
 # When IdroGEO changes a path or a field, this opens an issue (or comments
 # on the one already open) instead of letting users find out.
 
 on:
   schedule:
-    - cron: "17 6 * * 1"  # Mondays, 06:17 UTC
+    - cron: "17 6 * * *"  # every day, 06:17 UTC (#9 went unseen for a week)
   workflow_dispatch:
 
 permissions:
@@ -54,9 +54,9 @@ jobs:
           RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           gh label create live-contract --color B60205 \
-            --description "IdroGEO changed: the weekly live tests failed" 2>/dev/null || true
+            --description "IdroGEO changed: the daily live tests failed" 2>/dev/null || true
           open=$(gh issue list --label live-contract --state open --json number --jq '.[0].number')
-          body="The weekly contract tests against the live IdroGEO service failed: $RUN
+          body="The daily contract tests against the live IdroGEO service failed: $RUN
 
           Something IdroGEO serves has changed (a path, a field, a status). Read the log, fix the library or the README's traps table, then the test in \`tests/live/\`. \`uv run pytest -m live\` runs them locally."
           if [ -n "$open" ]; then
