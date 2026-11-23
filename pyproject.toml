@@ -39,6 +39,10 @@ geo = [
 warehouse = [
     "duckdb>=2.0",  # geometry_always_xy, CRS-typed geometries
 ]
+# A short summary by a model in `idrogeo report --summary` (paid, checked).
+ai = [
+    "anthropic>=1.0",
+]
 # The idrogeo-mcp server for AI agents: ispra_idrogeo.mcp_server.
 mcp = [
     "mcp>=2.0",  # MCPServer; FastMCP before 2.0

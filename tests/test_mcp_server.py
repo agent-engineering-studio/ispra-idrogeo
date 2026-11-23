@@ -370,9 +370,15 @@ async def test_check_answer_finds_invented_numbers() -> None:
     mcp = _server()
     risk = await _call(mcp, "area_risk", level="italia")
     good = f"In Italy {risk['pop_idr_p2']:,} people live in flood hazard P2."
-    assert await _raw(mcp, "check_answer", text=good, facts=risk) == {"unmatched": [], "ok": True}
+    ok = await _raw(mcp, "check_answer", text=good, facts=risk)
+    assert ok == {"unmatched": [], "misquoted": [], "ok": True}
     bad = await _raw(mcp, "check_answer", text="About 7.4 million people.", facts=risk)
-    assert bad == {"unmatched": ["7.4 million"], "ok": False}
+    assert bad == {"unmatched": ["7.4 million"], "misquoted": [], "ok": False}
+    residents = f"Italy has {risk['pop_idr_p2']:,} residents."  # a real number, wrong thing
+    facts = {**risk, "pop_res021": 58_997_201}
+    swapped = await _raw(mcp, "check_answer", text=residents, facts=facts)
+    assert swapped["ok"] is False and swapped["unmatched"] == []
+    assert swapped["misquoted"][0]["key"] == "pop_res021"
 
 
 async def test_data_reliability() -> None:
@@ -383,3 +389,21 @@ async def test_data_reliability() -> None:
 async def test_data_freshness() -> None:
     files = await _call(_server(), "data_freshness")
     assert len(files) == 10 and {"filename", "modified", "changed"} <= files[0].keys()
+
+
+async def test_every_tool_publishes_its_output_shape() -> None:
+    tools = {t.name: t for t in await _server().list_tools()}
+    for name, tool in tools.items():
+        schema = tool.output_schema
+        assert schema and schema["type"] == "object", name
+        if name not in _UNGROUNDED:
+            assert {"source", "retrieved_at"} <= set(schema["required"]), name
+            assert schema.get("additionalProperties") is True, name  # API fields are kept
+    assert {"results", "count"} <= set(tools["search_events"].output_schema["required"])
+    assert "landslide" in tools["hazard_at"].output_schema["properties"]
+    assert set(tools["check_answer"].output_schema["required"]) == {"unmatched", "misquoted", "ok"}
+
+
+async def test_structured_answers_keep_the_api_fields() -> None:
+    risk = await _raw(_server(), "area_risk", level="italia")
+    assert risk["pop_idr_p2"] == 6818375 and risk["nome"] == "Italia"

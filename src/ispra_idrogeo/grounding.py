@@ -18,16 +18,19 @@ Digits inside words (``P4``, ``EPSG:32632``) and list markers (``1.`` at the
 start of a line) are not numbers. Dates (``2026-11-22``, ``22/11/2026``)
 must appear among the dates of the facts.
 
-This checks that a number exists in the facts, not that it is said of the
-right thing: "Bari has 53 landslides" passes if 53 is any figure of the
-facts. Pass only the facts the text was written from.
+:func:`check_text` checks that a number exists in the facts, not that it is
+said of the right thing: "Bari has 53 landslides" passes if 53 is any figure
+of the facts. :func:`check_claims` adds that: in each clause it reads what a
+number is said of (residents in flood hazard, a share of land in landslide
+hazard, buildings, landslides…, in Italian or English, from :data:`RULES`)
+and reports the number when it does not match that figure.
 """
 
 from __future__ import annotations
 
 import math
 import re
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -196,6 +199,11 @@ def _figures(facts: Any) -> Iterator[float | str]:
             yield float(facts)
 
 
+def matches(number: Number, value: float) -> bool:
+    """Whether ``value``, rounded the way ``number`` is written, equals it."""
+    return any(abs(value - v) <= unit / 2 + 1e-9 * max(1.0, abs(v)) for v, unit in number.readings)
+
+
 def check_text(text: str, facts: Any, question: str = "") -> list[str]:
     """The numbers and dates of ``text`` that match no figure of ``facts``.
 
@@ -209,14 +217,123 @@ def check_text(text: str, facts: Any, question: str = "") -> list[str]:
     known_dates = {d for s in [*strings, question] for d in _dates(s)}
 
     def backed(number: Number) -> bool:
-        for value, unit in number.readings:
-            tolerance = unit / 2 + 1e-9 * max(1.0, abs(value))
-            if any(abs(f - value) <= tolerance for f in values):
-                return True
-            if any(abs(v - value) <= 1e-9 * max(1.0, abs(v)) for v, _ in asked):
-                return True
-        return False
+        if any(matches(number, f) for f in values):
+            return True
+        return any(
+            abs(v - value) <= 1e-9 * max(1.0, abs(v))
+            for value, _ in number.readings
+            for v, _ in asked
+        )
 
     missing = [n.text for n in numbers(text) if not backed(n)]
     missing += [d for d in _dates(text) if d not in known_dates]
     return missing
+
+
+# Who said what
+
+
+@dataclass(frozen=True)
+class Rule:
+    """A figure a clause can talk about: its key, its words, and whether it is a share."""
+
+    key: str
+    #: Every group must have a word in the clause (any of them, as a prefix).
+    words: tuple[tuple[str, ...], ...]
+    share: bool
+    #: No word of these may appear (to tell residents from residents in hazard).
+    without: tuple[str, ...] = ()
+
+
+_FLOOD = ("alluvion", "allagab", "flood", "esondaz")
+_LANDSLIDE = ("frana", "frane", "franos", "landslide")
+_PEOPLE = ("resident", "persone", "abitanti", "people", "inhabitant", "popolazione")
+_LAND = ("territorio", "superficie", "land", "area")
+_BUILDINGS = ("edific", "building")
+#: What the indicators of ``summary("pir", …)`` and ``summary("iffi", …)`` are called.
+RULES: tuple[Rule, ...] = (
+    Rule("popidp2_p", (_FLOOD, _PEOPLE), share=True),
+    Rule("popfrp3p4p", (_LANDSLIDE, _PEOPLE), share=True),
+    Rule("aridp2_p", (_FLOOD, _LAND), share=True),
+    Rule("ar_frp3p4p", (_LANDSLIDE, _LAND), share=True),
+    Rule("pop_idr_p2", (_FLOOD, _PEOPLE), share=False),
+    Rule("popfr_p3p4", (_LANDSLIDE, _PEOPLE), share=False),
+    Rule("ed_idr_p2", (_FLOOD, _BUILDINGS), share=False),
+    Rule("ed_fr_p3p4", (_LANDSLIDE, _BUILDINGS), share=False),
+    Rule("pop_res021", (_PEOPLE,), share=False, without=_FLOOD + _LANDSLIDE + ("%",)),
+    Rule(
+        "frane_totali",
+        (_LANDSLIDE,),
+        share=False,
+        without=_PEOPLE + _LAND + _BUILDINGS + ("datat", "data", "dated", "event"),
+    ),
+)
+
+
+@dataclass(frozen=True)
+class Misquote:
+    """A number said of a figure it does not match."""
+
+    said: str
+    key: str
+    #: The first figure under ``key`` in the facts (there may be several places).
+    fact: float
+
+
+_SENTENCE = re.compile(r"(?<=[.;!?])\s+|\n+")
+_SHARE = re.compile(r"^\s*(%|per\s*cento|percent)", re.IGNORECASE)
+
+
+def _under(facts: Any, key: str) -> Iterator[float]:
+    """Every number under ``key`` anywhere in ``facts`` (a place, a list of places)."""
+    if isinstance(facts, dict):
+        for k, value in facts.items():
+            if k == key and isinstance(value, int | float) and not isinstance(value, bool):
+                if value >= 0:  # the API writes -1 for "not available"
+                    yield float(value)
+            else:
+                yield from _under(value, key)
+    elif isinstance(facts, list | tuple):
+        for value in facts:
+            yield from _under(value, key)
+
+
+def check_claims(text: str, facts: Any, rules: Iterable[Rule] = RULES) -> list[Misquote]:
+    """The numbers of ``text`` said of a figure of ``facts`` that they do not match.
+
+    A number is read with the words around it, from the number before to the
+    number after in the same sentence, and taken as said of the most specific
+    rule whose words are all there and whose kind (a share or a count) fits.
+    A rule with ``without`` words (all residents, all landslides) applies only
+    when the whole sentence has none of them. When the facts hold several
+    places, a number that matches the figure of any of them passes: the check
+    does not know which place a sentence speaks of. The reading is careful
+    rather than complete: a number it cannot place is left to :func:`check_text`.
+    """
+    chosen = sorted(rules, key=lambda r: -len(r.words))
+    found: list[Misquote] = []
+    for sentence in _SENTENCE.split(text):
+        whole = sentence.lower()
+        spans: list[tuple[Number, int, int]] = []
+        cursor = 0
+        for number in numbers(sentence):
+            at = sentence.find(number.text, cursor)
+            spans.append((number, at, at + len(number.text)))
+            cursor = at + len(number.text)
+        for i, (number, _begin, end) in enumerate(spans):
+            left = spans[i - 1][2] if i else 0
+            right = spans[i + 1][1] if i + 1 < len(spans) else len(sentence)
+            near = sentence[left:right].lower()
+            share = bool(_SHARE.match(sentence[end:]))
+            for rule in chosen:
+                if rule.share != share:
+                    continue
+                if any(w in whole for w in rule.without):
+                    continue
+                if not all(any(w in near for w in group) for group in rule.words):
+                    continue
+                facts_of = list(_under(facts, rule.key))
+                if facts_of and not any(matches(number, f) for f in facts_of):
+                    found.append(Misquote(number.text, rule.key, facts_of[0]))
+                break
+    return found

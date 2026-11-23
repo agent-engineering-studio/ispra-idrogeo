@@ -661,6 +661,31 @@ kind stands, so a stopped watch resumes without missing or repeating a
 change. In Python, `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` does
 one round.
 
+
+### A digest of what changed
+
+```bash
+idrogeo digest                      # since the last digest (the first looks back 7 days)
+idrogeo digest --json               # the same as JSON, for a job
+```
+
+```text
+# IdroGEO changes, 2026-11-16 to 2026-11-23
+
+- Published files: 10 checked; first look, no comparison.
+- IFFI landslide records changed: 0.
+- Landslide events changed: 2 (Lazio 2).
+  - event EIT202600110: 2026-10-11, Roccasecca
+  - event EIT202600117: 2026-03-25, Leonessa
+- Monitoring sites changed: 0.
+```
+
+One round of `freshness` and `watch`, in a few lines: which files ISPRA
+changed, how many records changed by region, and the newest events. It
+keeps its own state (`digest.json`, `digest-files.json`), so it never
+takes the changes of `idrogeo watch` or `idrogeo freshness`. A changed
+record is a correction or an addition to an archive, not a landslide
+happening now: the digest says so.
 ### Landslides per region (the map above)
 
 ```python
@@ -1174,7 +1199,7 @@ clients use: `IDROGEO_MCP_ALLOWED_HOSTS=idrogeo-mcp:*,localhost:*`.
 | `warehouse_schema` / `warehouse_sql` | The tables of the [local warehouse](#offline-many-places-at-once-your-own-sql-a-local-warehouse), and one read-only SQL query on them |
 | `data_reliability` | How far IFFI counts and dates can be trusted in an area, with what is not measured |
 | `data_freshness` | When ISPRA last changed each published file, and how many days ago |
-| `check_answer` | The numbers of a draft answer that no tool returned: the agent checks itself before answering |
+| `check_answer` | The numbers of a draft answer that no tool returned (`unmatched`) or that are said of the wrong indicator (`misquoted`): the agent checks itself before answering |
 
 Names are matched without accents or apostrophes (`forli` finds *Forlì*),
 and a name that matches nothing comes back with "did you mean" suggestions.
@@ -1193,8 +1218,11 @@ Every answer carries `source` (the citation and licence ISPRA asks for:
 CC BY-SA 4.0 for IFFI and the events, CC BY 4.0 for the risk indicators)
 and `retrieved_at` (UTC). Lists come as `{"results": […], "count": n,
 "source": …, "retrieved_at": …}`. The instructions ask the agent to take
-every number from a tool, to cite the source, and to call `check_answer` on
-its draft.
+every number from a tool, to cite the source, and to call `check_answer`
+before every answer with a number, even one. `check_answer` returns
+`unmatched` (numbers no tool returned) and `misquoted` (real numbers said of
+the wrong indicator). Every tool publishes an output schema (`outputSchema`):
+the keys named there are stable, and the API's own fields come along.
 
 Every tool but `download_dataset` only reads. Searches stop at `limit` rows
 (100 by default, 1,000 at most), so an agent never receives 700,000
@@ -1289,7 +1317,9 @@ up a number, a date or a place. And nothing here is an alert.
 |---|---|---|
 | [`idrogeo-mcp`](#for-ai-agents-the-mcp-server) | Gives the data to any AI agent as 19 tools: hazard at a point, nearby landslides, risk figures, rankings, searches, SQL on the warehouse, and `check_answer`. Every answer carries its source, licence and time | No: the agent brings its own model (Claude Desktop, Claude Code, your app) |
 | [`llms.txt`](https://agentengineering.it/ispra-idrogeo/llms.txt), [`llms-full.txt`](https://agentengineering.it/ispra-idrogeo/llms-full.txt), [`SKILL.md`](https://github.com/agent-engineering-studio/ispra-idrogeo/blob/main/skills/ispra-idrogeo/SKILL.md) | A short guide, the whole documentation in one file, and an agent skill for coding assistants, with the traps | No |
-| [`check_text`](#check-a-text-for-invented-numbers) | Finds the numbers of a text that match no figure of the data it was written from. Also `idrogeo check` and the MCP tool `check_answer` | No |
+| [`check_text`, `check_claims`](#check-a-text-for-invented-numbers) | Find the numbers of a text that match no figure of the data, or that are said of the wrong indicator. Also `idrogeo check` and the MCP tool `check_answer`; scored on 18 hand-labeled answers in CI | No |
+| [`idrogeo report`](#a-report-for-one-municipality) | A page in Italian on one municipality, from a template, every number checked | No; `--summary` adds a model's summary, checked too |
+| [`idrogeo digest`](#a-digest-of-what-changed) | What changed in IdroGEO since the last digest, in a few lines | No |
 | [`evals/`](https://github.com/agent-engineering-studio/ispra-idrogeo/tree/main/evals) | Measures whether Claude, connected to `idrogeo-mcp`, answers 31 real questions right. The true answers are computed from the live data on every run | **Yes** (paid calls) |
 
 ### Where it can help
@@ -1340,11 +1370,53 @@ Codes inside words (`P4`, `EPSG:32632`) and list markers are skipped. A date
 must be among the dates of the facts. Numbers of the question are allowed
 (`question=`).
 
-**What it does not do.** It checks that a number exists in the facts, not
-that it is said of the right thing. With all the indicators of Bari as
-facts, "2 % in flood hazard P2" passes, because another indicator is 2.
-Pass only the facts the text uses. A check of who-said-what
-(`check_claims`) is not there yet.
+**Who said what.** `check_text` checks that a number exists in the facts,
+not that it is said of the right thing. `check_claims` does the second part
+for the main indicators (residents; people, land and buildings in landslide
+hazard P3+P4 or flood hazard P2; all the landslides):
+
+```python
+from ispra_idrogeo.grounding import check_claims
+
+check_claims("Bari ha 4.038 residenti.", facts)
+# [Misquote(said='4.038', key='pop_res021', fact=315948.0)]: 4,038 are the people in flood hazard
+```
+
+Each number is read with its own words, from the number before to the
+number after. With several places in the facts, a number that matches any
+of them passes: the check does not know which place a sentence means.
+`idrogeo check` and `check_answer` run both checks.
+
+How well they work is measured on 18 answers labeled by hand
+(`benchmarks/faithful.toml`), offline and free, in CI:
+
+| answers | `check_text` | with `check_claims` |
+|---|---|---|
+| faithful, approximate, with the question's numbers (8) | 8/8 | 8/8 |
+| rounded the wrong way, invented (4) | 4/4 | 4/4 |
+| a real number said of the wrong thing (6) | 0/6 | 5/6 |
+
+The one swap left is "Bari ha 53 frane" with Sarno's 53 among the facts.
+
+### A report for one municipality
+
+```bash
+idrogeo report Sarno                       # or the ISTAT code: idrogeo report 65135
+idrogeo report Sarno --out sarno.md --facts sarno.json
+```
+
+A page in Italian for a town's website or a council office: residents,
+land and buildings in landslide and flood hazard, the predisposition
+classes, the IFFI landslides, how far to trust them, what nobody measured,
+and the sources with their licences. The figures come from IdroGEO and the
+words from a template, with no model. Every number is checked with
+`check_text` and `check_claims` before the text is returned. It is not an
+alert, and it says so.
+
+With `--summary` and `ANTHROPIC_API_KEY` in the shell, a model adds a short
+summary in plain words (`pip install 'ispra-idrogeo[ai]'`; each run is
+paid). The summary is checked too: if it has a number the figures do not
+back, the command stops and writes nothing.
 
 ### Use your Anthropic key
 
@@ -1370,28 +1442,27 @@ Keep the key safe:
 
 - `.env` is in `.gitignore`: git never commits it. Never put the key in
   `.env.example`, which is committed.
-- The library, the MCP server and the containers never read the key. Only
-  `make eval` does.
+- The MCP server and the containers never read the key. Only `make eval`
+  and `idrogeo report --summary` use it, and only from your shell or `.env`
+  through `make`.
 - If a key leaks, revoke it on the console and make a new one.
 
-### What comes next
+### What was planned, and is done
 
-These are planned in the roadmap
+The roadmap of phase 5
 ([#11](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/11),
-phase 5):
+[#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23)):
 
-- ✅ **Source and date in every answer**, and ✅ **a checker for invented
-  numbers** (`check_text`, `idrogeo check`, `check_answer`): done.
-- **Who said what.** `check_claims`: a number said of the right indicator,
-  not just present in the facts.
-- **A faithfulness benchmark.** Answers written by a model from recorded
-  facts, scored by `check_text` for free in CI; the model runs only by hand,
-  with a key.
-- **Area reports.** `idrogeo report <comune>`: the figures from a template
-  with no model at all; with a key, a model writes a plain summary, and the
-  checker verifies it before it is saved.
-- **Change digests** on top of `idrogeo watch` and `idrogeo freshness`.
-- ✅ An agent skill (`SKILL.md`) and `llms-full.txt`: done.
+- ✅ Source and date in every answer; a checker for invented numbers
+  (`check_text`, `idrogeo check`, `check_answer`).
+- ✅ Who said what: `check_claims`, in `check_answer` and `idrogeo check`.
+- ✅ A faithfulness benchmark, free and offline in CI
+  (`python -m benchmarks.faithful`).
+- ✅ `check_answer` before every answer with numbers: stronger instructions,
+  and the eval counts it ("checks its answer: x/y").
+- ✅ Typed outputs: every MCP tool publishes its output schema.
+- ✅ Area reports (`idrogeo report`) and change digests (`idrogeo digest`).
+- ✅ An agent skill (`SKILL.md`) and `llms-full.txt`.
 
 <!-- --8<-- [end:ai] -->
 
@@ -1556,7 +1627,7 @@ give the known answer, and a recorded gap (Melito) to watch for.
 | `.download` / `.fetch(..., progress=callback)` | `callback(done, total)` after each chunk, for your own progress bar. |
 | `ispra_idrogeo.watch.changes(idrogeo, kind, mark)` | One round of `idrogeo watch`: what changed since a `Mark`. |
 | `idrogeo-mcp` | An MCP server with the same data as 19 tools, 3 resources and 2 prompts (extra `[mcp]`). |
-| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`, `sync`, `sql`, `check`, `dated`, `reliability`, `freshness`. |
+| `idrogeo <command>` | The same from the shell: `fetch`, `summary`, `municipalities`, `landslides`, `events`, `sites`, `webcams`, `landslide`, `labels`, `dictionaries`, `lookup`, `hazard`, `near`, `watch`, `sync`, `sql`, `check`, `dated`, `reliability`, `freshness`, `report`, `digest`. |
 
 Lower level, for your own HTTP layer: `summary_path`, `search_params`,
 `level_codes`, `since_filter`, `parse` / `parse_list`, `read_validators` / `write_validators`,

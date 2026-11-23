@@ -1,0 +1,94 @@
+# Hand-labeled answers, written from the facts below, scored offline:
+#     python -m benchmarks.faithful [--record | --check]
+#
+# Each answer has a class and the numbers a careful reader would flag:
+# - faithful:    every number is in the facts, said of the right thing;
+# - approximate: rounded the way a person would ("about 6.8 million");
+# - question:    repeats a number of the question (passed as `question`);
+# - rounded:     rounded the wrong way, or off by one;
+# - invented:    a number no tool returned;
+# - swapped:     a real number, said of the wrong thing.
+# Only `swapped` needs check_claims: check_text sees a number that exists.
+# One swap stays uncaught on purpose: "Bari ha 53 frane" uses Sarno's figure,
+# and with two places in the facts the check cannot tell which one is meant.
+
+[facts.bari]
+nome = "Bari"
+uid = 72006
+pop_res021 = 315948
+pop_idr_p2 = 4038
+popidp2_p = 1.278
+aridp2_p = 2.1
+ed_idr_p2 = 500
+ar_kmq = 117.39
+
+[facts.sarno]
+frane_totali = 53
+ar_frp3p4p = 43.0
+slope_deg = 12.3
+
+[[answer]]
+class = "faithful"
+text = "Bari ha 315.948 residenti; l'1,3% (4.038 persone) vive in pericolo alluvione P2."
+[[answer]]
+class = "faithful"
+text = "Bari has 315,948 residents: 1.28% of them, 4,038 people, live in flood hazard P2."
+[[answer]]
+class = "faithful"
+text = "Il 2,1% del territorio di Bari è in pericolo alluvione P2, con 500 edifici."
+[[answer]]
+class = "faithful"
+text = "Sarno ha 53 frane censite e il 43% del territorio in pericolo frana P3+P4."
+[[answer]]
+class = "faithful"
+text = "4,038 residents live in flood hazard P2; the town has 315,948 residents."
+[[answer]]
+class = "approximate"
+text = "Bari ha circa 316 mila abitanti."
+[[answer]]
+class = "approximate"
+text = "About 4 thousand people in Bari live in flood hazard P2, roughly 1.3%."
+[[answer]]
+class = "question"
+question = "Quante frane ci sono entro 500 m da Sarno?"
+text = "Entro 500 m non lo so; il Comune di Sarno ha 53 frane."
+[[answer]]
+class = "rounded"
+text = "Bari: l'1,5% dei residenti è in pericolo alluvione P2."
+flag = ["1,5"]
+[[answer]]
+class = "rounded"
+text = "Bari has 315,949 residents."
+flag = ["315,949"]
+[[answer]]
+class = "invented"
+text = "Sarno ha 54 frane censite."
+flag = ["54"]
+[[answer]]
+class = "invented"
+text = "In Bari 7,200 people live in flood hazard P2."
+flag = ["7,200"]
+[[answer]]
+class = "swapped"
+text = "Bari ha 4.038 residenti."
+flag = ["4.038"]
+[[answer]]
+class = "swapped"
+text = "A Bari 315.948 persone vivono in pericolo alluvione P2."
+flag = ["315.948"]
+[[answer]]
+class = "swapped"
+text = "In pericolo alluvione P2 vive il 2,1% dei residenti di Bari."
+flag = ["2,1"]
+[[answer]]
+class = "swapped"
+text = "Il 1,3% del territorio di Bari è in pericolo alluvione."
+flag = ["1,3"]
+[[answer]]
+class = "swapped"
+text = "Bari ha 53 frane censite."
+flag = ["53"]
+[[answer]]
+class = "swapped"
+text = "In Bari 500 people live in flood hazard P2."
+flag = ["500"]

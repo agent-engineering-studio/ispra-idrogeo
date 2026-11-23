@@ -169,6 +169,28 @@ def parser() -> argparse.ArgumentParser:
     trust.add_argument("level", choices=("regioni", "province", "comuni"))
     trust.add_argument("code", type=int, nargs="?", help="ISTAT code; without it, every area")
 
+    report = commands.add_parser(
+        "report", help="the report of a municipality, in Italian, from a template (no model)"
+    )
+    report.add_argument("municipality", help="ISTAT code or exact name, e.g. 65135 or Sarno")
+    report.add_argument("--out", type=Path, help="write the Markdown here (default: print it)")
+    report.add_argument("--facts", type=Path, help="also write the figures it used, as JSON")
+    report.add_argument(
+        "--summary",
+        action="store_true",
+        help="add a short summary by a model (needs ANTHROPIC_API_KEY; paid), checked first",
+    )
+    report.add_argument("--model", default="claude-sonnet-5-5", help="for --summary")
+
+    digest = commands.add_parser(
+        "digest", help="what changed since the last digest: files, records, events"
+    )
+    digest.add_argument(
+        "--kind", action="append", choices=tuple(WATCHED), help="repeatable (default: all)"
+    )
+    digest.add_argument("--since", type=_since, help="first digest: start here (default: 7 days)")
+    digest.add_argument("--json", action="store_true", help="JSON instead of Markdown")
+
     check = commands.add_parser(
         "check", help="the numbers of a text that match no figure of a JSON file (no network)"
     )
@@ -322,6 +344,18 @@ async def run(
             write(row)
     elif command in ("sync", "sql"):
         await _warehouse(args, idrogeo, write)
+    elif command == "report":
+        await _report(args, idrogeo, out)
+    elif command == "digest":
+        from ispra_idrogeo.digest import digest
+
+        folder = args.dir or default_directory()
+        folder.mkdir(parents=True, exist_ok=True)
+        changed = await digest(idrogeo, folder, args.kind, args.since)
+        if args.json:
+            write(changed.as_dict())
+        else:
+            out.write(changed.markdown())
     else:  # dictionaries
         write(await idrogeo.dictionaries())
 
@@ -363,6 +397,21 @@ async def _watch(
         if args.once:
             return
         await sleep(args.interval)
+
+
+async def _report(args: argparse.Namespace, idrogeo: IdroGEO, out: TextIO) -> None:
+    from ispra_idrogeo.report import area_report, find_municipality, summarize
+
+    code = await find_municipality(idrogeo, args.municipality)
+    found = await area_report(idrogeo, code)
+    if args.summary:  # paid; raises before anything is written if a number is not backed
+        found = await asyncio.to_thread(summarize, found, None, args.model)
+    if args.facts:
+        args.facts.write_text(json.dumps(found.facts, ensure_ascii=False, indent=2) + "\n")
+    if args.out:
+        args.out.write_text(found.markdown(), encoding="utf-8")
+    else:
+        out.write(found.markdown())
 
 
 async def _warehouse(
@@ -413,13 +462,17 @@ def _reliability(args: argparse.Namespace, out: TextIO) -> int:
 
 def _check(args: argparse.Namespace, out: TextIO) -> int:
     """``idrogeo check``: 0 when every number is backed by the facts, else 1."""
-    from ispra_idrogeo.grounding import check_text
+    from ispra_idrogeo.grounding import check_claims, check_text
 
     facts = json.loads(args.facts.read_text(encoding="utf-8"))
     text = args.text.read_text(encoding="utf-8") if args.text else sys.stdin.read()
     missing = check_text(text, facts, args.question)
-    out.write(json.dumps({"unmatched": missing, "ok": not missing}, ensure_ascii=False) + "\n")
-    return 1 if missing else 0
+    wrong = [asdict(m) for m in check_claims(text, facts)]
+    ok = not missing and not wrong
+    out.write(
+        json.dumps({"unmatched": missing, "misquoted": wrong, "ok": ok}, ensure_ascii=False) + "\n"
+    )
+    return 0 if ok else 1
 
 
 def main(argv: Sequence[str] | None = None) -> int:

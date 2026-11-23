@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from ispra_idrogeo.grounding import SOURCES, check_text, grounded, numbers
+from ispra_idrogeo.grounding import SOURCES, Rule, check_claims, check_text, grounded, numbers
 
 # What area_risk and area_landslides answered for Bari, and hazard_at for a
 # point above Sarno: the facts the answers below were written from.
@@ -90,3 +90,38 @@ def test_grounded_answers() -> None:
     text = grounded("a path", "idrogeo")
     assert text["results"] == "a path" and "count" not in text
     assert "CC BY-SA 4.0" in SOURCES["iffi"] and "CC BY-SA 4.0" in SOURCES["events"]
+
+
+# (answer, numbers check_claims must report): said of the right thing, or not.
+CLAIMS = [
+    ("Bari ha 315.948 residenti, l'1,3% in pericolo alluvione P2 (4.038 persone).", []),
+    ("Bari has 315,948 residents: 1.28% of them, 4,038 people, live in flood hazard P2.", []),
+    ("4,038 residents live in flood hazard P2; the town has 315,948 residents.", []),
+    ("In pericolo alluvione ci sono 4.038 persone.", []),
+    ("In Italy about 6.8 million people live in flood hazard P2.", []),  # Italy, not Bari
+    ("Bari ha 4.038 residenti.", ["4.038"]),
+    ("A Bari 315.948 persone vivono in pericolo alluvione P2.", ["315.948"]),
+]
+
+
+@pytest.mark.parametrize(("text", "wrong"), CLAIMS)
+def test_claims_said_of_the_right_thing(text: str, wrong: list[str]) -> None:
+    assert [m.said for m in check_claims(text, FACTS)] == wrong
+
+
+def test_shares_and_counts_are_told_apart() -> None:
+    facts = {"popidp2_p": 1.278, "aridp2_p": 2.1, "frane_totali": 9, "ed_idr_p2": 500}
+    assert check_claims("Il 2,1% del territorio è in pericolo alluvione.", facts) == []
+    [wrong] = check_claims("Il 2,1% dei residenti è in pericolo alluvione.", facts)
+    assert (wrong.said, wrong.key, wrong.fact) == ("2,1", "popidp2_p", 1.278)
+    assert check_claims("In pericolo alluvione ci sono 500 edifici.", facts) == []
+    assert [m.said for m in check_claims("Il Comune ha 53 frane.", facts)] == ["53"]
+    assert check_claims("Il Comune ha 53 frane datate.", facts) == []  # not all of them
+
+
+def test_claims_leave_unknown_things_alone() -> None:
+    assert check_claims("Bari ha 12 ponti e 3 fiumi.", FACTS) == []
+    assert check_claims("Bari ha 4.038 residenti.", {"other": 1}) == []  # no figure to compare
+    assert check_claims("Bari ha 4.038 residenti.", {"pop_res021": -1}) == []  # not available
+    own = (Rule("ar_kmq", (("km",),), share=False),)
+    assert [m.said for m in check_claims("Bari covers 131 km².", FACTS, own)] == ["131"]

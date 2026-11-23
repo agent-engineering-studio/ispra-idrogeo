@@ -9,12 +9,12 @@ from app.data import (
     Data,
     UnavailableError,
     dated_features,
-    notes_it,
     panel,
     region_of,
 )
 from ispra_idrogeo import IdroGEO, IdrogeoError
 from ispra_idrogeo.dated import from_iffi
+from ispra_idrogeo.report import notes_it
 
 PIR = {
     "nome": "Sarno",

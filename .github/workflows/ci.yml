@@ -40,6 +40,8 @@ jobs:
       - run: uv sync --locked
       - name: Known cases, offline, against the recorded results
         run: uv run python -m benchmarks.run --check
+      - name: Faithfulness of the number checks, offline
+        run: uv run python -m benchmarks.faithful --check
 
   publiccode:
     runs-on: ubuntu-latest

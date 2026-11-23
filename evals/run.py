@@ -183,6 +183,7 @@ async def run_case(
         calls: list[dict[str, Any]] = []
         submission: dict[str, Any] | None = None
         nudged, tool_calls, stop_reason, model = False, 0, None, None
+        checked = False  # check_answer called before submit_answer
         for _turn in range(options.max_turns):
             started = time.monotonic()
             response = await client.messages.create(
@@ -234,6 +235,7 @@ async def run_case(
                     output, failed = "Answer recorded.", False
                 else:
                     tool_calls += 1
+                    checked = checked or use.name == "check_answer"
                     try:
                         output, failed = await tools.call(use.name, dict(use.input))
                     except Exception as exc:  # a broken tool reaches the model as an error
@@ -266,6 +268,7 @@ async def run_case(
         "usage": usage,
         "latency_s": round(sum(c["latency_s"] for c in calls), 2),
         "tool_calls": tool_calls,
+        "checked_answer": checked,
         "turns": len(calls),
         "meta": {"calls": calls, "nudged": nudged, "effort": options.effort, "trace": trace},
     }
