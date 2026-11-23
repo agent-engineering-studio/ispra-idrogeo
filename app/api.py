@@ -20,9 +20,10 @@ from starlette.responses import JSONResponse, PlainTextResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
-from app.data import CITATIONS, LAYERS, NOTE_IT, RULE_IT, Data, UnavailableError
+from app.data import CITATIONS, LAYERS, Data, UnavailableError
 from ispra_idrogeo import WMS_URL, IdroGEO, IdrogeoError
 from ispra_idrogeo.predisposition import NOTE, THRESHOLDS, rule
+from ispra_idrogeo.report import NOTE_IT, RULE_IT
 
 STATIC = Path(__file__).parent / "static"
 

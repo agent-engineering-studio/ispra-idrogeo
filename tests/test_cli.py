@@ -249,7 +249,12 @@ def test_check(
     answer = tmp_path / "answer.txt"
     answer.write_text("4,038 people, 1.3 %.", encoding="utf-8")
     assert cli.main(["check", str(facts), "--text", str(answer)]) == 0
-    assert json.loads(capsys.readouterr().out) == {"unmatched": [], "ok": True}
+    assert json.loads(capsys.readouterr().out) == {"unmatched": [], "misquoted": [], "ok": True}
+    swapped = tmp_path / "swapped.txt"
+    swapped.write_text("The town has 4,038 residents.")
+    facts.write_text(json.dumps({"pop_idr_p2": 4038, "pop_res021": 315948}), encoding="utf-8")
+    assert cli.main(["check", str(facts), "--text", str(swapped)]) == 1
+    assert json.loads(capsys.readouterr().out)["misquoted"][0]["key"] == "pop_res021"
     monkeypatch.setattr("sys.stdin", io.StringIO("4,039 people within 500 m"))
     assert cli.main(["check", str(facts), "--question", "within 500 m?"]) == 1
     assert json.loads(capsys.readouterr().out)["unmatched"] == ["4,039"]

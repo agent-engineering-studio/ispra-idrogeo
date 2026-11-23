@@ -37,7 +37,18 @@ from ispra_idrogeo.client import IdroGEO
 from ispra_idrogeo.codes import decode
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.filters import event_filter, landslide_filter, site_filter
-from ispra_idrogeo.grounding import SOURCES, check_claims, check_text, grounded
+from ispra_idrogeo.grounding import SOURCES, Kind, check_claims, check_text, grounded
+from ispra_idrogeo.outputs import (
+    Area,
+    Checked,
+    Comparison,
+    Grounded,
+    HazardAt,
+    Misquoted,
+    Ranking,
+    Reliability,
+    Results,
+)
 from ispra_idrogeo.sources import (
     EVENT_LAYERS,
     LANDSLIDE_LAYERS,
@@ -194,7 +205,7 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
-    async def find_area(name: str, level: AreaLevel = "comuni") -> dict[str, Any]:
+    async def find_area(name: str, level: AreaLevel = "comuni") -> Results:
         """ISTAT code of a region, province or municipality from (part of) its name."""
         if level not in areas:
             areas[level] = await client.summary("iffi", level)
@@ -207,40 +218,38 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
             hint = f"; did you mean {', '.join(names[c] for c in close)}?" if close else ""
             raise ValueError(f"no {level} named like {name!r}{hint}")
         rows = [{"code": a["uid"], "name": a["nome"], "level": level} for a in found[:20]]
-        return grounded(rows, "idrogeo")
+        return _answer(Results, rows, "idrogeo")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
-    async def area_risk(level: Literal["italia", AreaLevel], code: int | None = None) -> Any:
+    async def area_risk(level: Literal["italia", AreaLevel], code: int | None = None) -> Grounded:
         """Hazard and exposure indicators of Italy or one area (ISTAT code).
 
         Keys: ar_* areas (km², *_p in %), pop_* residents, fam_* families,
         ed_* buildings, im_* businesses, bbcc_* cultural heritage; *_fr_*
         landslide hazard P1-P4/AA, *_idr_* flood hazard P1-P3.
         """
-        return grounded(await client.summary("pir", level, code), "indicators")
+        return _answer(Grounded, await client.summary("pir", level, code), "indicators")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
-    async def area_landslides(
-        level: Literal["italia", AreaLevel], code: int | None = None
-    ) -> dict[str, Any]:
+    async def area_landslides(level: Literal["italia", AreaLevel], code: int | None = None) -> Area:
         """IFFI counts of Italy or one area: landslides by type, events, monitoring."""
         found = await client.summary("iffi", level, code)
         types = await client.labels("tipo_movimento")
         found["frane_stats"] = [
             {**s, "type": types.get(str(s.get("cod")))} for s in found.get("frane_stats") or []
         ]
-        return grounded(dict(found), "iffi")
+        return _answer(Area, dict(found), "iffi")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
-    async def landslide(id_frana: str) -> dict[str, Any]:
+    async def landslide(id_frana: str) -> Grounded:
         """The full record of one IFFI landslide, codes decoded, geometry left out."""
         record = await client.landslide(id_frana)
         labels = await client.code_labels([f for f in _CODED if f in record])
         decoded = {k: v for k, v in decode(record, labels).items() if k not in _GEOMETRY}
-        return grounded(decoded, "iffi")
+        return _answer(Grounded, decoded, "iffi")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
@@ -252,7 +261,7 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         municipality: int | None = None,
         modified_since: datetime | None = None,
         limit: int = 100,
-    ) -> dict[str, Any]:
+    ) -> Results:
         """IFFI landslides by movement code, activity codes (100 active, 200
         dormant, 300 stabilised, 400 relict), area (ISTAT codes) or changed
         since a time. An area reads the whole inventory first (~20 s); for an
@@ -270,7 +279,7 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
             found = client.iter_landslides(
                 wanted, modified_since=modified_since, page_size=_page(limit)
             )
-        return grounded(await _take(found, _page(limit)), "iffi")
+        return _answer(Results, await _take(found, _page(limit)), "iffi")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
@@ -282,7 +291,7 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         start: date | None = None,
         end: date | None = None,
         limit: int = 100,
-    ) -> dict[str, Any]:
+    ) -> Results:
         """Dated landslide events by area (ISTAT codes), movement, and dates
         (start included, end excluded)."""
         found = client.iter_events(
@@ -296,7 +305,7 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
             ),
             page_size=_page(limit),
         )
-        return grounded(await _take(found, limit), "events")
+        return _answer(Results, await _take(found, limit), "events")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
@@ -306,24 +315,24 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         municipality: int | None = None,
         active: bool | None = None,
         limit: int = 100,
-    ) -> dict[str, Any]:
+    ) -> Results:
         """Landslide monitoring sites by area (ISTAT codes) and whether active,
         with their instruments and the IFFI landslides they watch."""
         sites = await client.sites(
             site_filter(region=region, province=province, municipality=municipality, active=active)
         )
         labels = await client.code_labels(_SITE_CODES)
-        return grounded([decode(s, labels) for s in sites[: _page(limit)]], "monitoring")
+        return _answer(Results, [decode(s, labels) for s in sites[: _page(limit)]], "monitoring")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
-    async def webcams(region: int | None = None) -> dict[str, Any]:
+    async def webcams(region: int | None = None) -> Results:
         """Webcams pointed at landslides (geom in EPSG:3857 metres)."""
-        return grounded(await client.webcams(site_filter(region=region)), "monitoring")
+        return _answer(Results, await client.webcams(site_filter(region=region)), "monitoring")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
-    async def hazard_at(lat: float, lon: float, lithology: bool = False) -> dict[str, Any]:
+    async def hazard_at(lat: float, lon: float, lithology: bool = False) -> HazardAt:
         """Landslide and flood hazard of a point (WGS 84 degrees), with its
         municipality (ISTAT code) and slope in degrees.
 
@@ -333,24 +342,26 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         P1 low (rare, extreme). lithology=true adds the rock type but takes
         ~16 s longer.
         """
-        return grounded(asdict(await client.hazard_at(lat, lon, lithology=lithology)), "hazard")
+        return _answer(
+            HazardAt, asdict(await client.hazard_at(lat, lon, lithology=lithology)), "hazard"
+        )
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
     async def landslides_near(
         lat: float, lon: float, radius_m: float = 500, limit: int = 50
-    ) -> dict[str, Any]:
+    ) -> Results:
         """IFFI landslides within radius_m (at most 5,000) of a point, nearest
         first, with distance_m (0 when the point is on the landslide) and the
         type of movement."""
         found = await client.landslides_near(lat, lon, radius_m, limit=1000)
-        return grounded(found[: _page(limit)], "iffi")
+        return _answer(Results, found[: _page(limit)], "iffi")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
-    async def code_list(name: str, lang: Literal["it", "en", "fr", "de"] = "en") -> dict[str, Any]:
+    async def code_list(name: str, lang: Literal["it", "en", "fr", "de"] = "en") -> Grounded:
         """One IdroGEO code list as {code: label}, e.g. tipo_movimento, cause."""
-        return grounded(await client.labels(name, lang), "idrogeo")
+        return _answer(Grounded, await client.labels(name, lang), "idrogeo")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
@@ -362,7 +373,7 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         top: int = 10,
         lowest: bool = False,
         summary: Literal["pir", "iffi"] = "pir",
-    ) -> dict[str, Any]:
+    ) -> Ranking:
         """The areas with the highest (or lowest) value of one indicator.
 
         indicator: a numeric key of area_risk (summary "pir", e.g. popfrp3p4p,
@@ -380,7 +391,8 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         _check_indicators(rows, [indicator])
         valued = [r for r in rows if isinstance(r.get(indicator), int | float)]
         valued.sort(key=lambda r: r[indicator], reverse=not lowest)
-        return grounded(
+        return _answer(
+            Ranking,
             {
                 "indicator": indicator,
                 "order": "lowest first" if lowest else "highest first",
@@ -399,7 +411,7 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         level: Literal["italia", "macroregioni", AreaLevel],
         codes: list[int],
         indicators: list[str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Comparison:
         """Hazard and exposure indicators of up to 20 areas, side by side.
 
         codes: ISTAT codes of the same level (from find_area). indicators:
@@ -412,7 +424,8 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         rows = await asyncio.gather(*(client.summary("pir", level, c) for c in codes))
         if indicators:  # the defaults are left empty where an area has none
             _check_indicators(rows, wanted)
-        return grounded(
+        return _answer(
+            Comparison,
             {
                 "indicators": wanted,
                 "areas": [
@@ -425,18 +438,18 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
 
     @mcp.tool(annotations=_LOCAL)
     @_tool_errors
-    async def warehouse_schema() -> dict[str, Any]:
+    async def warehouse_schema() -> Grounded:
         """The tables of the local warehouse (`idrogeo sync`) and their columns.
 
         Read it before warehouse_sql. If there is no warehouse, tell the user
         to run `idrogeo sync frane_piff pai_frane idraulica` once.
         """
         schema = await local(lambda w: {"layers": w.layers(), "tables": w.schema()})
-        return grounded(schema, "warehouse")
+        return _answer(Grounded, schema, "warehouse")
 
     @mcp.tool(annotations=_LOCAL)
     @_tool_errors
-    async def warehouse_sql(sql: str, limit: int = 200) -> dict[str, Any]:
+    async def warehouse_sql(sql: str, limit: int = 200) -> Results:
         """One read-only DuckDB SELECT on the local warehouse, at most limit rows.
 
         For what the other tools cannot ask: many points or areas at once,
@@ -445,21 +458,21 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         ST_DWithin, ST_Area). pai_frane and idraulica carry `class` (P4…P1/AA,
         P3…P1) and are CC BY-SA 4.0. Show the user the SQL you ran.
         """
-        return grounded(await local(lambda w: w.query(sql, limit=limit)), "warehouse")
+        return _answer(Results, await local(lambda w: w.query(sql, limit=limit)), "warehouse")
 
     @mcp.tool(annotations=_READ)
     @_tool_errors
-    async def data_freshness() -> dict[str, Any]:
+    async def data_freshness() -> Results:
         """When ISPRA last changed each published file (IFFI layers, events,
         hazard mosaics): date, age in days and size, from one HEAD request each.
         Use it to say how recent the data behind an answer is."""
         from ispra_idrogeo.freshness import freshness
 
-        return grounded([f.as_dict() for f in await freshness(client)], "idrogeo")
+        return _answer(Results, [f.as_dict() for f in await freshness(client)], "idrogeo")
 
     @mcp.tool(annotations=_LOCAL)
     @_tool_errors
-    async def data_reliability(level: AreaLevel, code: int) -> dict[str, Any]:
+    async def data_reliability(level: AreaLevel, code: int) -> Reliability:
         """How far the IFFI inventory and the dated events can be trusted in a
         region, province or municipality (ISTAT code, from find_area).
 
@@ -472,11 +485,11 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         """
         from ispra_idrogeo.reliability import reliability
 
-        return grounded(reliability(level, code).as_dict(), "iffi")
+        return _answer(Reliability, reliability(level, code).as_dict(), "iffi")
 
     @mcp.tool(annotations=_LOCAL)
     @_tool_errors
-    async def check_answer(text: str, facts: Any, question: str = "") -> dict[str, Any]:
+    async def check_answer(text: str, facts: Any, question: str = "") -> Checked:
         """Always call this before giving an answer with numbers, even one.
 
         Pass the draft (text), the tool results it was written from (facts) and
@@ -490,7 +503,7 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         figure no tool returned.
         """
         missing = check_text(text, facts, question)
-        wrong = [asdict(m) for m in check_claims(text, facts)]
+        wrong = [cast(Misquoted, asdict(m)) for m in check_claims(text, facts)]
         return {"unmatched": missing, "misquoted": wrong, "ok": not missing and not wrong}
 
     @mcp.resource(
@@ -630,6 +643,11 @@ def _page(limit: int) -> int:
     if not 1 <= limit <= 1000:
         raise ValueError("limit must be between 1 and 1000")
     return limit
+
+
+def _answer[S](_shape: type[S], answer: Any, kind: Kind) -> S:
+    """``grounded`` as the shape the tool declares (a TypedDict: no check at run time)."""
+    return cast(S, grounded(answer, kind))
 
 
 async def _take(rows: AsyncIterator[dict[str, Any]], limit: int) -> list[dict[str, Any]]:

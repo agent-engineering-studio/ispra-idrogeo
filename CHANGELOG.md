@@ -25,6 +25,27 @@ All notable changes to this project are documented here. The format follows
   runs in CI (`--check`) and in `make benchmark`.
 - Evals: `checked_answer` per case (whether `check_answer` was called before
   `submit_answer`) and "checks its answer: x/y" in the report.
+- Typed outputs: every MCP tool publishes an output schema
+  (`ispra_idrogeo.outputs`: `Grounded`, `Results`, `HazardAt`,
+  `Reliability`, `Checked`, …). The keys named there are stable; the API's
+  own fields still come along.
+- `idrogeo report <comune>` (`ispra_idrogeo.report`): a page in Italian on
+  one municipality from a template, no model: residents, land and buildings
+  in hazard, predisposition classes, IFFI landslides, how far to trust them,
+  what nobody measured, the sources. Every number is checked before the text
+  is returned. `--summary` adds a short summary by a model (extra `ai`,
+  `ANTHROPIC_API_KEY`, paid), checked too: a summary with a number the
+  figures do not back is refused and nothing is written.
+- `idrogeo digest` (`ispra_idrogeo.digest`): the files, records and events
+  changed since the last digest, by region, in a few lines or as JSON. It
+  keeps its own state, apart from `watch` and `freshness`.
+- `idrogeo check` also returns `misquoted`.
+
+### Changed
+
+- The Italian texts of the *Mappa dei dati* (notes, what is not measured,
+  the predisposition rule) now live in `ispra_idrogeo.report`, so the page
+  and the report say the same.
 
 ## [0.10.1] - 2026-11-23
 

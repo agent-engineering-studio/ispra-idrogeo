@@ -39,7 +39,7 @@ discuss one before starting. The roadmap that brought it here is
 | 15 | Freshness of every published file (`freshness`) | Data | ✅ 0.10.0 |
 | 16 | Agent skill (`SKILL.md`) and `llms-full.txt` | AI | ✅ 0.10.0 |
 | 17 | *Mappa dei dati* for public bodies, predisposition classes | People | ✅ 0.10.0 |
-| 18 | `check_claims`, faithfulness benchmark, typed tool outputs, area reports | AI | ⏳ [#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23) |
+| 18 | `check_claims`, faithfulness benchmark, typed tool outputs, area reports, change digests | AI | ✅ next release ([#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23)) |
 | 19 | Map: polygons clipped to the town, EN switch, screenshot | People | ⏳ |
 | 20 | Landslide susceptibility baseline (notebook) | Research | 💡 |
 | 21 | News → candidate events, for review | Research | 💡 |
@@ -52,11 +52,11 @@ flowchart LR
         T["Dates and trust<br/>dated_landslides · reliability · freshness"]
         M["Mappa dei dati"]
         Q["Known cases · daily live tests"]
+        C["check_claims · faithfulness<br/>typed outputs · reports · digests"]
     end
     subgraph N["Next"]
         direction TB
-        C["check_claims · faithfulness"]
-        Y["Typed outputs · area reports"]
+        Y["Map: clipped polygons · EN switch"]
     end
     subgraph L["Later"]
         direction TB
@@ -117,12 +117,22 @@ still being traps. On failure the workflow opens an issue labelled
     the right codes, and reports the right numbers. Run on demand (it costs
     model calls), not in every CI build.
 
-### Typed outputs and citations
+### The AI layer, phase 5 (#23)
 
-`TypedDict` results give each tool an output schema, so agents stop guessing
-what a key means, and Python users get completion. Every answer carries
-`source`, `licence` and `retrieved_at`, so the credit ISPRA asks for survives
-into the agent's final answer. `rank_areas` and `compare_areas` already do it.
+- **`check_claims`**: a real number said of the wrong indicator ("Bari ha
+  4.038 residenti", where 4,038 are the people in flood hazard) is flagged.
+  `check_answer` and `idrogeo check` run it with `check_text`.
+- **A faithfulness benchmark**, free and offline in CI: 18 answers labeled
+  by hand. Swaps caught: 0/6 by `check_text`, 5/6 with `check_claims`; no
+  false alarm on the 8 good answers.
+- **`check_answer` before every number**: stronger instructions, and the
+  eval reports "checks its answer: x/y".
+- **Typed outputs**: every MCP tool publishes an output schema.
+- **`idrogeo report <comune>`**: a page in Italian from a template, every
+  number checked; `--summary` adds a model's summary, checked before it is
+  written.
+- **`idrogeo digest`**: files, records and events changed since the last
+  digest.
 
 ---
 
@@ -135,31 +145,11 @@ into the agent's final answer. `rank_areas` and `compare_areas` already do it.
     in the data. Every output cites ISPRA — IdroGEO and says it is not an
     official hazard assessment.
 
-### Grounded area reports
+### Next
 
-```bash
-pip install "ispra-idrogeo[ai]"
-idrogeo report sarno --lang it --format html > sarno.html
-```
-
-A one-page profile of a municipality: hazard and exposure by class,
-landslides by type, recent events, monitoring, compared with its province and
-region. The data part works with no model at all (a template). With an API
-key, a model writes a plain-language summary for citizens, journalists or
-council members, in Italian or English, behind a small model-agnostic
-interface.
-
-### Change digests
-
-On top of `idrogeo watch`: *"This week in Liguria: 14 new events, 9 after the
-rain of 28 October in the province of Genova…"*, grounded in the records it
-lists, for a newsletter, a Slack channel or a council briefing.
-
-### An agent skill
-
-A `SKILL.md` in the repository teaches Claude Code and similar tools the
-recipes: which layer for which question, `(lat, lon)` order, EPSG:32632 vs
-3857 vs 3035, why not to filter landslides by `regione`.
+- An English version of `idrogeo report`, and HTML output.
+- A digest by region or province (`--region`), for a newsletter or a
+  council briefing.
 
 ---
 
@@ -199,5 +189,5 @@ written back as if they were ISPRA records.
 ## How to help
 
 Pick a row, open an issue saying which one, and read
-[Contributing](contributing.md). Typed outputs and the agent skill are good
-first contributions.
+[Contributing](contributing.md). The English report and the digest by region are
+good first contributions.

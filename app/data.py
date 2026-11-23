@@ -26,6 +26,13 @@ from ispra_idrogeo.dated import DatedLandslide, dated_landslides
 from ispra_idrogeo.grounding import SOURCES
 from ispra_idrogeo.predisposition import ITALIAN, predisposition
 from ispra_idrogeo.reliability import reliability
+from ispra_idrogeo.report import (  # shared with idrogeo report, so the two say the same
+    MEASURES_IT,
+    NOT_MEASURED_IT,
+    NOTE_IT,
+    RULE_IT,
+    notes_it,
+)
 
 #: The layers the page loads into its warehouse at start.
 LAYERS = ("frane_piff", "pai_frane_2024")
@@ -90,19 +97,6 @@ def region_of(summary: dict[str, Any]) -> int | None:
     return None
 
 
-#: The predisposition classes, said in Italian for the page.
-MEASURES_IT = {
-    "landslide": "quota di territorio in pericolo frana P3+P4 (mappa PAI 2024)",
-    "flood": "quota di territorio nello scenario di alluvione P2 (tempo di ritorno 100-200 anni)",
-}
-RULE_IT = "nessuna 0% · bassa <5% · media 5-15% · alta 15-30% · molto alta ≥30%"
-NOTE_IT = (
-    "È una classe di predisposizione calcolata sulle mappe ufficiali di pericolo, non "
-    "un'allerta: non usa la pioggia. Per le allerte valgono i bollettini della Protezione "
-    "Civile e della Regione."
-)
-
-
 def panel(
     code: int, pir: dict[str, Any], iffi: dict[str, Any], types: dict[str, str]
 ) -> dict[str, Any]:
@@ -148,53 +142,6 @@ def panel(
         "citations": CITATIONS,
         "retrieved_at": _now(),
     }
-
-
-NOT_MEASURED_IT = (
-    "la precisione delle posizioni IFFI: ogni record dice «esatta»",
-    "quanto è completo l'inventario: non c'è un riferimento con cui confrontarlo",
-    "se un evento e una frana IFFI sono la stessa frana",
-    "l'anno in cui ogni Regione ha rilevato le sue frane: ISPRA non lo pubblica",
-)
-
-
-def _n(value: int) -> str:
-    """A whole number with the Italian thousands separator: 1.234."""
-    return f"{value:,}".replace(",", ".")
-
-
-def _pct(share: float | None) -> str:
-    if share is None:
-        return "non disponibile"
-    value = share * 100
-    return "meno dello 0,1%" if 0 < value < 0.1 else f"{value:.1f}%".replace(".", ",")
-
-
-def notes_it(found: dict[str, Any]) -> list[str]:
-    """The notes of :func:`~ispra_idrogeo.reliability.reliability`, in Italian."""
-    landslides = found["landslides"]
-    if not landslides:
-        notes = ["In questo Comune IFFI non censisce nessuna frana."]
-    else:
-        day = round((found["day_share"] or 0) * landslides)
-        edited = _pct(found["edited_since_2021_share"])
-        notes = [
-            f"{_n(day)} frane IFFI su {_n(landslides)} ({_pct(found['day_share'])}) hanno una "
-            "data al giorno.",
-            f"Record IFFI modificati dal 2021: {edited}.",
-        ]
-    if found["dated_since_2018"]:
-        notes.append(
-            f"Dal 2018: {found['iffi_day_since_2018']} frane IFFI datate al giorno e "
-            f"{found['events_since_2018']} eventi, {found['events_within_1km']} con il punto "
-            "noto entro 1 km."
-        )
-    else:
-        notes.append(
-            "Nessuna frana datata al giorno dal 2018: qui nessun dato può verificare una soglia "
-            "di pioggia."
-        )
-    return notes
 
 
 def _value(value: Any) -> Any:

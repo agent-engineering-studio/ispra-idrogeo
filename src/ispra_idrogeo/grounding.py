@@ -265,7 +265,7 @@ RULES: tuple[Rule, ...] = (
         "frane_totali",
         (_LANDSLIDE,),
         share=False,
-        without=_PEOPLE + _LAND + _BUILDINGS + ("datat", "dated", "event"),
+        without=_PEOPLE + _LAND + _BUILDINGS + ("datat", "data", "dated", "event"),
     ),
 )
 

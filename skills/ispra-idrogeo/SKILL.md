@@ -50,8 +50,9 @@ place; `freshness()` when ISPRA last changed each file.
 
 - Every number from a tool or the library: no estimating, adding up or
   extrapolating. `null` means not available, never zero.
-- Cite the `source` each MCP answer carries; check a draft with
-  `check_answer` (or `ispra_idrogeo.grounding.check_text`).
+- Cite the `source` each MCP answer carries. Before every answer with a
+  number, call `check_answer` (or `ispra_idrogeo.grounding.check_text` and
+  `check_claims`) and fix every `unmatched` and `misquoted` number.
 - A hazard map is not an alert and not a safety assessment of a building:
   point to the Civil Protection bulletins for warnings.
 
