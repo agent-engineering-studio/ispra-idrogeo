@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-11-23
+
 ### Added
 
 - A screenshot of the *Mappa dei dati* on Sarno (`docs/images/mappa-sarno.jpg`)
