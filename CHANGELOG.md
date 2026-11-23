@@ -27,6 +27,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- The map: where an IFFI point and a dated landslide fall on the same spot
+  (the Casamicciola event of 26 November 2022), the IFFI point took the
+  click; the dated landslides now have their own pane above the IFFI points.
 - The map: the PAI polygons covered the landslide points, so a click on a
   dated landslide opened the polygon underneath; the points now have a pane
   of their own above the polygons. The flood citation in "Fonti e licenze"
