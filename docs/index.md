@@ -37,7 +37,7 @@ async with IdroGEO() as idrogeo:
 
 -   :material-robot: **[AI agents](ai-agents.md)**
 
-    `idrogeo-mcp`: the data as tools, with sources and a check for invented numbers.
+    `idrogeo-mcp`: the data as tools, with sources and a check of every number. Reports and digests too.
 
 -   :material-check-decagram: **[How it works](how-it-works.md)**
 

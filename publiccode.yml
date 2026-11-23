@@ -5,7 +5,7 @@ name: ispra-idrogeo
 url: "https://github.com/agent-engineering-studio/ispra-idrogeo.git"
 landingURL: "https://agentengineering.it/ispra-idrogeo/"
 releaseDate: "2026-11-23"
-softwareVersion: "0.10.1"
+softwareVersion: "0.11.0"
 platforms: [web, linux, mac, windows]
 categories: [geographic-information-systems, data-visualization, data-analytics]
 usedBy: []
@@ -38,7 +38,8 @@ description:
       - Classe di predisposizione dalle mappe ufficiali, senza pioggia, mai un'allerta
       - Quanto fidarsi dei dati IFFI in ogni Comune, e cosa non è misurato
       - Fonte, licenza e data di ogni dato; scarico in CSV e GeoJSON
-      - Libreria Python, riga di comando e server MCP per gli assistenti
+      - Scheda del Comune in italiano (idrogeo report), con ogni numero verificato sui dati
+      - Libreria Python, riga di comando e server MCP per gli assistenti, con il controllo dei numeri
     screenshots:
       - docs/images/mappa-sarno.jpg
   en:
@@ -64,7 +65,8 @@ description:
       - Predisposition class from the official maps, no rain, never an alert
       - How far IFFI data can be trusted in each municipality, and what is not measured
       - Source, licence and date of every figure; CSV and GeoJSON downloads
-      - Python library, command line and MCP server for assistants
+      - A report on one municipality in Italian (idrogeo report), every number checked against the data
+      - Python library, command line and MCP server for assistants, with a check of the numbers
     screenshots:
       - docs/images/mappa-sarno.jpg
 organisation:

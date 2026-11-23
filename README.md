@@ -24,7 +24,9 @@ of ISPRA, Italy's national environmental agency. With this library you can:
 - **check a place**: is this point in a hazard area? Which landslides are near?
 - **find the landslides with a date**, and how precise that date is;
 - **know how far to trust** the data in each town, and say what is not measured;
-- **put it on a map** for a town's website, or **give it to an AI agent**.
+- **write a report** on a town in Italian, and **a digest** of what changed;
+- **put it on a map** for a town's website, or **give it to an AI agent**
+  that checks its own numbers.
 
 No browser, no account, no API key. It reads no rain and gives no alert:
 for warnings, follow the bulletins of the Civil Protection.
@@ -41,7 +43,8 @@ flowchart LR
     I["🏛️ ISPRA IdroGEO<br/>landslide inventory · hazard maps<br/>risk figures · events"] --> L["📦 ispra-idrogeo<br/>download · ask · check a place<br/>dated landslides · how far to trust"]
     L --> Y["🧑‍💻 Your work<br/>notebooks · GIS · SQL"]
     L --> M["🗺️ Mappa dei dati<br/>a page for a town's site"]
-    L --> A["🤖 AI agents<br/>idrogeo-mcp, with sources"]
+    L --> R["📝 Reports and digests<br/>idrogeo report · idrogeo digest"]
+    L --> A["🤖 AI agents<br/>idrogeo-mcp, sources and checked numbers"]
     L --> X["🛰️ Limen<br/>joins it with rain and thresholds"]
 ```
 
@@ -53,6 +56,9 @@ flowchart LR
 | use the command line | [From the command line](#3b-or-from-the-command-line) |
 | start everything in Docker with one command | [Run it in containers](#run-it-in-containers) |
 | put a map on a municipality's site | [A map for public bodies](#a-map-for-public-bodies) |
+| write a report on a town, in Italian | [A report for one municipality](#a-report-for-one-municipality) |
+| know what changed since last week | [A digest of what changed](#a-digest-of-what-changed) |
+| check the numbers of a text or an AI answer | [Check a text for invented numbers](#check-a-text-for-invented-numbers) |
 | know if a place is in a hazard area | [Hazard at a point](#is-this-place-at-risk-hazard-at-a-point) |
 | find the landslides near a place | [Landslides near a point](#landslides-near-a-point) |
 | get the risk figures of a town | [Ask the API](#4-ask-the-api) · [Every municipality](#every-municipality-in-one-table) |
@@ -155,9 +161,11 @@ Some of what is in there, straight from the API:
 | 📅 | **Landslides with a date** | `dated_landslides`: every dated landslide of IFFI and the events, with how precise its date (hour, day, interval) and its point are. |
 | 🧭 | **How far to trust the data** | `reliability`: for every town, how many landslides are dated, how recently the records were touched, and what nobody measured. |
 | 🕒 | **How fresh the data is** | `freshness`: when ISPRA last changed each file, without downloading it. |
+| 📝 | **A report on a town** | `idrogeo report Sarno`: a page in Italian with hazard, exposure, landslides, trust and sources, from a template; every number checked against the data. |
+| 📰 | **What changed** | `idrogeo digest`: the files, landslide records and events changed since the last digest, by region. |
 | 🗺️ | **A map for a town's site** | The *Mappa dei dati*: hazard, landslides, exposure and trust for one town, in Italian, in Docker. |
-| 🤖 | **For AI agents** | `idrogeo-mcp`: the same data as tools; every answer names its source and licence, and a check finds invented numbers. |
-| ✅ | **Checked** | 100% test coverage, known cases replayed in CI, the live service tested every day. |
+| 🤖 | **For AI agents** | `idrogeo-mcp`: the same data as tools, each with its output schema; every answer names its source and licence, and `check_answer` finds invented numbers and numbers said of the wrong thing. |
+| ✅ | **Checked** | 100% test coverage, known cases and a faithfulness benchmark replayed in CI, the live service tested every day. |
 
 One dependency for the core: [`httpx`](https://www.python-httpx.org/).
 
