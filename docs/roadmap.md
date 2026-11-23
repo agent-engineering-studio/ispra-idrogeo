@@ -1,11 +1,11 @@
 # Roadmap & AI
 
-Where ispra-idrogeo stands at **0.10.0** (22 November 2026), and what would
+Where ispra-idrogeo stands at **0.11.0** (23 November 2026), and what would
 make it more useful. These are directions, not promises: open an issue to
-discuss one before starting. The roadmap that brought it here is
+discuss one before starting. The roadmaps that brought it here are
 [#11](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/11)
-(closed); the AI layer still to do is
-[#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23).
+and [#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23)
+(the AI layer), both closed.
 
 ## Where we are
 
@@ -15,7 +15,7 @@ discuss one before starting. The roadmap that brought it here is
 | **Places** | `hazard_at`, `landslides_near`, `iter_landslides_in`; risk figures of all 7,899 towns | PAI polygons clipped to a box, not to the town's outline, on the map |
 | **Trust** | `dated_landslides` with their precision, `reliability` per town, `freshness` of every file | No reference to measure how complete IFFI is |
 | **People** | The *Mappa dei dati* for public bodies, in Docker, with `publiccode.yml` | Italian only; no WCAG audit |
-| **AI agents** | `idrogeo-mcp`: 19 tools with source, licence and time in every answer; `check_answer`; `SKILL.md`, `llms-full.txt`; an eval (pilot 5/5) | `check_answer` not yet used by agents; no check of who-said-what |
+| **AI agents** | `idrogeo-mcp`: 19 typed tools with source, licence and time in every answer; `check_answer` with `check_claims` (who said what); a faithfulness benchmark in CI; `idrogeo report` and `idrogeo digest`; `SKILL.md`, `llms-full.txt`; an eval (pilot 5/5) | Whether agents now call `check_answer` is not yet measured (pilot: 0/5) |
 | **Quality** | 100% coverage, `mypy --strict`, known cases replayed in CI, live contract tests every day | – |
 
 ## Status
@@ -39,14 +39,14 @@ discuss one before starting. The roadmap that brought it here is
 | 15 | Freshness of every published file (`freshness`) | Data | ✅ 0.10.0 |
 | 16 | Agent skill (`SKILL.md`) and `llms-full.txt` | AI | ✅ 0.10.0 |
 | 17 | *Mappa dei dati* for public bodies, predisposition classes | People | ✅ 0.10.0 |
-| 18 | `check_claims`, faithfulness benchmark, typed tool outputs, area reports, change digests | AI | ✅ next release ([#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23)) |
+| 18 | `check_claims`, faithfulness benchmark, typed tool outputs, area reports, change digests | AI | ✅ 0.11.0 ([#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23)) |
 | 19 | Map: polygons clipped to the town, EN switch, screenshot | People | ⏳ |
 | 20 | Landslide susceptibility baseline (notebook) | Research | 💡 |
 | 21 | News → candidate events, for review | Research | 💡 |
 
 ```mermaid
 flowchart LR
-    subgraph D["Done (0.6 → 0.10)"]
+    subgraph D["Done (0.6 → 0.11)"]
         direction TB
         P["Places and risk figures"]
         T["Dates and trust<br/>dated_landslides · reliability · freshness"]
@@ -67,57 +67,9 @@ flowchart LR
 
 ---
 
-## Done, not yet released
+## Done
 
-### Rank and compare, explain the indicators ([#1](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/1))
-
-`rank_areas` (top or bottom areas by any indicator, inside a region or
-province) and `compare_areas` (up to 20 side by side) so the agent quotes
-numbers instead of computing them. The resource `idrogeo://indicators`
-explains keys such as `popfrp3p4p`; two prompts, `area_profile` and
-`recent_events`, show clients how to chain the tools. `find_area` ignores
-accents and suggests close names.
-
-## In review
-
-### A local warehouse, offline and in SQL ([#4](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/4))
-
-`idrogeo sync` keeps the layers in one DuckDB file, R-tree indexed, in
-EPSG:32632. It is for what one WMS request per point cannot do: thousands of
-points, work offline, joins. `warehouse_sql` lets an agent write its own
-query. The file is opened read-only with DuckDB's access to files and URLs
-switched off, so a prompt-injected `read_text('~/.ssh/…')` fails.
-
-Building it turned up four facts now in [Known traps](traps.md):
-
-- the hazard mosaics are **CC BY-SA 4.0**;
-- the flood mosaic is in **EPSG:3035**;
-- the IFFI shapefiles are **ISO-8859-1**;
-- the API's landslide hazard areas add up to ~15% more than the mosaic you can download.
-
----
-
-### Live contract tests ([#5](https://github.com/agent-engineering-studio/ispra-idrogeo/pull/5))
-
-51 tests against the live service, weekly, outside `make check`. They cover
-every layer and area, the `304`, the fields the tools read, and the traps
-still being traps. On failure the workflow opens an issue labelled
-`live-contract`.
-
-## Next
-
-### Agent evaluation suite
-
-!!! tip "Tool descriptions are prompts: test them like code"
-    A set of 50–100 questions (*"residents in flood hazard P2 in Bari"*,
-    *"is piazza San Marco in a flood zone?"*, *"the five municipalities of
-    Campania with the most residents in landslide hazard P3+P4"*) whose
-    answers are computed from the API, run against an agent connected to
-    `idrogeo-mcp`. It measures whether the agent picks the right tools, with
-    the right codes, and reports the right numbers. Run on demand (it costs
-    model calls), not in every CI build.
-
-### The AI layer, phase 5 (#23)
+### The AI layer, phase 5 ([#23](https://github.com/agent-engineering-studio/ispra-idrogeo/issues/23), 0.11.0)
 
 - **`check_claims`**: a real number said of the wrong indicator ("Bari ha
   4.038 residenti", where 4,038 are the people in flood hazard) is flagged.
@@ -133,6 +85,14 @@ still being traps. On failure the workflow opens an issue labelled
   written.
 - **`idrogeo digest`**: files, records and events changed since the last
   digest.
+
+### Before (0.6 → 0.10)
+
+Rank and compare (`rank_areas`, `compare_areas`), the local DuckDB
+warehouse, live contract tests every day, the agent eval with true answers
+computed from the live data, dated landslides, reliability per town,
+freshness, the agent skill and the *Mappa dei dati*. The details are in the
+[changelog](changelog.md).
 
 ---
 
