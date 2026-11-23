@@ -74,7 +74,7 @@ async function showComune(code) {
         const d = f.properties, ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
         if (d.position_m) { L.circle(ll, { radius: d.position_m, color: "#1565c0", weight: 1, fillOpacity: 0.05, interactive: false }).addTo(group); }
         const filled = d.precision !== "interval";
-        L.circleMarker(ll, { radius: d.precision === "hour" ? 7 : 6, color: "#1565c0", weight: 2, fillOpacity: filled ? 0.9 : 0, pane: "points" })
+        L.circleMarker(ll, { radius: d.precision === "hour" ? 7 : 6, color: "#1565c0", weight: 2, fillOpacity: filled ? 0.9 : 0, pane: "dated" })
           .bindPopup(`<strong>${esc(d.start)}${d.end !== d.start ? " – " + esc(d.end) : ""}${d.time ? " ore " + esc(d.time) : ""}</strong><br>
             Precisione della data: ${esc(PRECISION[d.precision] || d.precision)} · del punto: ${d.position_m === null ? "non dichiarata" : d.position_m === 0 ? "esatta" : esc(d.position_m) + " m"}<br>
             Fonte: ${esc(SOURCE[d.source] || d.source)} ${esc(d.id)}<br><small>${esc(d.citation)}</small>`)
@@ -123,7 +123,8 @@ async function start() {
   $("ente").textContent = config.ente; $("bulletin").href = config.bulletin; $("limen").href = config.limen;
   map = L.map("map");
   map.createPane("boundary").style.zIndex = 450;  // above the hazard polygons
-  map.createPane("points").style.zIndex = 460;    // the landslides above everything, clickable
+  map.createPane("points").style.zIndex = 460;    // the IFFI landslides above the polygons
+  map.createPane("dated").style.zIndex = 470;     // the dated ones on top: same place, the date wins
   L.tileLayer(config.tiles, { attribution: `${config.tiles_credit} · Dati ISPRA IdroGEO`, maxZoom: 18 }).addTo(map);
   legend();
   const code = Number(new URLSearchParams(location.search).get("comune")) || config.comune;
