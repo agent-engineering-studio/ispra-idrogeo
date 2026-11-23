@@ -301,6 +301,7 @@ async def test_what_the_model_does_wrong_is_graded(tmp_path: Path) -> None:
             "refuses?": [_response([_text("No.")], "refusal")],
             "breaks?": [
                 _response([_use("area_risk", {"boom": True}, 1)]),
+                _response([_use("check_answer", {"text": "4037", "facts": {}}, 2)]),
                 _response([_submit("4037")]),
             ],
         }
@@ -312,11 +313,13 @@ async def test_what_the_model_does_wrong_is_graded(tmp_path: Path) -> None:
     assert rows["silent"]["explanation"]["correct"] == "no submit_answer call"
     assert rows["refuses"]["status"] == "refusal"
     assert rows["breaks"]["grade"]["correct"] == 1.0
+    assert rows["breaks"]["checked_answer"] and not rows["silent"]["checked_answer"]
     trace = json.loads((folder / "traces" / "breaks_rep0.json").read_text())
     assert "RuntimeError: tool broke" in trace[3]["content"]
     text = report.write_report(tmp_path).read_text()
     assert "correct: 2/2" not in text and "## baseline" in text
     assert "not scored: 1 (truncated or refused)" in text and "$" in text
+    assert "checks its answer (check_answer before submit_answer): 1/2" in text
 
 
 def test_wrapped_errors_are_unwrapped() -> None:

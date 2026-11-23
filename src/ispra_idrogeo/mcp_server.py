@@ -37,7 +37,7 @@ from ispra_idrogeo.client import IdroGEO
 from ispra_idrogeo.codes import decode
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.filters import event_filter, landslide_filter, site_filter
-from ispra_idrogeo.grounding import SOURCES, check_text, grounded
+from ispra_idrogeo.grounding import SOURCES, check_claims, check_text, grounded
 from ispra_idrogeo.sources import (
     EVENT_LAYERS,
     LANDSLIDE_LAYERS,
@@ -85,8 +85,12 @@ add up or extrapolate (rank_areas and compare_areas do the arithmetic).
 null means not available, never zero. Each result carries "source" (citation
 and licence) and "retrieved_at" (UTC): cite the source of the numbers you
 use. For how far IFFI counts and dates can be trusted in a place, use
-data_reliability. Before giving an answer with numbers, call check_answer with your draft,
-the tool results you used and the question, and fix every unmatched number.
+data_reliability.
+
+Always call check_answer before you give an answer that has a number in it,
+even a single number: pass your draft, the tool results you used and the
+question. Fix every number it lists as unmatched or misquoted, then give the
+answer. An answer with numbers that was not checked is not finished.
 """
 
 #: What the indicator keys of ``area_risk`` mean, for agents and people.
@@ -473,17 +477,21 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
     @mcp.tool(annotations=_LOCAL)
     @_tool_errors
     async def check_answer(text: str, facts: Any, question: str = "") -> dict[str, Any]:
-        """Check a draft answer before giving it: the numbers and dates of text
-        that match no figure of facts (the tool results you wrote it from).
+        """Always call this before giving an answer with numbers, even one.
 
-        A number matches when the figure, rounded as the number is written,
-        equals it (12.3 for 12.27, 1.3 million for 1,278,455). Numbers in the
-        question are allowed. If unmatched is not empty, fix or remove those
-        numbers: never give a figure no tool returned. It checks that a number
-        exists in the facts, not that it is said of the right thing.
+        Pass the draft (text), the tool results it was written from (facts) and
+        the question. unmatched lists the numbers and dates that match no figure
+        of facts; a number matches when the figure, rounded as the number is
+        written, equals it (12.3 for 12.27, 1.3 million for 1,278,455). Numbers
+        in the question are allowed. misquoted lists the numbers said of a known
+        indicator (residents, people or land in flood or landslide hazard,
+        buildings, landslides) that do not match that indicator: a real number
+        said of the wrong thing. Fix every one, then answer; never give a
+        figure no tool returned.
         """
         missing = check_text(text, facts, question)
-        return {"unmatched": missing, "ok": not missing}
+        wrong = [asdict(m) for m in check_claims(text, facts)]
+        return {"unmatched": missing, "misquoted": wrong, "ok": not missing and not wrong}
 
     @mcp.resource(
         "idrogeo://indicators",

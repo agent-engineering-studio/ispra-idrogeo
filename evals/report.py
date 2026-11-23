@@ -64,12 +64,14 @@ def summarize(folder: Path) -> list[str]:
     low, high = wilson(passed, len(scored))
     costs = [c for r in rows if (c := cost(r.get("model"), r.get("usage", {}))) is not None]
     cited = sum(int(r["grade"]["cited_source"]) for r in scored)
+    checked = sum(int(r.get("checked_answer", False)) for r in scored)
     lines = [
         f"## {folder.name}",
         "",
         f"- **correct: {passed}/{len(scored)} = {passed / max(len(scored), 1):.0%}** "
         f"(95% CI {low:.0%}-{high:.0%})",
         f"- cites ISPRA: {cited}/{len(scored)}",
+        f"- checks its answer (check_answer before submit_answer): {checked}/{len(scored)}",
         f"- not scored: {len(rows) - len(scored)} (truncated or refused), errors: {len(errors)}",
         f"- models: {', '.join(sorted({str(r.get('model')) for r in rows})) or '-'}",
     ]

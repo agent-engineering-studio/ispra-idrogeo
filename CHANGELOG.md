@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `check_claims(text, facts)`: the numbers of an answer said of a known
+  indicator (residents, people or land in flood or landslide hazard,
+  buildings, all landslides) that do not match it. It catches a real number
+  said of the wrong thing ("Bari ha 4.038 residenti"), which `check_text`
+  cannot see. Each number is read with its own words, from the number before
+  to the number after; with several places in the facts, a number that
+  matches any of them passes.
+- `check_answer` (MCP) also returns `misquoted`; `ok` is false when either
+  list has a number. The server instructions and the tool now say to call it
+  before every answer with a number, even one.
+- `benchmarks/faithful.py`: 18 hand-labeled answers in six classes
+  (faithful, approximate, question, rounded, invented, swapped), scored
+  offline with no model. `check_text` alone catches 0/6 swaps;
+  with `check_claims`, 5/6, and no false alarm on the 8 good answers. It
+  runs in CI (`--check`) and in `make benchmark`.
+- Evals: `checked_answer` per case (whether `check_answer` was called before
+  `submit_answer`) and "checks its answer: x/y" in the report.
+
 ## [0.10.1] - 2026-11-23
 
 ### Added

@@ -53,8 +53,9 @@ docs-serve:  ## Serve the documentation site locally
 live:  ## The contract tests against the live IdroGEO service (network)
 	uv run pytest -m live
 
-benchmark:  ## The known cases, offline from the cassettes (as in CI)
+benchmark:  ## The known cases and the faithfulness scores, offline (as in CI)
 	uv run python -m benchmarks.run --check
+	uv run python -m benchmarks.faithful --check
 
 benchmark-record:  ## Re-record the cassettes from the live service, then the results
 	uv run python -m benchmarks.record
