@@ -1,6 +1,9 @@
 # Use the Makefile: `make help`. It sets IDROGEO_NAME, so two copies of this
 # project (or this and another one) never share a container, image, volume or
 # network name: everything is called "<IDROGEO_NAME>-…".
+# The data lives on the host in $DATA_ROOT/ispra-idrogeo (./data/ispra-idrogeo
+# when DATA_ROOT is unset), the root shared with Limen and the other libraries;
+# inside the containers it is /data/ispra-idrogeo (DATA_ROOT=/data, in the image).
 name: ${IDROGEO_NAME:-ispra-idrogeo}
 
 services:
@@ -19,7 +22,7 @@ services:
     ports:
       - "127.0.0.1:${IDROGEO_MCP_PORT:-8767}:8767"
     volumes:
-      - data:/data/idrogeo
+      - ${DATA_ROOT:-./data}/ispra-idrogeo:/data/ispra-idrogeo
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8767/health')"]
       interval: 10s
@@ -41,7 +44,7 @@ services:
       - "127.0.0.1:${IDROGEO_JUPYTER_PORT:-8888}:8888"
     volumes:
       - ./examples:/home/idrogeo/examples
-      - data:/data/idrogeo
+      - ${DATA_ROOT:-./data}/ispra-idrogeo:/data/ispra-idrogeo
 
   # La Mappa dei dati su frane e pericolo, for public bodies (#22).
   app:
@@ -59,7 +62,7 @@ services:
     ports:
       - "127.0.0.1:${IDROGEO_APP_PORT:-3002}:3002"
     volumes:
-      - data:/data/idrogeo
+      - ${DATA_ROOT:-./data}/ispra-idrogeo:/data/ispra-idrogeo
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3002/api/health')"]
       interval: 15s
@@ -73,8 +76,4 @@ services:
     image: ${IDROGEO_NAME:-ispra-idrogeo}:local
     entrypoint: ["idrogeo"]
     volumes:
-      - data:/data/idrogeo
-
-volumes:
-  data:
-    name: ${IDROGEO_NAME:-ispra-idrogeo}-data
+      - ${DATA_ROOT:-./data}/ispra-idrogeo:/data/ispra-idrogeo

@@ -17,3 +17,4 @@ tests
 examples
 app/static/vendor
 **/__pycache__
+data/

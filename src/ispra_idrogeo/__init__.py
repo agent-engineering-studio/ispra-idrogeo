@@ -2,7 +2,8 @@
 
 Pure URL builders (:mod:`~ispra_idrogeo.sources`), API requests and parsers
 (:mod:`~ispra_idrogeo.api`), a persistent download folder with conditional
-GETs (:mod:`~ispra_idrogeo.cache`) and an async client over them.
+GETs (:mod:`~ispra_idrogeo.cache`), an async client over them, and
+:func:`~ispra_idrogeo.offline.init` to download everything needed offline.
 """
 
 from importlib.metadata import version
@@ -25,6 +26,7 @@ from ispra_idrogeo.api import (
 )
 from ispra_idrogeo.cache import (
     ENV_DATA_DIR,
+    ENV_DATA_ROOT,
     Validators,
     default_directory,
     extract,
@@ -37,6 +39,7 @@ from ispra_idrogeo.client import LANDSLIDE_FIELDS, Download, FileState, IdroGEO
 from ispra_idrogeo.codes import CODE_DICTIONARIES, Language, decode, parse_labels
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.filters import event_filter, landslide_filter, site_filter
+from ispra_idrogeo.offline import InitResult, init, init_with
 from ispra_idrogeo.sources import (
     BASE_URL,
     EVENT_LAYERS,
@@ -66,6 +69,7 @@ __all__ = [
     "CODE_DICTIONARIES",
     "CODE_FIELDS",
     "ENV_DATA_DIR",
+    "ENV_DATA_ROOT",
     "EVENT_LAYERS",
     "ITALY",
     "LANDSLIDE_FIELDS",
@@ -82,6 +86,7 @@ __all__ = [
     "Format",
     "IdroGEO",
     "IdrogeoError",
+    "InitResult",
     "LandslideLayer",
     "Language",
     "Layer",
@@ -97,6 +102,8 @@ __all__ = [
     "distance_m",
     "event_filter",
     "extract",
+    "init",
+    "init_with",
     "landslide_filter",
     "level_codes",
     "lookup_params",

@@ -278,6 +278,7 @@ basin district it falls in.
 ### 3b. Or from the command line
 
 ```bash
+idrogeo init                                        # the national data, once: see below
 idrogeo fetch frane_piff --area molise              # prints the unpacked folder
 idrogeo summary pir comuni 72006 | jq .popidp2_p    # 1.278
 idrogeo municipalities --max-age-days 30 > comuni.jsonl
@@ -358,9 +359,12 @@ flood mosaic is the exception: **EPSG:3035** (ETRS89 / LAEA Europe).
 In a folder that should survive restarts, because the national files weigh
 hundreds of MB:
 
-1. the `directory` you pass to `fetch` or `download`;
-2. otherwise `IDROGEO_DATA_DIR`, if set;
-3. otherwise `~/.cache/ispra-idrogeo` (or `$XDG_CACHE_HOME/ispra-idrogeo`).
+1. the `directory` you pass to `fetch`, `download` or `init`;
+2. otherwise `IDROGEO_DATA_DIR`, if set (kept for compatibility);
+3. otherwise `$DATA_ROOT/ispra-idrogeo`, if `DATA_ROOT` is set: the data
+   root shared with [Limen](https://github.com/agent-engineering-studio/limen)
+   and the other libraries, so a server keeps all their data under one folder;
+4. otherwise `~/.cache/ispra-idrogeo` (or `$XDG_CACHE_HOME/ispra-idrogeo`).
 
 ```text
 ~/.cache/ispra-idrogeo/
@@ -371,17 +375,42 @@ hundreds of MB:
     └── …
 ```
 
-In **Docker**, point it at a volume so the data survives the container:
+**Everything needed offline, in one call.** `init` downloads the national
+data Limen uses: the IFFI inventory area by area (5 layers × 21 areas), the
+PAI landslide mosaic 2020-2021 and the flood mosaic, the ISTAT boundaries
+2023 and CORINE Land Cover 2018, about 3.5 GB the first time. Run it again
+and an unchanged file costs a 304; ISTAT and CORINE, with their year in the
+name, are not asked for again. A file that does not arrive is listed in
+`failed` and the others go on.
+
+```bash
+idrogeo init                                     # all of it, into $DATA_ROOT/ispra-idrogeo
+idrogeo init --area puglia --area basilicata --no-land-cover
+idrogeo init --mosaic pai_frane_2024 --max-age-days 1
+```
+
+```python
+from ispra_idrogeo import init
+
+done = await init(areas=["puglia"], mosaics=["idraulica"])
+print(done.downloaded, done.skipped, done.failed, done.downloaded_bytes)
+```
+
+Pass your own `client=` and `retries=0` to put the call inside your own
+retry policy, as Limen does.
+
+In **Docker**, set `DATA_ROOT` and mount the package's folder so the data
+survives the container (the images of this repository already set
+`DATA_ROOT=/data`, and `compose.yaml` mounts `$DATA_ROOT/ispra-idrogeo`, or
+`./data/ispra-idrogeo`, from this computer):
 
 ```yaml
 services:
   app:
     environment:
-      IDROGEO_DATA_DIR: /data/idrogeo
+      DATA_ROOT: /data
     volumes:
-      - idrogeo-data:/data/idrogeo
-volumes:
-  idrogeo-data:
+      - ${DATA_ROOT:-./data}/ispra-idrogeo:/data/ispra-idrogeo
 ```
 
 <!-- --8<-- [end:saved] -->
@@ -458,20 +487,27 @@ library for you.
 
 ```bash
 make start                             # build every image and start everything: MCP, map, Jupyter
-make stop                              # stop everything (downloads stay in a volume)
+make stop                              # stop everything (downloads stay in $DATA_ROOT/ispra-idrogeo)
 make up                                # the MCP server, on http://localhost:8767/mcp
 make health                            # {"status":"ok",…}
 make cli ARGS="hazard 40.829 14.617"   # any idrogeo command: P4, Sarno, 12.3°
 make notebooks                         # Jupyter on http://localhost:8888/lab?token=idrogeo
 make docker-test-notebooks             # run the test notebook inside a container
-make down                              # stop (downloads stay in a volume)
-make clean                             # stop and delete images and the volume
+make cli ARGS="init"                   # download the national data for offline work
+make down                              # stop (downloads stay in $DATA_ROOT/ispra-idrogeo)
+make clean                             # stop and delete the images (the data stays)
 make help                              # every command
 ```
 
-**Unique names.** Every container, image, volume and network starts with
+**Unique names.** Every container, image and network starts with
 `NAME` (by default `ispra-idrogeo`): `ispra-idrogeo-mcp`,
-`ispra-idrogeo-notebooks`, `ispra-idrogeo-data`. So this project never
+`ispra-idrogeo-notebooks`.
+
+**The data** lives on this computer in `$DATA_ROOT/ispra-idrogeo` (set
+`DATA_ROOT` in `.env`; unset, `./data/ispra-idrogeo`), the folder Limen and
+the other libraries share, and the containers see it as
+`/data/ispra-idrogeo`. Two copies with different names share it unless you
+give them different `DATA_ROOT`s. So this project never
 clashes with another one on the same computer. To run a second copy, give it
 another name and other ports:
 
@@ -1179,9 +1215,9 @@ services:
       IDROGEO_MCP_TRANSPORT: streamable-http
       IDROGEO_MCP_HOST: 0.0.0.0
       IDROGEO_MCP_PORT: "8767"
-      IDROGEO_DATA_DIR: /data/idrogeo  # for download_dataset
+      DATA_ROOT: /data  # download_dataset writes to /data/ispra-idrogeo
     volumes:
-      - idrogeo-data:/data/idrogeo
+      - ${DATA_ROOT:-./data}/ispra-idrogeo:/data/ispra-idrogeo
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8767/health')"]
 ```
@@ -1613,7 +1649,8 @@ give the known answer, and a recorded gap (Melito) to watch for.
 | `REGIONS` / `PROVINCES` / `region_area(cod_reg)` | Area file names by ISTAT code. |
 | `LANDSLIDE_LAYERS` / `EVENT_LAYERS` / `MOSAICS` | What there is. |
 | `LANDSLIDE_FIELDS` | The fields a landslide search returns when you give no `select`. |
-| `default_directory()` | Where downloads go when no directory is given. |
+| `default_directory()` | Where downloads go when no directory is given: `IDROGEO_DATA_DIR`, `$DATA_ROOT/ispra-idrogeo`, `~/.cache/ispra-idrogeo`. |
+| `init(directory=None, *, areas=None, mosaics=("pai_frane", "idraulica"), boundaries=True, land_cover=True, unpack=True, max_age=None, concurrency=4, client=None, retries=3)` | Download the national data needed offline; an `InitResult` (`downloaded`, `skipped`, `failed`, `downloaded_bytes`). `init_with(idrogeo, …)` with a client you have. |
 | `.hazard_at(lat, lon, lithology=False)` | `PointHazard`: landslide class, flood scenarios, municipality, slope. |
 | `.landslides_near(lat, lon, radius_m=500, limit=200)` | IFFI landslides around a point, with `distance_m`. |
 | `.lookup(kind, text, limit=10)` | Search geological units, flights, bibliography, institutions, funding. |

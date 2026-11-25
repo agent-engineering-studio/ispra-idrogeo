@@ -33,7 +33,11 @@ def _zip(path: Path, members: dict[str, bytes]) -> Path:
 def test_default_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("IDROGEO_DATA_DIR", str(tmp_path / "dati"))
     assert default_directory() == tmp_path / "dati"
+    monkeypatch.setenv("DATA_ROOT", str(tmp_path / "root"))
+    assert default_directory() == tmp_path / "dati"  # the package's own folder wins
     monkeypatch.delenv("IDROGEO_DATA_DIR")
+    assert default_directory() == tmp_path / "root" / "ispra-idrogeo"
+    monkeypatch.delenv("DATA_ROOT")
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     assert default_directory() == tmp_path / "ispra-idrogeo"
     monkeypatch.delenv("XDG_CACHE_HOME")
