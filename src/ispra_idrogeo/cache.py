@@ -20,8 +20,12 @@ from typing import Any
 
 from ispra_idrogeo.errors import IdrogeoError
 
-#: The environment variable :func:`default_directory` reads.
+#: The folder of this package only: an override kept for compatibility.
 ENV_DATA_DIR = "IDROGEO_DATA_DIR"
+#: The data root shared with Limen and the other libraries.
+ENV_DATA_ROOT = "DATA_ROOT"
+#: The name of this package's folder under ``DATA_ROOT`` or the user cache.
+FOLDER = "ispra-idrogeo"
 
 _CHUNK = 1 << 20
 
@@ -29,14 +33,18 @@ _CHUNK = 1 << 20
 def default_directory() -> Path:
     """Where downloads go when no directory is given.
 
-    ``IDROGEO_DATA_DIR`` if set, else ``ispra-idrogeo`` in the user cache
-    (``$XDG_CACHE_HOME``, or ``~/.cache``). Use a folder that survives
-    restarts: the national files weigh hundreds of MB.
+    ``IDROGEO_DATA_DIR`` if set (kept for compatibility), else
+    ``$DATA_ROOT/ispra-idrogeo``, the root shared with Limen and the other
+    libraries, else ``ispra-idrogeo`` in the user cache (``$XDG_CACHE_HOME``,
+    or ``~/.cache``). Use a folder that survives restarts: the national files
+    weigh hundreds of MB.
     """
     if configured := os.environ.get(ENV_DATA_DIR, "").strip():
         return Path(configured).expanduser()
+    if root := os.environ.get(ENV_DATA_ROOT, "").strip():
+        return Path(root).expanduser() / FOLDER
     cache = os.environ.get("XDG_CACHE_HOME", "").strip() or "~/.cache"
-    return Path(cache).expanduser() / "ispra-idrogeo"
+    return Path(cache).expanduser() / FOLDER
 
 
 @dataclass(frozen=True, slots=True)

@@ -10,6 +10,10 @@
 
 ::: ispra_idrogeo.client.Download
 
+## Offline: everything at once
+
+::: ispra_idrogeo.offline
+
 ## Sources: what there is to download
 
 ::: ispra_idrogeo.sources

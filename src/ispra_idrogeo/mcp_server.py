@@ -10,7 +10,10 @@ an environment variable (``IDROGEO_MCP_TRANSPORT``, ``IDROGEO_MCP_HOST``,
 needs no command line.
 
 Every tool reads the public API (no account), except ``download_dataset``,
-which writes the file to the local download folder and returns its path.
+which writes the file to the local download folder and returns its path: the
+data goes in ``$DATA_ROOT/ispra-idrogeo`` (the root shared with Limen and the
+other libraries), or ``IDROGEO_DATA_DIR`` if set, else
+``~/.cache/ispra-idrogeo``. ``idrogeo init`` fills it beforehand.
 Codes come back with their English labels, and long answers are cut at
 ``limit`` rows, so an agent never receives 700,000 landslides at once.
 """
@@ -579,6 +582,8 @@ def server(idrogeo: IdroGEO | None = None, *, warehouse: Path | None = None) -> 
         dataset: str, area: str = "ispra", geojson: bool = False
     ) -> dict[str, str]:
         """Download (only if changed) and unpack an open-data layer; its local path.
+
+        The file goes in the server's data folder, $DATA_ROOT/ispra-idrogeo.
 
         Datasets: IFFI layers (frane_piff, frane_poly, frane_line, aree_poly,
         dgpv_poly), eventi, segnalazioni, or the mosaics pai_frane and

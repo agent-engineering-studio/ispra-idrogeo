@@ -6,6 +6,32 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `init()` (`ispra_idrogeo.offline`) and `idrogeo init`: the national data
+  needed to work offline, in one call: by default what Limen uses, the IFFI
+  inventory area by area (5 layers × 21 areas), the PAI landslide mosaic
+  2020-2021, the flood mosaic, the ISTAT boundaries 2023 and CORINE Land
+  Cover 2018. Every file goes through `IdroGEO.download` (an unchanged one
+  costs a 304; ISTAT and CORINE are not asked for again once on disk), a
+  file that fails is listed in `InitResult.failed` without stopping the
+  others, and a client and `retries=0` can be passed to run it inside your
+  own retry policy. `init_with(idrogeo, …)` takes a client you already have.
+- `DATA_ROOT`: when set, the download folder is `$DATA_ROOT/ispra-idrogeo`,
+  the root shared with Limen and the other libraries
+  (`ENV_DATA_ROOT`).
+
+### Changed
+
+- `IDROGEO_DATA_DIR` still wins when set, for compatibility, but is no longer
+  the documented way: set `DATA_ROOT`.
+- The containers keep the data in `$DATA_ROOT/ispra-idrogeo` on the host
+  (`./data/ispra-idrogeo` when `DATA_ROOT` is unset), mounted at
+  `/data/ispra-idrogeo`, instead of the named volume `<NAME>-data`; the images
+  set `DATA_ROOT=/data`. `make clean` no longer deletes the data. Data
+  downloaded before is still in the old volume: copy it over, or let
+  `idrogeo init` download it again.
+
 ## [0.11.0] - 2026-11-23
 
 ### Added
