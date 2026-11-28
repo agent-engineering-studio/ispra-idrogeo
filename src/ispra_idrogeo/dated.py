@@ -18,9 +18,17 @@ can trust: ``max_interval_days=1`` keeps dates known to the day,
 ``max_position_m=1000`` keeps points known to 1 km. Counted on 22 November
 2026; the figures above change as ISPRA updates the data.
 
-Not here: whether an event and an IFFI record are the same landslide (the
-open-data events do not carry the IFFI id), and any date for the 96% that
-have none. Both sources are CC BY-SA 4.0.
+The open-data events do not carry the IFFI id, so nothing says that an event
+and an IFFI record are the same landslide. :func:`twins` pairs the ones that
+probably are, by a rule: both dated to the day, at most one day and one
+kilometre apart. On 28 November 2026 it found 120 pairs, 115 of them since
+2018, among 1,621 IFFI records dated to the day and 1,710 events: the two
+sources mostly hold different landslides, and ``drop_twins=True`` keeps a
+study from counting those twice.
+It is a rule, not a fact: two landslides of the same storm on the same slope
+pair too.
+
+Not here: any date for the 96% that have none. Both sources are CC BY-SA 4.0.
 """
 
 from __future__ import annotations
@@ -32,7 +40,7 @@ import re
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
@@ -233,12 +241,15 @@ async def dated_landslides(
     max_interval_days: int | None = None,
     max_position_m: int | None = None,
     directory: Path | None = None,
+    drop_twins: bool = False,
 ) -> list[DatedLandslide]:
     """Every dated landslide of IFFI and of the events, with its precision, oldest first.
 
     IFFI is read from the API (one request, a few seconds); the events from
     the open-data file (100 kB, downloaded only if changed, into
-    ``directory``). See :func:`select` for the filters.
+    ``directory``). See :func:`select` for the filters. ``drop_twins`` leaves
+    out the IFFI record of each pair of :func:`twins`, before the filters: the
+    event stays, because it states how accurate its point is.
     """
     found: list[DatedLandslide] = []
     if "iffi" in sources:
@@ -249,6 +260,9 @@ async def dated_landslides(
         for path in sorted(folder.glob("*.json")):
             features = json.loads(path.read_text(encoding="utf-8")).get("features") or []
             found += [d for f in features if (d := from_event(f))]
+    if drop_twins:
+        same = {id(record) for record, _event in twins(found)}
+        found = [d for d in found if id(d) not in same]
     chosen = select(
         found,
         since=since,
@@ -258,6 +272,55 @@ async def dated_landslides(
         max_position_m=max_position_m,
     )
     return sorted(chosen, key=lambda d: (d.start, d.source, d.id))
+
+
+def distance_m(a: DatedLandslide, b: DatedLandslide) -> float | None:
+    """Metres between two landslides, ``None`` when one has no point.
+
+    On a plane tangent at their latitude: good to a few metres over the few
+    kilometres :func:`twins` looks at, not for points far apart.
+    """
+    if a.lon is None or a.lat is None or b.lon is None or b.lat is None:
+        return None
+    east = (a.lon - b.lon) * 111_320.0 * math.cos(math.radians((a.lat + b.lat) / 2))
+    return math.hypot(east, (a.lat - b.lat) * 110_574.0)
+
+
+def twins(
+    found: Iterable[DatedLandslide], *, max_distance_m: float = 1000, max_days: int = 1
+) -> list[tuple[DatedLandslide, DatedLandslide]]:
+    """The pairs (IFFI record, event) that are probably the same landslide, nearest first.
+
+    Both must be dated to the day or the hour, at most ``max_days`` apart, with
+    points at most ``max_distance_m`` apart. A record and an event are in one
+    pair at most: the nearest wins. A record dated by an interval is never
+    paired: a year that contains the day of an event says too little.
+    """
+    if max_distance_m < 0 or max_days < 0:
+        raise ValueError("max_distance_m and max_days must be 0 or more")
+    by_day: dict[date, list[DatedLandslide]] = {}
+    records = []
+    for d in found:
+        if d.interval_days != 1 or d.lon is None or d.lat is None:
+            continue
+        if d.source == "eventi":
+            by_day.setdefault(d.start, []).append(d)
+        else:
+            records.append(d)
+    close = []
+    for record in records:
+        for offset in range(-max_days, max_days + 1):
+            for event in by_day.get(record.start + timedelta(days=offset), ()):
+                apart = distance_m(record, event)
+                if apart is not None and apart <= max_distance_m:
+                    close.append((apart, record, event))
+    taken: set[int] = set()
+    pairs = []
+    for _apart, record, event in sorted(close, key=lambda c: (c[0], c[1].id, c[2].id)):
+        if id(record) not in taken and id(event) not in taken:
+            taken |= {id(record), id(event)}
+            pairs.append((record, event))
+    return pairs
 
 
 def summary(found: Iterable[DatedLandslide]) -> dict[str, Any]:

@@ -69,6 +69,27 @@ def test_the_report_says_the_figures_and_what_it_is_not() -> None:
     assert report.markdown() == text  # no summary
 
 
+def test_the_report_says_where_the_inventory_is_thin() -> None:
+    from ispra_idrogeo.reliability import THIN, reliability_map
+
+    table = reliability_map()
+    thin = next(
+        r
+        for r in table.all("comuni")
+        if r.province_vs_italy is not None and r.province_vs_italy < THIN
+    )
+    text = render(thin.code, PIR, IFFI, thin.as_dict(), NOW).text  # every number is checked
+    said = f"{thin.province_per_hazard_km2:.1f}".replace(".", ",")
+    assert (
+        f"In questa provincia poche frane censite per il pericolo mappato: {said} per km²" in text
+    )
+    assert "non che le frane sono poche" in text
+    # Sarno has few records for its wide hazard map, in a province that has many: no note
+    sarno = table.at("comuni", 65135)
+    assert sarno.vs_italy is not None and sarno.vs_italy < THIN
+    assert "poche frane censite" not in render(65135, PIR, IFFI, sarno.as_dict(), NOW).text
+
+
 def test_a_municipality_without_reliability() -> None:
     text = render(1, {"nome": "X"}, {}, None, NOW).text
     assert "Affidabilità: non disponibile" in text

@@ -14,15 +14,19 @@ from ispra_idrogeo.dated import (
     IFFI_FIELDS,
     DatedLandslide,
     dated_landslides,
+    distance_m,
     from_event,
     from_iffi,
     parse_period,
     select,
     summary,
+    twins,
     utm32n_to_lonlat,
 )
 
 TODAY = date(2026, 11, 22)
+#: Where the events of these tests are: the point of `_event`, in degrees.
+E1_AT = utm32n_to_lonlat(500000.0, 4500000.0)
 
 
 def test_parse_period() -> None:
@@ -166,6 +170,43 @@ def test_select_and_summary() -> None:
     assert found[0].as_dict()["start"] == "2020-01-01"
 
 
+def test_twins_are_the_same_landslide_in_both_sources() -> None:
+    day = date(2023, 5, 16)
+    here = {"lon": 12.0, "lat": 44.0, "start": day, "end": day}
+    found = [
+        _dated(source="iffi", id="I1", position_m=None, **here),
+        _dated(id="E-far", **{**here, "lat": 44.008}),  # about 890 m north
+        _dated(
+            id="E-near", **{**here, "lat": 44.001, "start": date(2023, 5, 17)}
+        ),  # 110 m, next day
+        _dated(
+            source="iffi", id="I2", position_m=None, **{**here, "lat": 44.0011}
+        ),  # E-near is taken
+        _dated(id="E-late", **{**here, "start": date(2023, 5, 19)}),  # three days after
+        _dated(id="E-away", **{**here, "lon": 12.02}),  # 1.6 km east
+        _dated(id="E-nowhere", **{**here, "lon": None, "lat": None}),
+        _dated(  # an interval says too little to call it the same landslide
+            source="iffi",
+            id="I-year",
+            position_m=None,
+            precision="interval",
+            interval_days=365,
+            **{**here, "start": date(2023, 1, 1), "end": date(2023, 12, 31)},
+        ),
+    ]
+    pairs = twins(found)
+    assert [(a.id, b.id) for a, b in pairs] == [("I2", "E-near"), ("I1", "E-far")]  # nearest first
+    assert all(a.source == "iffi" and b.source == "eventi" for a, b in pairs)
+    assert [(a.id, b.id) for a, b in twins(found, max_distance_m=500)] == [("I2", "E-near")]
+    assert [(a.id, b.id) for a, b in twins(found, max_days=0)] == [("I2", "E-far")]
+    assert twins(found[1:3]) == []  # two events are never twins
+    assert distance_m(found[0], found[1]) == pytest.approx(885, abs=1)
+    assert distance_m(found[0], found[6]) is None  # no point, no distance
+    for bad in ({"max_distance_m": -1}, {"max_days": -1}):
+        with pytest.raises(ValueError):
+            twins(found, **bad)
+
+
 def test_utm_matches_proj_across_italy() -> None:
     duckdb = pytest.importorskip("duckdb")
     db = duckdb.connect()
@@ -213,6 +254,7 @@ async def test_dated_landslides_reads_both_sources(tmp_path: Path) -> None:
                     {"id_frana": "1", "data_certa": "2019-11-12", "regione": 18},
                     {"id_frana": "2", "data_incerta_min": "1979", "regione": 18},
                     {"id_frana": "3", "data_certa": "7970-01-01"},  # impossible, left out
+                    {"id_frana": "4", "data_certa": "2024-10-11", "point": list(E1_AT)},
                 ],
             )
         assert request.url.path == "/opendata/eventi/" + opendata("eventi", fmt="geojson").filename
@@ -221,8 +263,16 @@ async def test_dated_landslides_reads_both_sources(tmp_path: Path) -> None:
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     async with IdroGEO(client, api_url="https://idrogeo.isprambiente.it/api/") as idrogeo:
         found = await dated_landslides(idrogeo, directory=tmp_path)
-        assert [(d.source, d.id) for d in found] == [("iffi", "2"), ("iffi", "1"), ("eventi", "E1")]
-        assert found[-1].position_m == 0
+        assert [(d.source, d.id) for d in found] == [
+            ("iffi", "2"),
+            ("iffi", "1"),
+            ("eventi", "E1"),
+            ("iffi", "4"),
+        ]
+        assert found[-2].position_m == 0
+        # record 4 is event E1, one day apart at the same point: the event stays
+        once = await dated_landslides(idrogeo, directory=tmp_path, drop_twins=True)
+        assert [(d.source, d.id) for d in once] == [("iffi", "2"), ("iffi", "1"), ("eventi", "E1")]
         recent = await dated_landslides(
             idrogeo, sources=["eventi"], since=date(2020, 1, 1), directory=tmp_path
         )

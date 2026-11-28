@@ -41,6 +41,7 @@ from typing import Any
 
 from ispra_idrogeo.cache import default_directory, read_validators
 from ispra_idrogeo.client import IdroGEO
+from ispra_idrogeo.dated import DatedLandslide
 from ispra_idrogeo.errors import IdrogeoError
 from ispra_idrogeo.sources import (
     EVENT_LAYERS,
@@ -262,6 +263,23 @@ class Warehouse:
             f") WHERE distance_m <= ? ORDER BY distance_m LIMIT ?",
             [radius_m, limit],
         )
+
+    def records_near(
+        self, landslide: DatedLandslide, *, min_radius_m: float = 100, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """The IFFI records an event could be: those within the accuracy it states.
+
+        The radius is the event's ``position_m``, and at least ``min_radius_m``
+        (an "exact" point is still a point on a landslide that has a size).
+        Rows as in :meth:`landslides_near`, nearest first. None: probably a
+        landslide IFFI does not hold; several: nothing here says which one.
+        ``ValueError`` when the landslide has no point or states no accuracy,
+        as every IFFI record does.
+        """
+        if landslide.lat is None or landslide.lon is None or landslide.position_m is None:
+            raise ValueError("the landslide needs a point and a stated accuracy (events have both)")
+        radius = max(float(landslide.position_m), min_radius_m)
+        return self.landslides_near(landslide.lat, landslide.lon, radius, limit=limit)
 
     def landslides_in(
         self,

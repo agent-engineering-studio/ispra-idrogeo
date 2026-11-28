@@ -281,8 +281,10 @@ async def test_dated(monkeypatch: pytest.MonkeyPatch) -> None:
     assert rows[0]["id"] == "1" and rows[0]["start"] == "2019-11-12"
     assert seen["since"] == date(2018, 1, 1) and seen["sources"] == ["iffi"]
     assert seen["max_interval_days"] == 1 and seen["max_position_m"] is None
-    [counts] = await _run("dated", "--summary")
+    assert seen["drop_twins"] is False
+    [counts] = await _run("dated", "--summary", "--drop-twins")
     assert counts["total"] == 1 and seen["sources"] == ("iffi", "eventi")
+    assert seen["drop_twins"] is True
 
 
 def test_reliability(capsys: pytest.CaptureFixture[str]) -> None:

@@ -181,6 +181,11 @@ def parser() -> argparse.ArgumentParser:
     dated.add_argument("--source", action="append", choices=("iffi", "eventi"), help="repeatable")
     dated.add_argument("--max-interval-days", type=int, help="1 keeps dates known to the day")
     dated.add_argument("--max-position-m", type=int, help="keeps points known to these metres")
+    dated.add_argument(
+        "--drop-twins",
+        action="store_true",
+        help="leave out the IFFI record of a landslide that is also an event (1 km, 1 day)",
+    )
     dated.add_argument("--summary", action="store_true", help="counts instead of the list")
 
     fresh = commands.add_parser(
@@ -361,6 +366,7 @@ async def run(
             max_interval_days=args.max_interval_days,
             max_position_m=args.max_position_m,
             directory=args.dir,
+            drop_twins=args.drop_twins,
         )
         if args.summary:
             write(summary(landslides))
