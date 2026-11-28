@@ -34,7 +34,7 @@ ufficiali di ISPRA IdroGEO e quanto ci si può fidare di quei dati.
 ```html
 <iframe src="https://mappa.comune.example.it/?comune=72021"
         title="Mappa dei dati su frane e pericolo"
-        width="100%" height="900" style="border:0" loading="lazy"></iframe>
+        width="100%" height="700" style="border:0" loading="lazy"></iframe>
 ```
 
 ## Che cosa resta all'ente

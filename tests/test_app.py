@@ -5,6 +5,7 @@ from starlette.testclient import TestClient
 
 from app import api
 from app.data import (
+    EXPOSURE,
     Cache,
     Data,
     UnavailableError,
@@ -163,6 +164,60 @@ def test_routes() -> None:
         page = client.get("/")
         assert "<html" in page.text and page.headers["cache-control"] == "no-cache"
         assert client.get("/app.js").headers["cache-control"] == "no-cache"  # updates show at once
+
+
+def _static(*paths: str) -> list[str]:
+    config = {**api.settings({}), "load": False}
+    with TestClient(api.create_app(FakeData(), config)) as client:
+        return [client.get(path).text for path in paths]
+
+
+def test_page_shell() -> None:
+    page, css = _static("/", "/app.css")
+    for marker in (
+        'id="not-alert"',
+        "Questa pagina non è un'allerta.",
+        'id="why"',
+        'id="panel-toggle"',
+        'aria-controls="panel"',
+        'id="summary"',
+        'id="tabs"',
+        'id="tabpanels"',
+        'id="how"',
+        'id="credits"',
+    ):
+        assert marker in page, marker
+    assert 'id="legend"' not in page and "<footer" not in page
+    # outside the panel: the warning stays when the panel closes
+    assert page.index('id="not-alert"') < page.index('id="panel"')
+    assert "360px" in css and "992px" in css
+
+
+def test_page_tabs() -> None:
+    page, script = _static("/", "/app.js")
+    assert page.count('role="tab"') == 4 and page.count('role="tabpanel"') == 4
+    assert 'role="tablist"' in page and 'id="contract-dot"' in page
+    for name in ("Esposti", "Frane", "Dati", "Assistenti AI"):
+        assert f">{name}" in page, name
+    assert (
+        "idrogeo-mcp" in page and "check_answer" in page
+    )  # the AI tab says how, and writes nothing
+    # the exposure table is built from the keys the API sends: a new one must reach the page
+    for key, _label in EXPOSURE:
+        assert key in script, key
+
+
+def test_legend_lives_in_the_layer_control() -> None:
+    (script,) = _static("/app.js")
+    assert "function layerLabel(" in script and "function legend(" not in script
+    assert "collapsed: false" not in script
+    for text in (
+        "frana IFFI",
+        "frana datata (ora/giorno)",
+        "intervallo",
+        "alone = precisione del punto",
+    ):
+        assert text in script, text  # the legend text is kept
 
 
 async def test_layers_wait_for_the_warehouse() -> None:

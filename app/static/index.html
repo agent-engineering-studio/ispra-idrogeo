@@ -9,88 +9,112 @@
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
-  <header class="it-header-center-wrapper py-3">
-    <div class="container">
-      <h1 id="ente" class="h3 mb-0 text-white">Mappa dei dati su frane e pericolo</h1>
-      <p class="mb-0 text-white small">Dati ufficiali ISPRA IdroGEO per un Comune · nessuna pioggia, nessuna allerta</p>
+  <header class="app-header">
+    <div class="app-bar">
+      <h1 id="ente" class="app-title">Mappa dei dati su frane e pericolo</h1>
+      <form id="search" class="app-search" role="search">
+        <label for="q" class="visually-hidden">Comune</label>
+        <input id="q" list="found" autocomplete="off" placeholder="Scrivi il nome di un Comune">
+        <datalist id="found"></datalist>
+        <button type="submit">Mostra</button>
+      </form>
+    </div>
+    <div id="not-alert" class="app-alert" role="note">
+      <span>
+        <strong>Questa pagina non è un'allerta.</strong>
+        Per le allerte vale il <a id="bulletin" href="#" rel="noopener">bollettino di criticità del Dipartimento della Protezione Civile</a>
+        e quello della Regione.
+      </span>
+      <details id="why">
+        <summary>Perché?</summary>
+        <p class="mb-0">
+          Dati ufficiali ISPRA IdroGEO per un Comune · nessuna pioggia, nessuna allerta.
+          Mostra cosa dicono le mappe e gli inventari ufficiali e quanto fidarsi dei dati.
+          Il quadro con la pioggia è compito di <a id="limen" href="#" rel="noopener">Limen</a>.
+        </p>
+      </details>
     </div>
   </header>
 
-  <main class="container my-3">
-    <div class="alert alert-warning" role="note">
-      <strong>Questa pagina non è un'allerta.</strong>
-      Mostra cosa dicono le mappe e gli inventari ufficiali e quanto fidarsi dei dati.
-      Per le allerte vale il <a id="bulletin" href="#" rel="noopener">bollettino di criticità del Dipartimento della Protezione Civile</a>
-      e quello della Regione. Il quadro con la pioggia è compito di <a id="limen" href="#" rel="noopener">Limen</a>.
-    </div>
+  <main class="app-main">
+    <section class="app-map" aria-label="Mappa">
+      <div id="map" role="application" aria-label="Mappa del Comune"></div>
+      <button id="panel-toggle" type="button" aria-controls="panel" aria-expanded="true"
+              aria-label="Chiudi il pannello dei dati" title="Chiudi il pannello dei dati">»</button>
+      <div id="layer-state" aria-live="polite"></div>
+    </section>
 
-    <form id="search" class="row g-2 align-items-end mb-3" role="search">
-      <div class="col-sm-8 col-md-6">
-        <label for="q" class="form-label">Comune</label>
-        <input id="q" class="form-control" list="found" autocomplete="off" placeholder="Scrivi il nome di un Comune">
-        <datalist id="found"></datalist>
-      </div>
-      <div class="col-auto"><button class="btn btn-primary" type="submit">Mostra</button></div>
-    </form>
-
-    <div class="row g-3">
-      <section class="col-lg-8" aria-label="Mappa">
-        <h2 id="title" class="h4">…</h2>
+    <aside id="panel" class="app-panel" aria-label="Dati del Comune">
+      <div id="summary">
+        <h2 id="title" class="h5 mb-0">…</h2>
         <p id="crumbs" class="small text-muted mb-2"></p>
-        <div id="map" role="application" aria-label="Mappa del Comune"></div>
-        <div id="layer-state" class="small text-muted mt-1" aria-live="polite"></div>
-        <div id="legend" class="small mt-2"></div>
-      </section>
-
-      <aside class="col-lg-4" aria-label="Dati del Comune">
-        <div class="box">
-          <h3 class="h5">Predisposizione <small class="text-muted">(non è un'allerta)</small></h3>
-          <div id="predisposition"></div>
+        <h3 class="h6 mb-1">Predisposizione <small class="text-muted">(non è un'allerta)</small></h3>
+        <div id="predisposition"></div>
+        <details id="how">
+          <summary>Come si calcola</summary>
+          <div id="measures" class="small text-muted"></div>
           <p class="small text-muted mb-0" id="rule"></p>
+        </details>
+      </div>
+
+      <div id="tabs" role="tablist" aria-label="Sezioni dei dati">
+        <button type="button" role="tab" id="tab-exposed" aria-controls="pane-exposed" aria-selected="true">Esposti</button>
+        <button type="button" role="tab" id="tab-landslides" aria-controls="pane-landslides" aria-selected="false" tabindex="-1">Frane</button>
+        <button type="button" role="tab" id="tab-data" aria-controls="pane-data" aria-selected="false" tabindex="-1">Dati<span id="contract-dot"></span></button>
+        <button type="button" role="tab" id="tab-ai" aria-controls="pane-ai" aria-selected="false" tabindex="-1">Assistenti AI</button>
+      </div>
+
+      <div id="tabpanels">
+        <div role="tabpanel" id="pane-exposed" aria-labelledby="tab-exposed">
+          <h3 class="h6">Persone e beni esposti</h3>
+          <div id="exposure"></div>
         </div>
 
-        <div class="box">
-          <h3 class="h5">Persone e beni esposti</h3>
-          <table class="table table-sm small mb-0"><tbody id="exposure"></tbody></table>
-        </div>
-
-        <div class="box">
-          <h3 class="h5">Frane censite (IFFI)</h3>
+        <div role="tabpanel" id="pane-landslides" aria-labelledby="tab-landslides" hidden>
+          <h3 class="h6">Frane censite (IFFI)</h3>
           <div id="iffi" class="small"></div>
-        </div>
-
-        <div class="box">
-          <h3 class="h5">Quanto fidarsi di questi dati</h3>
+          <h3 class="h6">Quanto fidarsi di questi dati</h3>
           <ul id="notes" class="small"></ul>
           <p class="small mb-1"><strong>Non misurato:</strong></p>
-          <ul id="not-measured" class="small text-muted"></ul>
+          <ul id="not-measured" class="small text-muted mb-0"></ul>
         </div>
 
-        <div class="box">
-          <h3 class="h5">Stato del contratto con IdroGEO</h3>
-          <ul id="contract" class="small list-unstyled mb-1"></ul>
-          <p class="small text-muted mb-0" id="contract-time"></p>
-        </div>
-
-        <div class="box">
-          <h3 class="h5">Scarica</h3>
-          <ul class="small mb-0" id="downloads"></ul>
-        </div>
-
-        <div class="box">
-          <h3 class="h5">Fonti e licenze</h3>
+        <div role="tabpanel" id="pane-data" aria-labelledby="tab-data" hidden>
+          <h3 class="h6">Scarica</h3>
+          <ul class="small" id="downloads"></ul>
+          <h3 class="h6">Fonti e licenze</h3>
           <ul id="citations" class="small"></ul>
-          <p class="small text-muted mb-0" id="retrieved"></p>
+          <p class="small text-muted" id="retrieved"></p>
+          <h3 class="h6">Stato del contratto con IdroGEO</h3>
+          <ul id="contract" class="small list-unstyled mb-1"></ul>
+          <p class="small text-muted" id="contract-time"></p>
+          <p id="credits" class="small text-muted mb-0">
+            Dati: ISPRA — IdroGEO (IFFI ed eventi CC BY-SA 4.0; mappa PAI frane 2024 e indicatori CC BY 4.0).
+            Nessun testo di questa pagina è scritto da un modello. Software:
+            <a href="https://github.com/agent-engineering-studio/ispra-idrogeo">ispra-idrogeo</a>, Apache-2.0.
+          </p>
         </div>
-      </aside>
-    </div>
-  </main>
 
-  <footer class="container small text-muted mb-4">
-    Dati: ISPRA — IdroGEO (IFFI ed eventi CC BY-SA 4.0; mappa PAI frane 2024 e indicatori CC BY 4.0).
-    Nessun testo di questa pagina è scritto da un modello. Software:
-    <a href="https://github.com/agent-engineering-studio/ispra-idrogeo">ispra-idrogeo</a>, Apache-2.0.
-  </footer>
+        <div role="tabpanel" id="pane-ai" aria-labelledby="tab-ai" hidden>
+          <h3 class="h6">Chiedere questi dati a un assistente AI</h3>
+          <p class="small">
+            Gli stessi dati di questa pagina si possono chiedere a un assistente AI: il server
+            <code>idrogeo-mcp</code> glieli fa leggere alla fonte, con fonte, licenza e data in ogni risposta.
+          </p>
+          <p class="small mb-1"><strong>Domande da provare:</strong></p>
+          <ul id="ai-questions" class="small"></ul>
+          <p class="small">
+            Ogni numero di una risposta si può controllare sui dati con <code>check_answer</code>:
+            chiedete all'assistente di farlo prima di rispondere.
+          </p>
+          <p class="small">
+            <a href="https://agentengineering.it/ispra-idrogeo/ai-agents/" rel="noopener">Come collegare un assistente</a>
+          </p>
+          <p class="small text-muted mb-0">Questa pagina non usa alcun modello: mostra solo i dati.</p>
+        </div>
+      </div>
+    </aside>
+  </main>
 
   <script src="vendor/leaflet/leaflet.js"></script>
   <script src="app.js"></script>

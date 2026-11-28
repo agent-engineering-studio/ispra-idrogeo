@@ -51,7 +51,8 @@ su `127.0.0.1`: per pubblicarla, mettetela dietro il proxy del vostro sito.
   la dichiara;
 - il **confine del Comune**.
 
-**Nel pannello:**
+**Nel pannello**, con le due classi sempre in vista e il resto in quattro
+schede (Esposti, Frane, Dati, Assistenti AI):
 
 - la **classe di predisposizione** a frana e ad alluvione: la quota di
   territorio in pericolo P3+P4 (frana) e nello scenario P2 (alluvione), in
@@ -66,6 +67,8 @@ su `127.0.0.1`: per pubblicarla, mettetela dietro il proxy del vostro sito.
   chiamate che usa rispondano ancora come previsto;
 - lo **scarico** dei dati in CSV e GeoJSON, con la citazione;
 - **fonte, licenza e data** di ogni dato.
+- come **chiedere gli stessi dati a un assistente AI** con `idrogeo-mcp`. La
+  pagina non usa alcun modello.
 
 ## L'API
 

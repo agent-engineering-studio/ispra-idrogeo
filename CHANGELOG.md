@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- *Mappa dei dati*: the map fills the window and the panel beside it keeps
+  the two predisposition classes in view, with the rest in four tabs
+  (Esposti, Frane, Dati, Assistenti AI). The exposure figures are one table,
+  landslide and flood side by side; the legend is in the layer control; the
+  panel closes to leave the whole width to the map. "Non è un'allerta" stays
+  on screen in every state. The new tab says how to ask the same data to an
+  AI agent through `idrogeo-mcp`; the page still calls no model. The `iframe`
+  example is now 700 px high.
+
 ## [0.11.0] - 2026-11-23
 
 ### Added
