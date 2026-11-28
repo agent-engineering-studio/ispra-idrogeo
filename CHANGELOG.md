@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-28
+
 ### Added
 
 - `twins(found)` (`ispra_idrogeo.dated`): the pairs (IFFI record, event) that
