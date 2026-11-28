@@ -6,6 +6,11 @@ const STEP_CLASS = { none: "class-none", low: "class-low", medium: "class-medium
 const KIND = { landslide: "Frana", flood: "Alluvione" };
 const PRECISION = { hour: "ora", day: "giorno", interval: "intervallo" };
 const SOURCE = { iffi: "IFFI", eventi: "evento" };
+const QUESTIONS = [
+  "Quante persone vivono in aree a pericolo frana elevato o molto elevato a {comune}?",
+  "Quante frane sono censite a {comune}, e di che tipo?",
+  "C'è una frana monitorata a {comune}?",
+];
 const fmt = (v) => (v === null || v === undefined ? "non disponibile" : typeof v === "number" ? v.toLocaleString("it-IT") : String(v));
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -18,10 +23,15 @@ async function json(url) {
   return r.json();
 }
 
-function legend() {
-  const items = Object.entries(COLORS).map(([k, c]) => `<span class="legend-item"><span class="legend-swatch" style="background:${c}"></span>Frana ${k}</span>`);
-  items.push('<span class="legend-item">● frana IFFI</span>', '<span class="legend-item">◉ frana datata (ora/giorno) · ○ intervallo · alone = precisione del punto</span>');
-  $("legend").innerHTML = items.join(" ");
+// The name of a layer in the control, with its legend under it. The WMS
+// fallback of the landslide hazard has no swatches: its colours are not ours.
+function layerLabel(name, kind) {
+  const legend = {
+    pai: Object.entries(COLORS).map(([k, c]) => `<span class="legend-item"><span class="legend-swatch" style="background:${c}"></span>Frana ${k}</span>`).join(" "),
+    iffi: "● frana IFFI",
+    dated: "◉ frana datata (ora/giorno) · ○ intervallo · alone = precisione del punto",
+  }[kind];
+  return esc(name) + (legend ? `<span class="layer-legend">${legend}</span>` : "");
 }
 
 function wms(layer, extra = {}) {
@@ -46,23 +56,23 @@ async function showComune(code) {
   $("layer-state").textContent = "Caricamento degli strati della mappa…";
   if (p.extent) { map.fitBounds([[p.extent[0][1], p.extent[0][0]], [p.extent[1][1], p.extent[1][0]]]); }
 
-  layers["Confine del Comune"] = wms("idrogeo:comuni_2019", { CQL_FILTER: `pro_com=${code}`, opacity: 0.3, pane: "boundary" }).addTo(map);
-  layers["Pericolo alluvione (WMS IdroGEO)"] = wms("idrogeo:pericolosita_alluvioni", { opacity: 0.5 }).addTo(map);
+  layers[layerLabel("Confine del Comune", "boundary")] = wms("idrogeo:comuni_2019", { CQL_FILTER: `pro_com=${code}`, opacity: 0.3, pane: "boundary" }).addTo(map);
+  layers[layerLabel("Pericolo alluvione (WMS IdroGEO)", "flood")] = wms("idrogeo:pericolosita_alluvioni", { opacity: 0.5 }).addTo(map);
   const state = [];
   await Promise.all([
     json(`api/comune/${code}/pai.geojson`).then((g) => {
       if (!live()) { return; }
-      layers["Pericolo frana PAI 2024"] = L.geoJSON(g, {
+      layers[layerLabel("Pericolo frana PAI 2024", "pai")] = L.geoJSON(g, {
         style: (f) => ({ color: COLORS[f.properties.class] || "#666", weight: 0.5, fillOpacity: 0.45 }),
         onEachFeature: (f, l) => l.bindPopup(`Pericolo frana <strong>${esc(f.properties.class)}</strong><br><small>${esc(f.properties.citation)}</small>`),
       }).addTo(map);
     }).catch(() => {
-      layers["Pericolo frana (WMS IdroGEO)"] = wms("idrogeo:pericolosita_frane", { opacity: 0.5 }).addTo(map);
+      layers[layerLabel("Pericolo frana (WMS IdroGEO)", "pai-wms")] = wms("idrogeo:pericolosita_frane", { opacity: 0.5 }).addTo(map);
       state.push("La mappa PAI 2024 è in caricamento: per ora il pericolo frana viene dal WMS di IdroGEO.");
     }),
     json(`api/comune/${code}/iffi.geojson`).then((g) => {
       if (!live()) { return; }
-      layers["Frane IFFI"] = L.geoJSON(g, {
+      layers[layerLabel("Frane IFFI", "iffi")] = L.geoJSON(g, {
         pointToLayer: (_f, ll) => L.circleMarker(ll, { radius: 3, color: "#5d4037", weight: 1, fillOpacity: 0.8, pane: "points" }),
         onEachFeature: (f, l) => l.bindPopup(`Frana IFFI ${esc(f.properties.id_frana)}<br>${esc(f.properties.type)}`),
       }).addTo(map);
@@ -80,20 +90,79 @@ async function showComune(code) {
             Fonte: ${esc(SOURCE[d.source] || d.source)} ${esc(d.id)}<br><small>${esc(d.citation)}</small>`)
           .addTo(group);
       }
-      layers[`Frane datate (${g.features.length})`] = group.addTo(map);
+      layers[layerLabel(`Frane datate (${g.features.length})`, "dated")] = group.addTo(map);
     }).catch(() => state.push("Le frane datate non sono disponibili.")),
   ]);
   if (!live()) { return; }
-  control = L.control.layers(null, layers, { collapsed: false }).addTo(map);
+  control = L.control.layers(null, layers, { collapsed: window.innerWidth < 992 }).addTo(map);
   $("layer-state").textContent = state.join(" ");
 }
 
+// Residents, buildings and cultural heritage, each under landslide and flood
+// hazard. A key the answer lacks reads as a missing value.
+function exposureTable(exposure) {
+  const found = Object.fromEntries(exposure.map((e) => [e.key, e]));
+  const value = (key) => found[key]?.value ?? null;
+  const cell = (key, percent) => {
+    const of = percent ? value(percent) : null;
+    return `<td>${esc(fmt(value(key)))}${of === null ? "" : `<small>${esc(fmt(of))}%</small>`}</td>`;
+  };
+  const rows = [
+    ["Residenti<small>e in % dei residenti</small>", ["popfr_p3p4", "popfrp3p4p"], ["pop_idr_p2", "popidp2_p"]],
+    ["Edifici", ["ed_fr_p3p4"], ["ed_idr_p2"]],
+    ["Beni culturali", ["bbccfrp3p4"], ["bbcc_id_p2"]],
+  ];
+  const total = found.pop_res021;
+  return `<p class="exposure-total"><span>${esc(total ? total.label : "Residenti")}</span><strong>${esc(fmt(value("pop_res021")))}</strong></p>
+    <table class="exposure-table"><caption class="visually-hidden">In pericolo, per frana e per alluvione</caption>
+    <thead><tr><td></td><th scope="col">Frana P3+P4</th><th scope="col">Alluvione P2</th></tr></thead>
+    <tbody>${rows.map(([name, slide, flood]) => `<tr><th scope="row">${name}</th>${cell(...slide)}${cell(...flood)}</tr>`).join("")}</tbody></table>`;
+}
+
+// One tab at a time; arrows, Home and End move between them. Wired once, so
+// another Comune keeps the tab the reader chose.
+function tabs() {
+  const all = [...document.querySelectorAll('#tabs [role="tab"]')];
+  const select = (tab, focus) => {
+    for (const t of all) {
+      const on = t === tab;
+      t.setAttribute("aria-selected", String(on)); t.tabIndex = on ? 0 : -1;
+      $(t.getAttribute("aria-controls")).hidden = !on;
+    }
+    if (focus) { tab.focus(); }
+  };
+  all.forEach((tab, i) => {
+    tab.addEventListener("click", () => select(tab, false));
+    tab.addEventListener("keydown", (e) => {
+      const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: all.length - 1 }[e.key];
+      if (to === undefined) { return; }
+      e.preventDefault(); select(all[(to + all.length) % all.length], true);
+    });
+  });
+}
+
+function panelToggle() {
+  const button = $("panel-toggle");
+  button.addEventListener("click", () => {
+    const closed = document.body.classList.toggle("panel-closed");
+    const label = closed ? "Apri il pannello dei dati" : "Chiudi il pannello dei dati";
+    button.setAttribute("aria-expanded", String(!closed)); button.setAttribute("aria-label", label);
+    button.title = label; button.textContent = closed ? "«" : "»";
+    map.invalidateSize();
+  });
+}
+
 function panel(p) {
-  $("predisposition").innerHTML = Object.entries(p.predisposition).map(([k, c]) =>
-    `<p class="mb-2">${KIND[k]}: <span class="class-badge ${c.step ? STEP_CLASS[c.step] : "class-na"}">${esc(c.label)}</span>
-     <br><small class="text-muted">${esc(c.measures)}: ${c.share === null ? "non disponibile" : fmt(Math.round(c.share * 10) / 10) + "%"}</small></p>`).join("");
+  const share = (c) => (c.share === null ? "non disponibile" : fmt(Math.round(c.share * 10) / 10) + "%");
+  const classes = Object.entries(p.predisposition);
+  $("predisposition").innerHTML = classes.map(([k, c]) =>
+    `<div class="pred-row" title="${esc(c.measures)}"><span class="pred-kind">${KIND[k]}</span>
+     <span class="class-badge ${c.step ? STEP_CLASS[c.step] : "class-na"}">${esc(c.label)}</span>
+     <span class="pred-share">${esc(share(c))}</span></div>`).join("");
+  $("measures").innerHTML = classes.map(([k, c]) => `<p class="mb-1">${KIND[k]}: ${esc(c.measures)}: ${esc(share(c))}</p>`).join("");
   $("rule").textContent = `Regola: ${config.rule}. ${config.note}`;
-  $("exposure").innerHTML = p.exposure.map((e) => `<tr><td>${esc(e.label)}</td><td class="text-end">${esc(fmt(e.value))}</td></tr>`).join("");
+  $("exposure").innerHTML = exposureTable(p.exposure);
+  $("ai-questions").innerHTML = QUESTIONS.map((q) => `<li>${esc(q.replace("{comune}", p.name))}</li>`).join("");
   const i = p.iffi;
   $("iffi").innerHTML = `<p class="mb-1"><strong>${esc(fmt(i.landslides))}</strong> frane · ${esc(fmt(i.events))} eventi · ${esc(fmt(i.monitored))} monitorate</p>
     <ul class="mb-0">${i.by_type.map((t) => `<li>${esc(t.type)}: ${esc(fmt(t.n))}</li>`).join("")}</ul>`;
@@ -111,11 +180,16 @@ function panel(p) {
 }
 
 async function contract() {
+  const dot = (ok) => {
+    $("contract-dot").className = ok ? "ok" : "ko";
+    $("contract-dot").innerHTML = `<span class="visually-hidden"> contratto con IdroGEO ${ok ? "" : "non "}rispettato</span>`;
+  };
   try {
     const c = await json("api/contract");
     $("contract").innerHTML = c.checks.map((k) => `<li>${k.ok ? "✅" : "❌"} ${esc(k.name)}${k.detail ? ` <small class="text-muted">${esc(k.detail)}</small>` : ""}</li>`).join("");
     $("contract-time").textContent = `Controllato il ${c.checked_at}.`;
-  } catch { $("contract").innerHTML = "<li>❌ IdroGEO non risponde.</li>"; }
+    dot(c.checks.every((k) => k.ok));
+  } catch { $("contract").innerHTML = "<li>❌ IdroGEO non risponde.</li>"; dot(false); }
 }
 
 async function start() {
@@ -126,7 +200,7 @@ async function start() {
   map.createPane("points").style.zIndex = 460;    // the IFFI landslides above the polygons
   map.createPane("dated").style.zIndex = 470;     // the dated ones on top: same place, the date wins
   L.tileLayer(config.tiles, { attribution: `${config.tiles_credit} · Dati ISPRA IdroGEO`, maxZoom: 18 }).addTo(map);
-  legend();
+  tabs(); panelToggle();
   const code = Number(new URLSearchParams(location.search).get("comune")) || config.comune;
   $("q").addEventListener("input", async (e) => {
     const found = await json(`api/find?q=${encodeURIComponent(e.target.value)}`).catch(() => []);

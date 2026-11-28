@@ -1,14 +1,75 @@
-.it-header-center-wrapper { background: #0066cc; }
-#map { height: 68vh; min-height: 420px; border-radius: 4px; }
-.class-badge { display: inline-block; padding: .2rem .5rem; border-radius: 3px; font-weight: 600; }
+/* The shell: header, then the map and the panel share what is left of the window. */
+html, body { height: 100%; }
+body { display: flex; flex-direction: column; margin: 0; }
+
+.app-bar { background: #0066cc; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1rem; padding: .45rem 1rem; }
+.app-title { color: #fff; font-size: 1.125rem; font-weight: 600; margin: 0; }
+.app-search { display: flex; gap: .4rem; flex: 0 1 24rem; margin-left: auto; }
+.app-search input { flex: 1; min-width: 0; border: 0; border-radius: 4px; padding: .3rem .6rem; font-size: 1rem; }
+.app-search button { border: 1px solid #fff; border-radius: 4px; background: transparent; color: #fff; font-weight: 600; padding: .3rem .8rem; }
+.app-search button:hover, .app-search button:focus-visible { background: #fff; color: #0066cc; }
+
+.app-alert { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .8rem; padding: .25rem 1rem; background: #fff3cd; border-bottom: 1px solid #e6d58f; color: #333; font-size: .875rem; }
+.app-alert a { color: #004d99; }
+.app-alert strong { font-weight: 700; }
+#why summary, #how summary { cursor: pointer; color: #004d99; font-size: .875rem; }
+#why[open] > p { position: absolute; top: 100%; left: 1rem; right: 1rem; max-width: 34rem; z-index: 1100; background: #fff; border: 1px solid #d9dadb; border-radius: 4px; box-shadow: 0 4px 12px rgba(0, 0, 0, .15); padding: .6rem .8rem; }
+
+.app-main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; }
+.app-map { position: relative; min-height: 0; }
+#map { height: 100%; }
+#layer-state { position: absolute; left: .6rem; bottom: 1.6rem; z-index: 1000; max-width: 60%; background: rgba(255, 255, 255, .92); border-radius: 4px; padding: .2rem .5rem; font-size: .8125rem; color: #333; }
+#layer-state:empty { display: none; }
+#panel-toggle { position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 1000; width: 1.5rem; height: 3rem; padding: 0; border: 1px solid #b1b1b3; border-right: 0; border-radius: 4px 0 0 4px; background: #fff; color: #333; font-size: 1rem; line-height: 1; }
+
+.app-panel { display: flex; flex-direction: column; overflow-y: auto; background: #fff; border-left: 1px solid #d9dadb; }
+body.panel-closed .app-main { grid-template-columns: minmax(0, 1fr); }
+body.panel-closed .app-panel { display: none; }
+#summary { padding: .7rem 1rem .6rem; }
+.pred-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .35rem; }
+.pred-kind { flex: 0 0 4.6rem; }
+.pred-share { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* The tabs: one panel at a time, the chosen one stays when the Comune changes. */
+#tabs { position: sticky; top: 0; z-index: 1; display: flex; background: #fff; border-top: 1px solid #d9dadb; border-bottom: 1px solid #d9dadb; }
+#tabs [role="tab"] { flex: 1 1 auto; padding: .5rem .3rem; border: 0; border-bottom: 3px solid transparent; background: none; color: #455a64; font-size: .875rem; font-weight: 600; white-space: nowrap; }
+#tabs [role="tab"][aria-selected="true"] { color: #0066cc; border-bottom-color: #0066cc; }
+[role="tabpanel"] { padding: .8rem 1rem 1rem; }
+[role="tabpanel"] h3:not(:first-child) { margin-top: .9rem; padding-top: .8rem; border-top: 1px solid #e3e4e6; }
+#contract-dot { display: inline-block; width: .6rem; height: .6rem; margin-left: .35rem; border-radius: 50%; }
+#contract-dot.ok { background: #008758; }
+#contract-dot.ko { background: #d9364f; }
+
+.exposure-total { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .4rem; font-size: .875rem; }
+.exposure-table { width: 100%; font-size: .875rem; }
+.exposure-table th, .exposure-table td { padding: .35rem .25rem; border-top: 1px solid #e3e4e6; vertical-align: top; }
+.exposure-table thead th, .exposure-table thead td { border-top: 0; font-weight: 600; text-align: right; }
+.exposure-table td, .exposure-table thead th { white-space: nowrap; }
+.exposure-table td { text-align: right; font-variant-numeric: tabular-nums; }
+.exposure-table tbody th { font-weight: 400; }
+.exposure-table small { display: block; color: #5c6f82; }
+
+.class-badge { display: inline-block; padding: .15rem .5rem; border-radius: 3px; font-weight: 600; }
 .class-none { background: #e9ecef; color: #333; }
 .class-low { background: #fee08b; color: #333; }
 .class-medium { background: #fdae61; color: #222; }
 .class-high { background: #f46d43; color: #fff; }
 .class-very-high { background: #a50026; color: #fff; }
 .class-na { background: #fff; color: #666; border: 1px dashed #999; }
-.legend-swatch { display: inline-block; width: .9rem; height: .9rem; margin-right: .3rem; vertical-align: -2px; border: 1px solid #555; }
-.legend-item { margin-right: .9rem; white-space: nowrap; }
-.box { border: 1px solid #d9dadb; border-radius: 4px; padding: .9rem 1rem; margin-bottom: .9rem; background: #fff; }
-.box h3 { margin-bottom: .5rem; }
+
+/* The legend lives in the layer control, under the layer it explains. */
+.leaflet-control-layers { max-width: 16rem; }
+.layer-legend { display: block; margin: .1rem 0 .25rem 1.3rem; font-size: .75rem; line-height: 1.5; color: #444; }
+.legend-swatch { display: inline-block; width: .75rem; height: .75rem; margin-right: .2rem; vertical-align: -1px; border: 1px solid #555; }
+.legend-item { margin-right: .5rem; white-space: nowrap; }
 .leaflet-boundary-pane { pointer-events: none; }
+
+/* A narrow window: the map on top, the panel under it, the page scrolls. */
+@media (max-width: 992px) {
+  html, body { height: auto; }
+  body, .app-main { display: block; }
+  #map { height: 60vh; min-height: 320px; }
+  #panel-toggle { display: none; }
+  .app-panel, body.panel-closed .app-panel { display: flex; overflow: visible; border-left: 0; border-top: 1px solid #d9dadb; }
+  .app-search { flex-basis: 100%; }
+}
