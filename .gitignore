@@ -12,3 +12,4 @@ site/
 .claude/hillclimb/
 .env
 app/static/vendor/
+data/

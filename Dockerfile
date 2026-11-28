@@ -14,7 +14,7 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH=/opt/venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    IDROGEO_DATA_DIR=/data/idrogeo
+    DATA_ROOT=/data
 
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md LICENSE ./
@@ -22,8 +22,8 @@ COPY src ./src
 RUN uv sync --locked --no-dev --no-editable --extra geo --extra mcp --extra warehouse
 
 RUN useradd --create-home --uid 1000 idrogeo \
-    && mkdir -p /data/idrogeo \
-    && chown idrogeo /data/idrogeo
+    && mkdir -p /data/ispra-idrogeo \
+    && chown idrogeo /data/ispra-idrogeo
 USER idrogeo
 WORKDIR /home/idrogeo
 
@@ -55,7 +55,7 @@ RUN uv sync --locked --no-dev --no-editable --extra geo --extra mcp --extra ware
 COPY app ./app
 RUN sh app/vendor.sh && chown -R idrogeo /app/app
 USER idrogeo
-ENV IDROGEO_APP_WAREHOUSE=/data/idrogeo/app.duckdb
+ENV IDROGEO_APP_WAREHOUSE=/data/ispra-idrogeo/app.duckdb
 
 EXPOSE 3002
 CMD ["uvicorn", "--factory", "app.api:create_app", "--host", "0.0.0.0", "--port", "3002"]

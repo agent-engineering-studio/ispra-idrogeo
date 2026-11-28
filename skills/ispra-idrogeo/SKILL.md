@@ -18,6 +18,9 @@ pip install "ispra-idrogeo[mcp]"          # idrogeo-mcp, the MCP server
 ```
 
 Everything is async: `async with IdroGEO() as idrogeo: ...`. No account, no key.
+Downloads go to `$DATA_ROOT/ispra-idrogeo` when `DATA_ROOT` is set (the root
+shared with Limen), else `~/.cache/ispra-idrogeo`; `idrogeo init` (or
+`await init()`) downloads the national data needed offline in one go.
 
 ## The data, in one paragraph
 

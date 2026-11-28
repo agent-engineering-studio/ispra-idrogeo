@@ -4,6 +4,8 @@ Downloads print the path they wrote; everything else prints JSON, one
 object per line for lists (JSON Lines), so it pipes into ``jq``, a file or
 a database loader.
 
+    idrogeo init                                   # the national data, to work offline
+    idrogeo init --area puglia --no-land-cover
     idrogeo fetch frane_piff --area puglia
     idrogeo summary pir comuni 72006
     idrogeo municipalities --max-age-days 30 > comuni.jsonl
@@ -57,8 +59,32 @@ def parser() -> argparse.ArgumentParser:
     top = argparse.ArgumentParser(
         prog="idrogeo", description="ISPRA IdroGEO open data and API, from the shell."
     )
-    top.add_argument("--dir", type=Path, help="download folder (default: IDROGEO_DATA_DIR)")
+    top.add_argument("--dir", type=Path, help="download folder (default: $DATA_ROOT/ispra-idrogeo)")
     commands = top.add_subparsers(dest="command", required=True, metavar="command")
+
+    init = commands.add_parser(
+        "init", help="download the national data needed offline (IFFI, mosaics, ISTAT, CORINE)"
+    )
+    init.add_argument(
+        "--area",
+        action="append",
+        help="IFFI area, repeatable: a region or province file name (default: all 21)",
+    )
+    init.add_argument("--no-iffi", action="store_true", help="no IFFI files")
+    init.add_argument(
+        "--mosaic",
+        action="append",
+        choices=tuple(MOSAICS),
+        help="repeatable (default: pai_frane and idraulica)",
+    )
+    init.add_argument("--no-mosaics", action="store_true", help="no hazard mosaics")
+    init.add_argument("--no-boundaries", action="store_true", help="no ISTAT boundaries")
+    init.add_argument("--no-land-cover", action="store_true", help="no CORINE Land Cover 2018")
+    init.add_argument("--no-unpack", action="store_true", help="keep the ZIPs as they are")
+    init.add_argument(
+        "--max-age-days", type=float, help="do not even ask for files downloaded more recently"
+    )
+    init.add_argument("--concurrency", type=int, default=4)
 
     fetch = commands.add_parser("fetch", help="download (if changed) and unpack a dataset")
     fetch.add_argument("dataset", choices=_DATASETS)
@@ -254,7 +280,9 @@ async def run(
         json.dumps(value, ensure_ascii=False, default=str), file=out
     )
     command = args.command
-    if command == "fetch":
+    if command == "init":
+        await _init(args, idrogeo, write)
+    elif command == "fetch":
         dataset = _dataset(args.dataset, args.area, args.geojson)
         show = sys.stderr.isatty() if args.progress is None else args.progress
         bar = _bar(dataset.filename, sys.stderr) if show else None
@@ -358,6 +386,25 @@ async def run(
             out.write(changed.markdown())
     else:  # dictionaries
         write(await idrogeo.dictionaries())
+
+
+async def _init(args: argparse.Namespace, idrogeo: IdroGEO, write: Callable[[Any], None]) -> None:
+    from ispra_idrogeo.offline import DEFAULT_MOSAICS, init_with
+
+    found = await init_with(
+        idrogeo,
+        args.dir,
+        areas=() if args.no_iffi else args.area,
+        mosaics=() if args.no_mosaics else (args.mosaic or DEFAULT_MOSAICS),
+        boundaries=not args.no_boundaries,
+        land_cover=not args.no_land_cover,
+        unpack=not args.no_unpack,
+        max_age=None if args.max_age_days is None else timedelta(days=args.max_age_days),
+        concurrency=args.concurrency,
+    )
+    write(found.as_dict())
+    if found.failed:
+        raise IdrogeoError(f"did not arrive: {', '.join(sorted(found.failed))}")
 
 
 def _bar(name: str, stream: TextIO) -> Callable[[int, int | None], None]:

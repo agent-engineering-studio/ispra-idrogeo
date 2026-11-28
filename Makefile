@@ -1,6 +1,6 @@
 .PHONY: start stop app app-up help check lint format typecheck test build docs docs-serve live benchmark benchmark-record \
 	test-notebooks up down restart ps logs health notebooks cli shell \
-	docker-build docker-test-notebooks clean eval
+	docker-build docker-test-notebooks clean eval data-dir
 
 # Containers. Every name starts with NAME, so copies never clash:
 #   make up NAME=idrogeo-dev IDROGEO_MCP_PORT=8768
@@ -16,6 +16,11 @@ export IDROGEO_MCP_PORT IDROGEO_JUPYTER_PORT IDROGEO_JUPYTER_TOKEN
 export ANTHROPIC_API_KEY
 IDROGEO_APP_PORT ?= 3002
 export IDROGEO_APP_PORT
+# The data: $(DATA_ROOT)/ispra-idrogeo on this computer, the root shared with
+# Limen and the other libraries. Made here, so Docker does not create it as root.
+DATA_ROOT ?= ./data
+export DATA_ROOT
+DATA_DIR := $(DATA_ROOT)/ispra-idrogeo
 COMPOSE := docker compose --profile notebooks --profile tools --profile app
 NOTEBOOK_TEST := examples/00-test-the-library.ipynb
 
@@ -71,7 +76,7 @@ app:  ## The Mappa dei dati, here: http://127.0.0.1:3002
 
 # Containers
 
-app-up:  ## The Mappa dei dati in a container: http://localhost:$(IDROGEO_APP_PORT)
+app-up: data-dir  ## The Mappa dei dati in a container: http://localhost:$(IDROGEO_APP_PORT)
 	docker compose --profile app up --build --detach app
 	@echo "Mappa dei dati: http://localhost:$(IDROGEO_APP_PORT) (container $(NAME)-app)"
 
@@ -81,25 +86,25 @@ start: docker-build up app-up notebooks  ## Build every image and start everythi
 	@echo "Mappa dei dati: http://localhost:$(IDROGEO_APP_PORT)"
 	@echo "Jupyter: http://localhost:$(IDROGEO_JUPYTER_PORT)/lab?token=$(IDROGEO_JUPYTER_TOKEN)"
 
-stop: down  ## Stop everything started by make start (the data volume stays)
+stop: down  ## Stop everything started by make start (the data stays)
 
 docker-build:  ## Build the images
 	$(COMPOSE) build
 
-up:  ## Start the MCP server: http://localhost:$(IDROGEO_MCP_PORT)/mcp
+up: data-dir  ## Start the MCP server: http://localhost:$(IDROGEO_MCP_PORT)/mcp
 	docker compose up --build --detach --wait mcp
 	@echo "MCP server: http://localhost:$(IDROGEO_MCP_PORT)/mcp (container $(NAME)-mcp)"
 
-notebooks:  ## Start Jupyter with the examples
+notebooks: data-dir  ## Start Jupyter with the examples
 	docker compose --profile notebooks up --build --detach notebooks
 	@echo "Jupyter: http://localhost:$(IDROGEO_JUPYTER_PORT)/lab?token=$(IDROGEO_JUPYTER_TOKEN) (container $(NAME)-notebooks)"
 
-docker-test-notebooks:  ## Run the test notebook inside a container
+docker-test-notebooks: data-dir  ## Run the test notebook inside a container
 	docker compose --profile notebooks run --rm --build --name $(NAME)-notebook-test notebooks \
 		jupyter nbconvert --to notebook --execute --inplace \
 		--ExecutePreprocessor.timeout=600 00-test-the-library.ipynb
 
-cli:  ## Run the idrogeo command: make cli ARGS="hazard 40.829 14.617"
+cli: data-dir  ## Run the idrogeo command: make cli ARGS="hazard 40.829 14.617"
 	docker compose --profile tools run --rm --name $(NAME)-cli-$$$$ cli $(ARGS)
 
 shell:  ## A shell in the MCP server container
@@ -116,11 +121,14 @@ logs:  ## Follow the logs
 
 restart: down up  ## Stop, then start again
 
-down:  ## Stop and remove the containers (the data volume stays)
+down:  ## Stop and remove the containers (the data stays)
 	$(COMPOSE) down
 
-clean:  ## Remove containers, images and the data volume of this copy
-	$(COMPOSE) down --volumes --rmi local
+clean:  ## Remove the containers and images of this copy (the data in $(DATA_ROOT) stays)
+	$(COMPOSE) down --rmi local
+
+data-dir:
+	@mkdir -p $(DATA_DIR)
 
 # The agent eval: Claude on idrogeo-mcp (costs API calls). ARGS="--limit 5" for a pilot.
 eval:  ## The agent eval of Claude on idrogeo-mcp (paid API calls): make eval ARGS="--limit 5"

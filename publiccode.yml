@@ -4,8 +4,8 @@ publiccodeYmlVersion: "0"
 name: ispra-idrogeo
 url: "https://github.com/agent-engineering-studio/ispra-idrogeo.git"
 landingURL: "https://agentengineering.it/ispra-idrogeo/"
-releaseDate: "2026-11-23"
-softwareVersion: "0.11.0"
+releaseDate: "2026-11-25"
+softwareVersion: "0.12.0"
 platforms: [web, linux, mac, windows]
 categories: [geographic-information-systems, data-visualization, data-analytics]
 usedBy: []
