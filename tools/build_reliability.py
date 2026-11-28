@@ -6,7 +6,8 @@ For every region, province and municipality it measures how far the IFFI
 inventory and the dated events can be trusted for a study that needs dates
 (rainfall thresholds) or a complete count: see ispra_idrogeo.reliability.
 It reads the whole inventory once (about 50 s), the events file (100 kB) and
-the area of every municipality (cached on disk for 30 days).
+the area of every municipality and its land in landslide hazard P3+P4
+(cached on disk for 30 days).
 """
 
 from __future__ import annotations
@@ -82,6 +83,7 @@ async def main() -> None:
                     c["events_within_1km"] += known
         names: dict[str, dict[int, str]] = {}
         areas: dict[str, dict[int, float]] = {}
+        hazard: dict[str, dict[int, float]] = {}
         for level in LEVELS:
             summaries = await idrogeo.summaries("pir", level, max_age=timedelta(days=30))
             names[level] = {int(s["uid"]): str(s["nome"]) for s in summaries}
@@ -89,6 +91,11 @@ async def main() -> None:
                 int(s["uid"]): float(s["ar_kmq"])
                 for s in summaries
                 if isinstance(s.get("ar_kmq"), int | float)
+            }
+            hazard[level] = {
+                int(s["uid"]): float(s["ar_fr_p3p4"])
+                for s in summaries
+                if isinstance(s.get("ar_fr_p3p4"), int | float) and s["ar_fr_p3p4"] >= 0
             }
         iffi_regions = {
             int(r["uid"]): int(r["frane_totali"])
@@ -117,6 +124,7 @@ async def main() -> None:
                 c.get("events_since_2018", 0),
                 c.get("events_within_1km", 0),
                 c.get("edited_recently", 0),
+                round(hazard[level][code], 2) if code in hazard[level] else None,
             ]
         out["levels"][level] = table
     # check: the inventory counted per region is the API's own count

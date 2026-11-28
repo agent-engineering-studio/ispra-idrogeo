@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Any
 
 from ispra_idrogeo.grounding import SOURCES, check_claims, check_text
 from ispra_idrogeo.predisposition import ITALIAN, predisposition
-from ispra_idrogeo.reliability import reliability
+from ispra_idrogeo.reliability import THIN, reliability
 
 if TYPE_CHECKING:
     from ispra_idrogeo.client import IdroGEO
@@ -59,6 +59,11 @@ def number_it(value: int) -> str:
     return f"{value:,}".replace(",", ".")
 
 
+def decimal_it(value: float) -> str:
+    """A figure with one decimal and the Italian comma: 27.3 is "27,3"."""
+    return f"{value:.1f}".replace(".", ",")
+
+
 def share_it(share: float | None) -> str:
     """A share from 0 to 1 as an Italian percentage: 0.039 is "3,9%"."""
     if share is None:
@@ -90,6 +95,15 @@ def notes_it(found: dict[str, Any]) -> list[str]:
         notes.append(
             "Nessuna frana datata al giorno dal 2018: qui nessun dato può verificare una soglia "
             "di pioggia."
+        )
+    vs_italy: float | None = found.get("province_vs_italy")
+    if vs_italy is not None and vs_italy < THIN:
+        ratio, italy = found["province_per_hazard_km2"], found["italy_per_hazard_km2"]
+        notes.append(
+            f"In questa provincia poche frane censite per il pericolo mappato: "
+            f"{decimal_it(ratio)} per km² di "
+            f"territorio in pericolo frana P3+P4, contro {decimal_it(italy)} in Italia. Qui una "
+            "densità bassa può voler dire che si è rilevato poco, non che le frane sono poche."
         )
     return notes
 

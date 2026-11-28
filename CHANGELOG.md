@@ -6,6 +6,25 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `twins(found)` (`ispra_idrogeo.dated`): the pairs (IFFI record, event) that
+  are probably the same landslide, by a rule: both dated to the day, at most
+  one day and 1 km apart, each in one pair at most. 120 pairs on 28 November
+  2026. `dated_landslides(..., drop_twins=True)` and `idrogeo dated
+  --drop-twins` leave out the IFFI record of each pair; `distance_m` is the
+  distance the rule uses.
+- `Warehouse.records_near(event)`: the IFFI records within the accuracy an
+  event states (at least 100 m).
+- `reliability`: `hazard_land_km2`, `landslides_per_hazard_km2`,
+  `italy_per_hazard_km2` and `vs_italy`: the IFFI landslides per km² of land
+  in landslide hazard P3+P4, and that as a share of Italy's. Under `THIN`
+  (0.2) a note says that a low density may mean little surveyed. A
+  municipality is judged by its province (`province_per_hazard_km2`,
+  `province_vs_italy`). The *Mappa dei dati* and `idrogeo report` show the
+  note in Italian. The table shipped with the package was rebuilt on 28
+  November 2026 with the new column.
+
 ### Changed
 
 - *Mappa dei dati*: the map fills the window and the panel beside it keeps

@@ -909,7 +909,15 @@ What the data holds (22 November 2026):
 - **Uncertain dates can be a year or a month** (`"1979"`, `"1983-07"`): they
   become intervals. Impossible dates (year 7970) are left out.
 - **An event and an IFFI record may be the same landslide**: the open-data
-  events do not carry the IFFI id, so nothing here merges them.
+  events do not carry the IFFI id. `twins(found)` pairs the ones that
+  probably are, by a rule (both dated to the day, at most one day and 1 km
+  apart): 120 pairs on 28 November 2026, 115 since 2018, so the two sources
+  mostly hold different landslides. `dated_landslides(..., drop_twins=True)`
+  and `idrogeo dated --drop-twins` leave out the IFFI record of each pair.
+  With the local warehouse, `Warehouse.records_near(event)` gives the IFFI
+  records within the accuracy an event states: of the events with a point
+  known to 1 km, half have none (a landslide IFFI does not hold), a sixth
+  have one, a third have several.
 
 ### How far to trust the data, place by place
 
@@ -941,6 +949,19 @@ date and with a date **to the day**, the landslides dated to the day since
 2018 (IFFI, and events with how many points are known to 1 km), the share of
 records **edited since 2021**, `notes` in plain words, and `not_measured`.
 The MCP tool `data_reliability` gives the same to an AI agent.
+
+It also has the **landslides per km² of land in landslide hazard P3+P4**
+(`landslides_per_hazard_km2`) and that figure as a share of Italy's
+(`vs_italy`; Italy has 25 per km²). The hazard maps say where landslides are
+expected: where they expect many and IFFI holds few, a low density more
+likely means that little was surveyed than that the ground is stable.
+Sardegna has 0.04 of Italy's figure, Puglia 0.06, Lombardia 3.6; between
+provinces the same hazard has up to 300 times the records. Under `THIN`
+(0.2) a note says so. A municipality is judged by its province
+(`province_vs_italy`), because its own ratio follows the shape of its hazard
+map: Sarno, mapped widely after 1998, has 0.12 in a province that has 1.14.
+It is a hint to read a density with care, not a measure of how complete
+IFFI is: the hazard maps differ between basin authorities too.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/agent-engineering-studio/ispra-idrogeo/main/docs/images/dates.svg" alt="Share of IFFI landslides dated to the day, by region: Trentino-Alto Adige 24.6%, Friuli-Venezia Giulia 22.0%, Veneto 19.4%, then Sardegna 4.3%, and sixteen regions under 1%" width="100%">

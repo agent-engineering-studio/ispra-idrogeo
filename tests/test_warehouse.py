@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from conftest import FORLI_DEL_SANNIO, LAT, LON, TRIVENTO, Opendata
 
 from ispra_idrogeo import IdroGEO, IdrogeoError
+from ispra_idrogeo.dated import from_iffi
 
 duckdb = pytest.importorskip("duckdb")
 from ispra_idrogeo import warehouse as wh  # noqa: E402
@@ -89,6 +91,19 @@ async def test_landslides_near_and_in(tmp_path: Path, idrogeo: IdroGEO) -> None:
         for radius, limit in ((0, 10), (60_000, 10), (100, 0)):
             with pytest.raises(ValueError):
                 warehouse.landslides_near(LAT, LON, radius, limit=limit)
+        # an event: the records within the accuracy it states, at least 100 m
+        record = from_iffi({"id_frana": "1", "data_certa": "2019-11-12", "point": [LON, LAT]})
+        assert record is not None
+        event = replace(record, source="eventi", position_m=0)
+        assert [r["id_frana"] for r in warehouse.records_near(event)] == [
+            "0000000001",
+            "0000000000",
+        ]
+        assert [r["id_frana"] for r in warehouse.records_near(event, min_radius_m=50)] == [
+            "0000000001"
+        ]
+        with pytest.raises(ValueError, match="stated accuracy"):
+            warehouse.records_near(record)  # IFFI states none
         trivento = warehouse.landslides_in(municipality=TRIVENTO)
         assert trivento["landslides"] == 3
         assert trivento["by_type"][0] == {
